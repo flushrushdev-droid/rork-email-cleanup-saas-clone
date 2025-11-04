@@ -206,3 +206,13 @@ export interface HistoryEntry {
     ruleName?: string;
   };
 }
+
+export interface SmartFolder {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  query: string;
+  count: number;
+  category?: EmailCategory;
+}
