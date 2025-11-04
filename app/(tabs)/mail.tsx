@@ -1165,17 +1165,6 @@ export default function MailScreen() {
       {currentView === 'detail' && renderEmailDetail()}
       {currentView === 'compose' && renderCompose()}
 
-      {currentView !== 'compose' && currentView !== 'detail' && (
-        <TouchableOpacity
-          testID="compose-fab"
-          style={[styles.fab, { bottom: insets.bottom + 90 }]}
-          onPress={handleCompose}
-          activeOpacity={0.8}
-        >
-          <PenSquare size={24} color="#FFF" />
-        </TouchableOpacity>
-      )}
-
       {renderCalendar()}
 
       {isCalendarVisible && (
