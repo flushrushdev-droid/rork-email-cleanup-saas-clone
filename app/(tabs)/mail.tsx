@@ -1168,7 +1168,7 @@ export default function MailScreen() {
       {currentView !== 'compose' && currentView !== 'detail' && (
         <TouchableOpacity
           testID="compose-fab"
-          style={[styles.fab, { bottom: insets.bottom + 90 }]}
+          style={[styles.fab, { bottom: insets.bottom + 70 }]}
           onPress={handleCompose}
           activeOpacity={0.8}
         >
