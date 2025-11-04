@@ -22,7 +22,7 @@ export default function ToolsScreen() {
       title: 'Top Senders',
       description: 'Manage and analyze your top email senders',
       icon: Users,
-      color: '#6366F1',
+      color: '#007AFF',
       route: '/senders' as const,
     },
     {
