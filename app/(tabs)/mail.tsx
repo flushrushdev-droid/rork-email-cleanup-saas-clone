@@ -1978,6 +1978,7 @@ const styles = StyleSheet.create({
   aiOption: {
     flex: 1,
     position: 'relative',
+    zIndex: 10,
   },
   aiDropdownButton: {
     backgroundColor: Colors.light.surface,
@@ -2010,12 +2011,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 8,
     overflow: 'hidden',
-    zIndex: 10,
+    zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 100,
   },
   aiDropdownItem: {
     paddingVertical: 14,
