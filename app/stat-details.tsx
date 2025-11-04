@@ -1,8 +1,8 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Mail, Archive, HardDrive, Sparkles, ArrowLeft, AlertCircle } from 'lucide-react-native';
+import { Mail, Archive, HardDrive, Sparkles, ArrowLeft, AlertCircle, Trash2, XCircle } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { mockSenders, mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
@@ -15,6 +15,41 @@ export default function StatDetailsScreen() {
   const type = params.type as StatType;
   const { messages, senders } = useGmailSync();
   const insets = useSafeAreaInsets();
+  const [deletedEmailIds, setDeletedEmailIds] = useState<Set<string>>(new Set());
+
+  const handleDelete = (emailId: string, subject: string) => {
+    Alert.alert(
+      'Move to Trash',
+      `Move "${subject}" to trash?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setDeletedEmailIds(prev => new Set(prev).add(emailId));
+          },
+        },
+      ]
+    );
+  };
+
+  const handlePermanentDelete = (emailId: string, subject: string) => {
+    Alert.alert(
+      'Delete Permanently',
+      `Permanently delete "${subject}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Forever',
+          style: 'destructive',
+          onPress: () => {
+            setDeletedEmailIds(prev => new Set(prev).add(emailId));
+          },
+        },
+      ]
+    );
+  };
 
   const getStatInfo = () => {
     switch (type) {
@@ -151,7 +186,7 @@ export default function StatDetailsScreen() {
 
       case 'files':
         const emailsWithFiles = (messages.length > 0 ? messages : mockRecentEmails)
-          .filter(m => m.hasAttachments && ('attachmentCount' in m ? m.attachmentCount > 0 : true))
+          .filter(m => m.hasAttachments && ('attachmentCount' in m ? m.attachmentCount > 0 : true) && !deletedEmailIds.has(m.id))
           .sort((a, b) => {
             const aSize = 'size' in a ? a.size : ('sizeBytes' in a ? a.sizeBytes : 0);
             const bSize = 'size' in b ? b.size : ('sizeBytes' in b ? b.sizeBytes : 0);
@@ -186,6 +221,22 @@ export default function StatDetailsScreen() {
                       {'attachmentCount' in email ? email.attachmentCount : '?'} files
                     </Text>
                   </View>
+                </View>
+                <View style={styles.fileActions}>
+                  <TouchableOpacity
+                    onPress={() => handleDelete(email.id, email.subject)}
+                    style={styles.deleteButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Trash2 size={20} color={Colors.light.danger} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handlePermanentDelete(email.id, email.subject)}
+                    style={styles.permanentDeleteButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <XCircle size={20} color={Colors.light.danger} />
+                  </TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -462,6 +513,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -567,5 +619,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  fileActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFEBEE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permanentDeleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFCDD2',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
