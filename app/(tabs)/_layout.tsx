@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Activity, Sparkles, FolderOpen, Settings, Wrench, Mail } from 'lucide-react-native';
+import { Activity, Sparkles, Settings, Wrench, Mail } from 'lucide-react-native';
 import React from 'react';
 
 import Colors from '@/constants/colors';
@@ -23,24 +23,17 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Overview',
-          tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="tools"
-        options={{
-          title: 'Tools',
-          tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="mail"
         options={{
           title: 'Mail',
           tabBarIcon: ({ color, size }) => <Mail size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Overview',
+          tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -51,10 +44,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="folders"
+        name="tools"
         options={{
-          title: 'Folders',
-          tabBarIcon: ({ color, size }) => <FolderOpen size={size} color={color} />,
+          title: 'Tools',
+          tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} />,
         }}
       />
       <Tabs.Screen
