@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen } from 'lucide-react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
@@ -64,6 +64,7 @@ export default function MailScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred'>('all');
 
   const allEmails = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
@@ -159,8 +160,21 @@ export default function MailScreen() {
       );
     }
 
+    if (currentView === 'inbox') {
+      switch (activeFilter) {
+        case 'unread':
+          filtered = filtered.filter((email: EmailMessage) => !email.isRead);
+          break;
+        case 'starred':
+          filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
+          break;
+        default:
+          break;
+      }
+    }
+
     return filtered.sort((a: EmailMessage, b: EmailMessage) => b.date.getTime() - a.date.getTime());
-  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails]);
+  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails, activeFilter]);
 
   const handleEmailPress = (email: EmailMessage) => {
     setSelectedEmail(email);
@@ -569,7 +583,26 @@ export default function MailScreen() {
         )}
       </View>
 
-
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterButton, activeFilter === 'all' && styles.filterButtonActive]}
+          onPress={() => setActiveFilter('all')}
+        >
+          <Text style={[styles.filterButtonText, activeFilter === 'all' && styles.filterButtonTextActive]}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, activeFilter === 'unread' && styles.filterButtonActive]}
+          onPress={() => setActiveFilter('unread')}
+        >
+          <Text style={[styles.filterButtonText, activeFilter === 'unread' && styles.filterButtonTextActive]}>Unread</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, activeFilter === 'starred' && styles.filterButtonActive]}
+          onPress={() => setActiveFilter('starred')}
+        >
+          <Text style={[styles.filterButtonText, activeFilter === 'starred' && styles.filterButtonTextActive]}>Starred</Text>
+        </TouchableOpacity>
+      </View>
 
       <ScrollView 
         style={styles.emailList} 
@@ -941,6 +974,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
     paddingVertical: 0,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.light.surface,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  filterButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
   },
 
   emailList: {
