@@ -569,117 +569,12 @@ export default function MailScreen() {
         )}
       </View>
 
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterRow}
-      >
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'inbox' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('inbox')}
-        >
-          <Inbox size={14} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'inbox' && styles.filterButtonTextActive]}>
-            Inbox
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'unread' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('unread')}
-        >
-          <MailOpen size={14} color={currentFolder === 'unread' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'unread' && styles.filterButtonTextActive]}>
-            Unread
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'starred' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('starred')}
-        >
-          <Star size={14} color={currentFolder === 'starred' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'starred' && styles.filterButtonTextActive]}>
-            Starred
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'important' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('important')}
-        >
-          <AlertOctagon size={14} color={currentFolder === 'important' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'important' && styles.filterButtonTextActive]}>
-            Important
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'snoozed' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('snoozed')}
-        >
-          <Clock size={14} color={currentFolder === 'snoozed' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'snoozed' && styles.filterButtonTextActive]}>
-            Snoozed
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'sent' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('sent')}
-        >
-          <Send size={14} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'sent' && styles.filterButtonTextActive]}>
-            Sent
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'drafts' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('drafts')}
-        >
-          <FileEdit size={14} color={currentFolder === 'drafts' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'drafts' && styles.filterButtonTextActive]}>
-            Drafts
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'spam' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('spam')}
-        >
-          <AlertCircle size={14} color={currentFolder === 'spam' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'spam' && styles.filterButtonTextActive]}>
-            Spam
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'trash' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('trash')}
-        >
-          <Trash2 size={14} color={currentFolder === 'trash' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'trash' && styles.filterButtonTextActive]}>
-            Trash
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, currentFolder === 'archived' && styles.filterButtonActive]}
-          onPress={() => setCurrentFolder('archived')}
-        >
-          <Archive size={14} color={currentFolder === 'archived' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.filterButtonText, currentFolder === 'archived' && styles.filterButtonTextActive]}>
-            Archived
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setCurrentView('folders')}
-        >
-          <FolderOpen size={14} color={Colors.light.textSecondary} />
-          <Text style={styles.filterButtonText}>
-            Smart Folders
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+
 
       <ScrollView 
         style={styles.emailList} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 80 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
       >
         {filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
@@ -1047,35 +942,7 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     paddingVertical: 0,
   },
-  filterContainer: {
-    marginBottom: 4,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    gap: 6,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: Colors.light.surface,
-  },
-  filterButtonActive: {
-    backgroundColor: Colors.light.primary + '15',
-  },
-  filterButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-  },
-  filterButtonTextActive: {
-    color: Colors.light.primary,
-  },
+
   emailList: {
     flex: 1,
   },
