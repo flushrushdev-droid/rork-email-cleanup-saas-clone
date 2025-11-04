@@ -1226,7 +1226,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   emailCardUnread: {
-    backgroundColor: '#F0F8FF',
+    backgroundColor: '#FFFFFF',
   },
   emailCardContent: {
     flex: 1,
