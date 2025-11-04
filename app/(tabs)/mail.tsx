@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   folderTabsContainer: {
-    marginBottom: 4,
+    marginBottom: 8,
   },
   folderTabs: {
     flexDirection: 'row',
@@ -1059,16 +1059,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 14,
     backgroundColor: Colors.light.surface,
   },
   folderTabActive: {
     backgroundColor: Colors.light.primary + '15',
   },
   folderTabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: Colors.light.textSecondary,
   },
