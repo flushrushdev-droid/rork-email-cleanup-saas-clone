@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { History, MailX, ChevronRight, Sparkles } from 'lucide-react-native';
+import { History, MailX, ChevronRight, Sparkles, Users } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
@@ -16,6 +16,14 @@ export default function ToolsScreen() {
       icon: History,
       color: Colors.light.secondary,
       route: '/history' as const,
+    },
+    {
+      id: 'top-senders',
+      title: 'Top Senders',
+      description: 'Manage and analyze your top email senders',
+      icon: Users,
+      color: '#6366F1',
+      route: '/senders' as const,
     },
     {
       id: 'unsubscribe',
