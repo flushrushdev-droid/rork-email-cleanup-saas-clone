@@ -1294,7 +1294,7 @@ const styles = StyleSheet.create({
   },
   composeFab: {
     position: 'absolute',
-    left: 20,
+    right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
