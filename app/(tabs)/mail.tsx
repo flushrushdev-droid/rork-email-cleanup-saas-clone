@@ -679,7 +679,7 @@ export default function MailScreen() {
       <ScrollView 
         style={styles.emailList} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 0, paddingBottom: insets.bottom + 80 }}
+        contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 80 }}
       >
         {filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   folderTabsContainer: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   folderTabs: {
     flexDirection: 'row',
@@ -1058,17 +1058,17 @@ const styles = StyleSheet.create({
   folderTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: Colors.light.surface,
   },
   folderTabActive: {
     backgroundColor: Colors.light.primary + '15',
   },
   folderTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: Colors.light.textSecondary,
   },
