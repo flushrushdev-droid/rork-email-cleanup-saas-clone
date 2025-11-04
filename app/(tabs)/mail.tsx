@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
@@ -60,6 +60,10 @@ export default function MailScreen() {
   const [composeBody, setComposeBody] = useState('');
   const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
   const [selectedFolder, setSelectedFolder] = useState<{ id: string; name: string; color: string; category?: EmailCategory } | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [folderName, setFolderName] = useState<string>('');
+  const [folderRule, setFolderRule] = useState<string>('');
+  const [isCreating, setIsCreating] = useState<boolean>(false);
 
   const allEmails = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
@@ -195,6 +199,32 @@ export default function MailScreen() {
       }
       return newSet;
     });
+  };
+
+  const handleCreateFolder = async () => {
+    if (!folderName.trim() || !folderRule.trim()) {
+      Alert.alert('Missing Information', 'Please enter both folder name and rule');
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      console.log('Creating folder:', { folderName, folderRule });
+      
+      Alert.alert('Success', `Folder "${folderName}" created successfully!`);
+      
+      setIsModalVisible(false);
+      setFolderName('');
+      setFolderRule('');
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      Alert.alert('Error', 'Failed to create folder. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const smartFolders = useMemo(() => {
@@ -336,6 +366,15 @@ export default function MailScreen() {
       )}
 
       <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+        <TouchableOpacity 
+          testID="create-folder" 
+          style={styles.createFolderButton} 
+          onPress={() => setIsModalVisible(true)}
+        >
+          <Plus size={20} color={Colors.light.primary} />
+          <Text style={styles.createFolderButtonText}>Create Custom Folder</Text>
+        </TouchableOpacity>
+
         {smartFolders.length === 0 ? (
           <View style={styles.emptyState}>
             <FolderOpen size={48} color={Colors.light.textSecondary} />
@@ -765,6 +804,81 @@ export default function MailScreen() {
       {currentView === 'folder-detail' && renderFolderDetail()}
       {currentView === 'detail' && renderEmailDetail()}
       {currentView === 'compose' && renderCompose()}
+
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => !isCreating && setIsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create Custom Folder</Text>
+              <TouchableOpacity
+                onPress={() => !isCreating && setIsModalVisible(false)}
+                disabled={isCreating}
+              >
+                <X size={24} color={Colors.light.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDescription}>
+              Create a smart folder using natural language rules
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Folder Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Important Clients"
+                placeholderTextColor={Colors.light.textSecondary}
+                value={folderName}
+                onChangeText={setFolderName}
+                editable={!isCreating}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Folder Rule</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="e.g., Emails from clients about project updates or invoices"
+                placeholderTextColor={Colors.light.textSecondary}
+                value={folderRule}
+                onChangeText={setFolderRule}
+                multiline
+                numberOfLines={4}
+                editable={!isCreating}
+              />
+              <Text style={styles.helperText}>
+                Describe the rule in plain English. Our AI will understand it!
+              </Text>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setIsModalVisible(false)}
+                disabled={isCreating}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.createButtonModal]}
+                onPress={handleCreateFolder}
+                disabled={isCreating || !folderName.trim() || !folderRule.trim()}
+              >
+                {isCreating ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.createButtonModalText}>Create Folder</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1192,5 +1306,109 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.light.primary,
     fontWeight: '500',
+  },
+  createFolderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    borderStyle: 'dashed',
+  },
+  createFolderButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.primary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.light.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: Colors.light.textSecondary,
+    marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.light.text,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  textArea: {
+    height: 120,
+    textAlignVertical: 'top',
+  },
+  helperText: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    marginTop: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: Colors.light.surface,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  createButtonModal: {
+    backgroundColor: Colors.light.primary,
+  },
+  createButtonModalText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
