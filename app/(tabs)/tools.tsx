@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { Inbox, History, MailX, ChevronRight } from 'lucide-react-native';
+import { Inbox, History, MailX, ChevronRight, Sparkles } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
@@ -32,6 +32,14 @@ export default function ToolsScreen() {
       icon: MailX,
       color: Colors.light.danger,
       route: '/unsubscribe' as const,
+    },
+    {
+      id: 'suggestions',
+      title: 'Suggestions',
+      description: 'Smart recommendations for your inbox',
+      icon: Sparkles,
+      color: '#FFA500',
+      route: '/suggestions' as const,
     },
   ];
 
