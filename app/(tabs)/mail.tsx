@@ -65,7 +65,14 @@ export default function MailScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts'>('all');
+  const [drafts, setDrafts] = useState<Array<{
+    id: string;
+    to: string;
+    subject: string;
+    body: string;
+    date: Date;
+  }>>([]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -189,6 +196,9 @@ export default function MailScreen() {
         case 'starred':
           filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
           break;
+        case 'drafts':
+          filtered = [];
+          break;
         default:
           break;
       }
@@ -213,6 +223,49 @@ export default function MailScreen() {
     setComposeSubject('');
     setComposeBody('');
     setCurrentView('compose');
+  };
+
+  const handleSaveDraft = () => {
+    if (!composeTo && !composeSubject && !composeBody) {
+      Alert.alert('Error', 'Draft is empty');
+      return;
+    }
+
+    const newDraft = {
+      id: Date.now().toString(),
+      to: composeTo,
+      subject: composeSubject,
+      body: composeBody,
+      date: new Date(),
+    };
+
+    setDrafts(prev => [newDraft, ...prev]);
+    Alert.alert('Success', 'Draft saved successfully');
+    setCurrentView('inbox');
+    setActiveFilter('drafts');
+  };
+
+  const handleLoadDraft = (draft: typeof drafts[0]) => {
+    setComposeTo(draft.to);
+    setComposeSubject(draft.subject);
+    setComposeBody(draft.body);
+    setCurrentView('compose');
+    setDrafts(prev => prev.filter(d => d.id !== draft.id));
+  };
+
+  const handleDeleteDraft = (draftId: string) => {
+    Alert.alert(
+      'Delete Draft',
+      'Are you sure you want to delete this draft?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => setDrafts(prev => prev.filter(d => d.id !== draftId)),
+        },
+      ]
+    );
   };
 
   const handleSend = () => {
@@ -610,6 +663,12 @@ export default function MailScreen() {
         >
           <Text style={[styles.filterButtonText, activeFilter === 'starred' && styles.filterButtonTextActive]}>Starred</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, activeFilter === 'drafts' && styles.filterButtonActive]}
+          onPress={() => setActiveFilter('drafts')}
+        >
+          <Text style={[styles.filterButtonText, activeFilter === 'drafts' && styles.filterButtonTextActive]}>Drafts</Text>
+        </TouchableOpacity>
       </View>
 
       {smartFolders.length > 0 && (
@@ -667,7 +726,54 @@ export default function MailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
       >
-        {filteredEmails.length === 0 ? (
+        {activeFilter === 'drafts' ? (
+          drafts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <FileEdit size={48} color={Colors.light.textSecondary} />
+              <Text style={styles.emptyText}>No drafts</Text>
+              <Text style={styles.emptySubtext}>Start composing to save drafts</Text>
+            </View>
+          ) : (
+            drafts.map((draft) => (
+              <TouchableOpacity
+                key={draft.id}
+                testID={`draft-${draft.id}`}
+                style={styles.draftCard}
+                onPress={() => handleLoadDraft(draft)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.draftCardContent}>
+                  <View style={styles.draftCardHeader}>
+                    <FileEdit size={16} color={Colors.light.primary} />
+                    <Text style={styles.draftBadge}>Draft</Text>
+                    <Text style={styles.draftDate}>{formatDate(draft.date)}</Text>
+                  </View>
+                  <Text style={styles.draftTo} numberOfLines={1}>
+                    To: {draft.to || '(no recipient)'}
+                  </Text>
+                  <Text style={styles.draftSubject} numberOfLines={1}>
+                    {draft.subject || '(no subject)'}
+                  </Text>
+                  {draft.body && (
+                    <Text style={styles.draftBody} numberOfLines={2}>
+                      {draft.body}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  testID={`delete-draft-${draft.id}`}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeleteDraft(draft.id);
+                  }}
+                  style={styles.deleteDraftButton}
+                >
+                  <Trash2 size={18} color={Colors.light.danger} />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))
+          )
+        ) : filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
             <Mail size={48} color={Colors.light.textSecondary} />
             <Text style={styles.emptyText}>No emails found</Text>
@@ -833,13 +939,22 @@ export default function MailScreen() {
           <X size={24} color={Colors.light.text} />
         </TouchableOpacity>
         <Text style={styles.composeTitle}>New Message</Text>
-        <TouchableOpacity
-          testID="send-email"
-          style={styles.sendButton}
-          onPress={handleSend}
-        >
-          <Send size={20} color={Colors.light.primary} />
-        </TouchableOpacity>
+        <View style={styles.composeHeaderActions}>
+          <TouchableOpacity
+            testID="save-draft"
+            style={styles.saveDraftButton}
+            onPress={handleSaveDraft}
+          >
+            <FileEdit size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="send-email"
+            style={styles.sendButton}
+            onPress={handleSend}
+          >
+            <Send size={20} color={Colors.light.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.composeForm} keyboardShouldPersistTaps="handled">
@@ -1571,5 +1686,71 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  draftCard: {
+    backgroundColor: Colors.light.surface,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.light.primary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  draftCardContent: {
+    flex: 1,
+  },
+  draftCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  draftBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.light.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  draftDate: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginLeft: 'auto',
+  },
+  draftTo: {
+    fontSize: 14,
+    color: Colors.light.text,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  draftSubject: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  draftBody: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
+  deleteDraftButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  composeHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  saveDraftButton: {
+    padding: 4,
   },
 });
