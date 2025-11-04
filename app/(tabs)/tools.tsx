@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { Inbox, History, MailX, ChevronRight, Sparkles } from 'lucide-react-native';
+import { History, MailX, ChevronRight, Sparkles, ShieldOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
@@ -10,11 +10,11 @@ export default function ToolsScreen() {
 
   const tools = [
     {
-      id: 'top-senders',
-      title: 'Top Senders',
-      description: 'Manage your email sources',
-      icon: Inbox,
-      color: Colors.light.primary,
+      id: 'senders',
+      title: 'Senders',
+      description: 'Block and manage email senders',
+      icon: ShieldOff,
+      color: '#FF3B30',
       route: '/senders' as const,
     },
     {
