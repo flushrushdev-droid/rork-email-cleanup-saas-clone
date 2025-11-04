@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler, Animated, Dimensions } from 'react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,9 +73,16 @@ export default function MailScreen() {
     body: string;
     date: Date;
   }>>([]);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const calendarSlideAnim = useState(new Animated.Value(Dimensions.get('window').width))[0];
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isCalendarVisible) {
+        toggleCalendar();
+        return true;
+      }
       if (currentView === 'detail') {
         setCurrentView('inbox');
         return true;
@@ -92,7 +99,7 @@ export default function MailScreen() {
     });
 
     return () => backHandler.remove();
-  }, [currentView]);
+  }, [currentView, isCalendarVisible]);
 
   const allEmails = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
@@ -439,6 +446,17 @@ export default function MailScreen() {
     ].filter(folder => folder.count > 0);
   }, [messages, allEmails, isDemoMode]);
 
+  const toggleCalendar = () => {
+    const toValue = isCalendarVisible ? Dimensions.get('window').width : 0;
+    Animated.spring(calendarSlideAnim, {
+      toValue,
+      useNativeDriver: false,
+      tension: 65,
+      friction: 10,
+    }).start();
+    setIsCalendarVisible(!isCalendarVisible);
+  };
+
   const formatDate = (date: Date): string => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -451,6 +469,132 @@ export default function MailScreen() {
     } else {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
+  };
+
+  const renderCalendar = () => {
+    const today = new Date();
+    const currentMonth = selectedDate.getMonth();
+    const currentYear = selectedDate.getFullYear();
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const startingDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    const days = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+    
+    const weeks = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push(days.slice(i, i + 7));
+    }
+    
+    const isToday = (day: number | null) => {
+      if (!day) return false;
+      return day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+    };
+    
+    const isSelected = (day: number | null) => {
+      if (!day) return false;
+      return day === selectedDate.getDate() && currentMonth === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
+    };
+    
+    const handleDayPress = (day: number | null) => {
+      if (day) {
+        setSelectedDate(new Date(currentYear, currentMonth, day));
+      }
+    };
+    
+    const goToPreviousMonth = () => {
+      setSelectedDate(new Date(currentYear, currentMonth - 1, 1));
+    };
+    
+    const goToNextMonth = () => {
+      setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
+    };
+    
+    return (
+      <Animated.View style={[styles.calendarSidebar, { right: calendarSlideAnim }]}>
+        <View style={[styles.calendarHeader, { paddingTop: insets.top + 16 }]}>
+          <Text style={styles.calendarTitle}>Calendar</Text>
+          <TouchableOpacity onPress={toggleCalendar}>
+            <X size={24} color={Colors.light.text} />
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.calendarContent}>
+          <View style={styles.monthNavigation}>
+            <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
+              <ChevronLeft size={20} color={Colors.light.text} />
+            </TouchableOpacity>
+            <Text style={styles.monthText}>{monthNames[currentMonth]} {currentYear}</Text>
+            <TouchableOpacity onPress={goToNextMonth} style={styles.monthButton}>
+              <ChevronRight size={20} color={Colors.light.text} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.calendarGrid}>
+            <View style={styles.weekDaysRow}>
+              {dayNames.map((day) => (
+                <View key={day} style={styles.weekDayCell}>
+                  <Text style={styles.weekDayText}>{day}</Text>
+                </View>
+              ))}
+            </View>
+            
+            {weeks.map((week, weekIndex) => (
+              <View key={weekIndex} style={styles.weekRow}>
+                {week.map((day, dayIndex) => (
+                  <TouchableOpacity
+                    key={dayIndex}
+                    style={[
+                      styles.dayCell,
+                      isToday(day) && styles.todayCell,
+                      isSelected(day) && styles.selectedDayCell,
+                    ]}
+                    onPress={() => handleDayPress(day)}
+                    disabled={!day}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        !day && styles.emptyDayText,
+                        isToday(day) && styles.todayText,
+                        isSelected(day) && styles.selectedDayText,
+                      ]}
+                    >
+                      {day || ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))}
+          </View>
+          
+          <View style={styles.selectedDateInfo}>
+            <Text style={styles.selectedDateLabel}>Selected Date</Text>
+            <Text style={styles.selectedDateValue}>
+              {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </Text>
+          </View>
+          
+          <View style={styles.calendarEvents}>
+            <Text style={styles.eventsTitle}>Events</Text>
+            <View style={styles.emptyEvents}>
+              <Calendar size={32} color={Colors.light.textSecondary} />
+              <Text style={styles.emptyEventsText}>No events for this day</Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    );
   };
 
   const renderFolders = () => (
@@ -626,6 +770,13 @@ export default function MailScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>Mail</Text>
+        <TouchableOpacity
+          testID="calendar-toggle"
+          onPress={toggleCalendar}
+          style={styles.calendarButton}
+        >
+          <Calendar size={24} color={Colors.light.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -1023,6 +1174,16 @@ export default function MailScreen() {
         >
           <PenSquare size={24} color="#FFF" />
         </TouchableOpacity>
+      )}
+
+      {renderCalendar()}
+
+      {isCalendarVisible && (
+        <TouchableOpacity
+          style={styles.calendarOverlay}
+          activeOpacity={1}
+          onPress={toggleCalendar}
+        />
       )}
 
       <Modal
@@ -1752,5 +1913,152 @@ const styles = StyleSheet.create({
   },
   saveDraftButton: {
     padding: 4,
+  },
+  calendarButton: {
+    padding: 4,
+  },
+  calendarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  calendarSidebar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '85%',
+    backgroundColor: Colors.light.background,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 16,
+    zIndex: 1000,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  calendarTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
+  calendarContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  monthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  monthButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.light.surface,
+  },
+  monthText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  calendarGrid: {
+    marginBottom: 24,
+  },
+  weekDaysRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  weekDayCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  weekDayText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+  },
+  weekRow: {
+    flexDirection: 'row',
+  },
+  dayCell: {
+    flex: 1,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 2,
+    borderRadius: 8,
+  },
+  todayCell: {
+    backgroundColor: Colors.light.surface,
+    borderWidth: 1,
+    borderColor: Colors.light.primary,
+  },
+  selectedDayCell: {
+    backgroundColor: Colors.light.primary,
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  emptyDayText: {
+    opacity: 0,
+  },
+  todayText: {
+    color: Colors.light.primary,
+    fontWeight: '700',
+  },
+  selectedDayText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  selectedDateInfo: {
+    padding: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  selectedDateLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.light.textSecondary,
+    marginBottom: 4,
+  },
+  selectedDateValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  calendarEvents: {
+    flex: 1,
+  },
+  eventsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 16,
+  },
+  emptyEvents: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyEventsText: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    marginTop: 12,
   },
 });
