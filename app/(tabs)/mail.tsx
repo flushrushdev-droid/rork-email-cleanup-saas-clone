@@ -2010,7 +2010,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 8,
     overflow: 'hidden',
-    zIndex: 1000,
+    zIndex: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -2040,6 +2040,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     borderRadius: 12,
     paddingVertical: 16,
+    zIndex: 1,
   },
   aiGenerateButtonText: {
     fontSize: 17,
