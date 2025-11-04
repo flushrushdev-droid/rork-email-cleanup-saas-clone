@@ -1939,7 +1939,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiModalContent: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1947,7 +1947,7 @@ const styles = StyleSheet.create({
   aiModalHandle: {
     width: 36,
     height: 5,
-    backgroundColor: '#48484A',
+    backgroundColor: '#E5E5EA',
     borderRadius: 3,
     alignSelf: 'center',
     marginBottom: 20,
@@ -1955,11 +1955,11 @@ const styles = StyleSheet.create({
   aiModalTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.light.text,
     marginBottom: 20,
   },
   aiPromptContainer: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -1967,7 +1967,7 @@ const styles = StyleSheet.create({
   },
   aiPromptInput: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: Colors.light.text,
     lineHeight: 22,
   },
   aiOptionsContainer: {
@@ -1980,13 +1980,13 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   aiDropdownButton: {
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
   },
   aiDropdownLabel: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: Colors.light.textSecondary,
     marginBottom: 6,
     fontWeight: '500',
   },
@@ -1997,7 +1997,7 @@ const styles = StyleSheet.create({
   },
   aiDropdownValue: {
     fontSize: 15,
-    color: '#FFFFFF',
+    color: Colors.light.text,
     fontWeight: '500',
     textTransform: 'capitalize',
   },
@@ -2006,7 +2006,7 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginTop: 8,
     overflow: 'hidden',
@@ -2021,11 +2021,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#48484A',
+    borderBottomColor: Colors.light.border,
   },
   aiDropdownItemText: {
     fontSize: 15,
-    color: '#FFFFFF',
+    color: Colors.light.text,
     textTransform: 'capitalize',
   },
   aiDropdownItemTextActive: {
@@ -2037,7 +2037,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#3A3A3C',
+    backgroundColor: Colors.light.primary,
     borderRadius: 12,
     paddingVertical: 16,
   },
