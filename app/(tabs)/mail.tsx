@@ -1175,6 +1175,17 @@ export default function MailScreen() {
         />
       )}
 
+      {currentView !== 'compose' && (
+        <TouchableOpacity
+          testID="compose-fab"
+          style={[styles.composeFab, { bottom: insets.bottom + 30 }]}
+          onPress={handleCompose}
+          activeOpacity={0.8}
+        >
+          <PenSquare size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
+
 
 
       <Modal
@@ -1281,9 +1292,9 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 2,
   },
-  fab: {
+  composeFab: {
     position: 'absolute',
-    right: 20,
+    left: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
