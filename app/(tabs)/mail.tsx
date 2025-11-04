@@ -572,105 +572,105 @@ export default function MailScreen() {
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false} 
-        style={styles.folderTabsContainer}
-        contentContainerStyle={styles.folderTabs}
+        style={styles.filterContainer}
+        contentContainerStyle={styles.filterRow}
       >
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'inbox' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'inbox' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('inbox')}
         >
-          <Inbox size={16} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'inbox' && styles.folderTabTextActive]}>
+          <Inbox size={14} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'inbox' && styles.filterButtonTextActive]}>
             Inbox
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'unread' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'unread' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('unread')}
         >
-          <MailOpen size={16} color={currentFolder === 'unread' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'unread' && styles.folderTabTextActive]}>
+          <MailOpen size={14} color={currentFolder === 'unread' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'unread' && styles.filterButtonTextActive]}>
             Unread
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'starred' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'starred' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('starred')}
         >
-          <Star size={16} color={currentFolder === 'starred' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'starred' && styles.folderTabTextActive]}>
+          <Star size={14} color={currentFolder === 'starred' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'starred' && styles.filterButtonTextActive]}>
             Starred
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'important' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'important' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('important')}
         >
-          <AlertOctagon size={16} color={currentFolder === 'important' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'important' && styles.folderTabTextActive]}>
+          <AlertOctagon size={14} color={currentFolder === 'important' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'important' && styles.filterButtonTextActive]}>
             Important
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'snoozed' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'snoozed' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('snoozed')}
         >
-          <Clock size={16} color={currentFolder === 'snoozed' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'snoozed' && styles.folderTabTextActive]}>
+          <Clock size={14} color={currentFolder === 'snoozed' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'snoozed' && styles.filterButtonTextActive]}>
             Snoozed
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'sent' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'sent' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('sent')}
         >
-          <Send size={16} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'sent' && styles.folderTabTextActive]}>
+          <Send size={14} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'sent' && styles.filterButtonTextActive]}>
             Sent
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'drafts' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'drafts' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('drafts')}
         >
-          <FileEdit size={16} color={currentFolder === 'drafts' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'drafts' && styles.folderTabTextActive]}>
+          <FileEdit size={14} color={currentFolder === 'drafts' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'drafts' && styles.filterButtonTextActive]}>
             Drafts
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'spam' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'spam' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('spam')}
         >
-          <AlertCircle size={16} color={currentFolder === 'spam' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'spam' && styles.folderTabTextActive]}>
+          <AlertCircle size={14} color={currentFolder === 'spam' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'spam' && styles.filterButtonTextActive]}>
             Spam
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'trash' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'trash' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('trash')}
         >
-          <Trash2 size={16} color={currentFolder === 'trash' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'trash' && styles.folderTabTextActive]}>
+          <Trash2 size={14} color={currentFolder === 'trash' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'trash' && styles.filterButtonTextActive]}>
             Trash
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'archived' && styles.folderTabActive]}
+          style={[styles.filterButton, currentFolder === 'archived' && styles.filterButtonActive]}
           onPress={() => setCurrentFolder('archived')}
         >
-          <Archive size={16} color={currentFolder === 'archived' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'archived' && styles.folderTabTextActive]}>
+          <Archive size={14} color={currentFolder === 'archived' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.filterButtonText, currentFolder === 'archived' && styles.filterButtonTextActive]}>
             Archived
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab]}
+          style={styles.filterButton}
           onPress={() => setCurrentView('folders')}
         >
-          <FolderOpen size={16} color={Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText]}>
+          <FolderOpen size={14} color={Colors.light.textSecondary} />
+          <Text style={styles.filterButtonText}>
             Smart Folders
           </Text>
         </TouchableOpacity>
@@ -679,7 +679,7 @@ export default function MailScreen() {
       <ScrollView 
         style={styles.emailList} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 80 }}
+        contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 80 }}
       >
         {filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
@@ -1047,33 +1047,33 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     paddingVertical: 0,
   },
-  folderTabsContainer: {
-    marginBottom: 0,
+  filterContainer: {
+    marginBottom: 4,
   },
-  folderTabs: {
+  filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingVertical: 4,
     gap: 6,
   },
-  folderTab: {
+  filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: Colors.light.surface,
   },
-  folderTabActive: {
+  filterButtonActive: {
     backgroundColor: Colors.light.primary + '15',
   },
-  folderTabText: {
-    fontSize: 13,
+  filterButtonText: {
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.light.textSecondary,
   },
-  folderTabTextActive: {
+  filterButtonTextActive: {
     color: Colors.light.primary,
   },
   emailList: {
