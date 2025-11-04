@@ -1,0 +1,780 @@
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/contexts/AuthContext';
+import { useGmailSync } from '@/contexts/GmailSyncContext';
+import { mockRecentEmails } from '@/mocks/emailData';
+import Colors from '@/constants/colors';
+import type { EmailMessage, Email } from '@/constants/types';
+
+type MailView = 'inbox' | 'compose' | 'detail';
+type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred';
+
+export default function MailScreen() {
+  const insets = useSafeAreaInsets();
+  const { isDemoMode } = useAuth();
+  const { messages, markAsRead, archiveMessage } = useGmailSync();
+  const [currentView, setCurrentView] = useState<MailView>('inbox');
+  const [currentFolder, setCurrentFolder] = useState<MailFolder>('inbox');
+  const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [composeTo, setComposeTo] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
+
+  const allEmails = useMemo(() => {
+    const emails = isDemoMode || messages.length === 0 
+      ? mockRecentEmails.map(email => ({
+          ...email,
+          isStarred: starredEmails.has(email.id),
+        }))
+      : messages.map((msg: Email): EmailMessage => ({
+          id: msg.id,
+          threadId: msg.threadId || msg.id,
+          from: msg.from,
+          to: msg.to,
+          subject: msg.subject,
+          snippet: msg.snippet,
+          date: new Date(msg.date),
+          size: msg.sizeBytes || 0,
+          labels: msg.labels,
+          tags: [],
+          hasAttachments: msg.hasAttachments || false,
+          attachmentCount: 0,
+          isRead: msg.isRead,
+          isStarred: starredEmails.has(msg.id),
+          priority: undefined,
+          confidence: 1,
+        }));
+
+    return emails;
+  }, [isDemoMode, messages, starredEmails]);
+
+  const filteredEmails = useMemo(() => {
+    let filtered = allEmails;
+
+    switch (currentFolder) {
+      case 'starred':
+        filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
+        break;
+      case 'sent':
+        filtered = [];
+        break;
+      case 'archived':
+        filtered = [];
+        break;
+      default:
+        filtered = filtered.filter((email: EmailMessage) => email.labels.includes('inbox') || email.labels.includes('INBOX'));
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((email: EmailMessage) =>
+        email.subject.toLowerCase().includes(query) ||
+        email.from.toLowerCase().includes(query) ||
+        email.snippet.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered.sort((a: EmailMessage, b: EmailMessage) => b.date.getTime() - a.date.getTime());
+  }, [allEmails, currentFolder, searchQuery, starredEmails]);
+
+  const handleEmailPress = (email: EmailMessage) => {
+    setSelectedEmail(email);
+    setCurrentView('detail');
+    
+    if (!email.isRead && !isDemoMode) {
+      markAsRead(email.id).catch(() => {
+        console.error('Failed to mark as read');
+      });
+    }
+  };
+
+  const handleCompose = () => {
+    setComposeTo('');
+    setComposeSubject('');
+    setComposeBody('');
+    setCurrentView('compose');
+  };
+
+  const handleSend = () => {
+    if (!composeTo || !composeSubject) {
+      Alert.alert('Error', 'Please fill in recipient and subject');
+      return;
+    }
+
+    if (isDemoMode) {
+      Alert.alert('Demo Mode', 'Email sending is disabled in demo mode');
+      setCurrentView('inbox');
+      return;
+    }
+
+    Alert.alert('Success', 'Email sent successfully!');
+    setCurrentView('inbox');
+  };
+
+  const handleArchive = async (email: EmailMessage) => {
+    if (isDemoMode) {
+      Alert.alert('Demo Mode', 'Archive is disabled in demo mode');
+      return;
+    }
+
+    try {
+      await archiveMessage(email.id);
+      Alert.alert('Success', 'Email archived');
+      setCurrentView('inbox');
+    } catch {
+      Alert.alert('Error', 'Failed to archive email');
+    }
+  };
+
+  const handleStar = (emailId: string) => {
+    setStarredEmails(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(emailId)) {
+        newSet.delete(emailId);
+      } else {
+        newSet.add(emailId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatDate = (date: Date): string => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = diff / (1000 * 60 * 60);
+
+    if (hours < 24) {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } else if (hours < 24 * 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const renderInbox = () => (
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.headerTitle}>Mail</Text>
+        <TouchableOpacity
+          testID="compose-button"
+          style={styles.composeButton}
+          onPress={handleCompose}
+        >
+          <PenSquare size={20} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Search size={18} color={Colors.light.textSecondary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search mail"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor={Colors.light.textSecondary}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <X size={18} color={Colors.light.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.folderTabs}>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'inbox' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('inbox')}
+        >
+          <Inbox size={16} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'inbox' && styles.folderTabTextActive]}>
+            Inbox
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'starred' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('starred')}
+        >
+          <Star size={16} color={currentFolder === 'starred' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'starred' && styles.folderTabTextActive]}>
+            Starred
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'sent' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('sent')}
+        >
+          <Send size={16} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'sent' && styles.folderTabTextActive]}>
+            Sent
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+        {filteredEmails.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Mail size={48} color={Colors.light.textSecondary} />
+            <Text style={styles.emptyText}>No emails found</Text>
+          </View>
+        ) : (
+          filteredEmails.map((email: EmailMessage) => (
+            <TouchableOpacity
+              key={email.id}
+              testID={`email-${email.id}`}
+              style={[styles.emailCard, !email.isRead && styles.emailCardUnread]}
+              onPress={() => handleEmailPress(email)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.emailCardContent}>
+                <View style={styles.emailCardHeader}>
+                  <Text
+                    style={[styles.emailFrom, !email.isRead && styles.emailFromUnread]}
+                    numberOfLines={1}
+                  >
+                    {email.from.split('<')[0].trim() || email.from}
+                  </Text>
+                  <View style={styles.emailMeta}>
+                    <Text style={styles.emailDate}>{formatDate(email.date)}</Text>
+                    <TouchableOpacity
+                      testID={`star-${email.id}`}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleStar(email.id);
+                      }}
+                      style={styles.starButton}
+                    >
+                      <Star
+                        size={16}
+                        color={email.isStarred ? Colors.light.warning : Colors.light.textSecondary}
+                        fill={email.isStarred ? Colors.light.warning : 'none'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <Text
+                  style={[styles.emailSubject, !email.isRead && styles.emailSubjectUnread]}
+                  numberOfLines={1}
+                >
+                  {email.subject}
+                </Text>
+                <Text style={styles.emailSnippet} numberOfLines={2}>
+                  {email.snippet}
+                </Text>
+                {email.hasAttachments && (
+                  <View style={styles.attachmentBadge}>
+                    <Paperclip size={12} color={Colors.light.textSecondary} />
+                  </View>
+                )}
+              </View>
+              {!email.isRead && <View style={styles.unreadDot} />}
+            </TouchableOpacity>
+          ))
+        )}
+        <View style={{ height: 20 }} />
+      </ScrollView>
+    </View>
+  );
+
+  const renderEmailDetail = () => {
+    if (!selectedEmail) return null;
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.detailHeader}>
+          <TouchableOpacity
+            testID="back-to-inbox"
+            style={styles.backButton}
+            onPress={() => setCurrentView('inbox')}
+          >
+            <ChevronLeft size={24} color={Colors.light.text} />
+          </TouchableOpacity>
+          <View style={styles.detailActions}>
+            <TouchableOpacity
+              testID="star-email"
+              style={styles.actionButton}
+              onPress={() => handleStar(selectedEmail.id)}
+            >
+              <Star
+                size={20}
+                color={selectedEmail.isStarred ? Colors.light.warning : Colors.light.text}
+                fill={selectedEmail.isStarred ? Colors.light.warning : 'none'}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="archive-email"
+              style={styles.actionButton}
+              onPress={() => handleArchive(selectedEmail)}
+            >
+              <Archive size={20} color={Colors.light.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="delete-email"
+              style={styles.actionButton}
+              onPress={() => Alert.alert('Delete', 'Delete this email?')}
+            >
+              <Trash2 size={20} color={Colors.light.danger} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.detailSubject}>{selectedEmail.subject}</Text>
+          
+          <View style={styles.detailFrom}>
+            <View style={styles.detailAvatar}>
+              <Text style={styles.detailAvatarText}>
+                {selectedEmail.from[0].toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.detailSenderInfo}>
+              <Text style={styles.detailSenderName}>
+                {selectedEmail.from.split('<')[0].trim() || selectedEmail.from}
+              </Text>
+              <Text style={styles.detailSenderEmail}>
+                {selectedEmail.from.match(/<(.+?)>/) ?.[1] || selectedEmail.from}
+              </Text>
+            </View>
+            <Text style={styles.detailDate}>
+              {selectedEmail.date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+            </Text>
+          </View>
+
+          {selectedEmail.hasAttachments && (
+            <View style={styles.attachmentsSection}>
+              <View style={styles.attachmentItem}>
+                <Paperclip size={16} color={Colors.light.textSecondary} />
+                <Text style={styles.attachmentName}>attachment.pdf</Text>
+                <Text style={styles.attachmentSize}>234 KB</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.detailBody}>
+            <Text style={styles.detailBodyText}>{selectedEmail.snippet}</Text>
+            <Text style={styles.detailBodyText}>
+              {'\n\n'}Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+              {'\n\n'}Best regards,{'\n'}{selectedEmail.from.split('<')[0].trim()}
+            </Text>
+          </View>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderCompose = () => (
+    <View style={styles.container}>
+      <View style={styles.composeHeader}>
+        <TouchableOpacity
+          testID="cancel-compose"
+          onPress={() => setCurrentView('inbox')}
+        >
+          <X size={24} color={Colors.light.text} />
+        </TouchableOpacity>
+        <Text style={styles.composeTitle}>New Message</Text>
+        <TouchableOpacity
+          testID="send-email"
+          style={styles.sendButton}
+          onPress={handleSend}
+        >
+          <Send size={20} color={Colors.light.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.composeForm} keyboardShouldPersistTaps="handled">
+        <View style={styles.composeField}>
+          <Text style={styles.composeLabel}>To</Text>
+          <TextInput
+            style={styles.composeInput}
+            placeholder="recipient@example.com"
+            value={composeTo}
+            onChangeText={setComposeTo}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholderTextColor={Colors.light.textSecondary}
+          />
+        </View>
+
+        <View style={styles.composeDivider} />
+
+        <View style={styles.composeField}>
+          <Text style={styles.composeLabel}>Subject</Text>
+          <TextInput
+            style={styles.composeInput}
+            placeholder="Email subject"
+            value={composeSubject}
+            onChangeText={setComposeSubject}
+            placeholderTextColor={Colors.light.textSecondary}
+          />
+        </View>
+
+        <View style={styles.composeDivider} />
+
+        <View style={[styles.composeField, styles.composeBodyField]}>
+          <TextInput
+            style={[styles.composeInput, styles.composeBodyInput]}
+            placeholder="Compose your message..."
+            value={composeBody}
+            onChangeText={setComposeBody}
+            multiline
+            textAlignVertical="top"
+            placeholderTextColor={Colors.light.textSecondary}
+          />
+        </View>
+
+        <TouchableOpacity style={styles.attachButton}>
+          <Paperclip size={20} color={Colors.light.primary} />
+          <Text style={styles.attachButtonText}>Attach file</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+
+  return (
+    <View style={[styles.safeArea]}>
+      {currentView === 'inbox' && renderInbox()}
+      {currentView === 'detail' && renderEmailDetail()}
+      {currentView === 'compose' && renderCompose()}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
+  composeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.light.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.surface,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.light.text,
+    paddingVertical: 0,
+  },
+  folderTabs: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 16,
+  },
+  folderTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.light.surface,
+  },
+  folderTabActive: {
+    backgroundColor: Colors.light.primary + '15',
+  },
+  folderTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.textSecondary,
+  },
+  folderTabTextActive: {
+    color: Colors.light.primary,
+  },
+  emailList: {
+    flex: 1,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.light.textSecondary,
+    marginTop: 16,
+  },
+  emailCard: {
+    backgroundColor: Colors.light.surface,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  emailCardUnread: {
+    backgroundColor: '#F0F8FF',
+  },
+  emailCardContent: {
+    flex: 1,
+  },
+  emailCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  emailFrom: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  emailFromUnread: {
+    fontWeight: '700',
+  },
+  emailMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emailDate: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  starButton: {
+    padding: 2,
+  },
+  emailSubject: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  emailSubjectUnread: {
+    fontWeight: '600',
+  },
+  emailSnippet: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
+  attachmentBadge: {
+    marginTop: 6,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.light.primary,
+    marginLeft: 8,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  backButton: {
+    padding: 4,
+  },
+  detailActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  actionButton: {
+    padding: 4,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailSubject: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.light.text,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  detailFrom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  detailAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.light.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  detailSenderInfo: {
+    flex: 1,
+  },
+  detailSenderName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  detailSenderEmail: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  detailDate: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  attachmentsSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.surface,
+  },
+  attachmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    backgroundColor: Colors.light.background,
+    borderRadius: 8,
+  },
+  attachmentName: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.light.text,
+  },
+  attachmentSize: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+  },
+  detailBody: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  detailBodyText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.light.text,
+  },
+  composeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  composeTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  sendButton: {
+    padding: 4,
+  },
+  composeForm: {
+    flex: 1,
+  },
+  composeField: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  composeBodyField: {
+    flex: 1,
+    minHeight: 200,
+  },
+  composeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.textSecondary,
+    marginBottom: 8,
+  },
+  composeInput: {
+    fontSize: 16,
+    color: Colors.light.text,
+    paddingVertical: 0,
+  },
+  composeBodyInput: {
+    flex: 1,
+    paddingTop: 0,
+  },
+  composeDivider: {
+    height: 1,
+    backgroundColor: Colors.light.border,
+    marginHorizontal: 16,
+  },
+  attachButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderStyle: 'dashed',
+  },
+  attachButtonText: {
+    fontSize: 15,
+    color: Colors.light.primary,
+    fontWeight: '500',
+  },
+});
