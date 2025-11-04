@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler } from 'react-native';
 import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,6 +66,26 @@ export default function MailScreen() {
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred'>('all');
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (currentView === 'detail') {
+        setCurrentView('inbox');
+        return true;
+      }
+      if (currentView === 'compose') {
+        setCurrentView('inbox');
+        return true;
+      }
+      if (currentView === 'folder-detail') {
+        setCurrentView('folders');
+        return true;
+      }
+      return false;
+    });
+
+    return () => backHandler.remove();
+  }, [currentView]);
 
   const allEmails = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
