@@ -1,15 +1,51 @@
 import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X } from 'lucide-react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
-import { mockRecentEmails } from '@/mocks/emailData';
+import { mockRecentEmails, mockSmartFolders } from '@/mocks/emailData';
 import Colors from '@/constants/colors';
-import type { EmailMessage, Email } from '@/constants/types';
+import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
 
-type MailView = 'inbox' | 'compose' | 'detail';
+type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred';
+
+const iconMap: Record<string, any> = {
+  'alert-circle': AlertCircle,
+  'receipt': Receipt,
+  'shopping-bag': ShoppingBag,
+  'plane': Plane,
+  'tag': Tag,
+  'users': Users,
+  'file-text': FileText,
+  'briefcase': Briefcase,
+  'scale': Scale,
+};
+
+const categoryKeywords: Record<EmailCategory, string[]> = {
+  invoices: ['invoice', 'bill', 'payment', 'billing', 'charge'],
+  receipts: ['receipt', 'order confirmation', 'purchase', 'transaction'],
+  travel: ['flight', 'hotel', 'booking', 'reservation', 'trip', 'travel'],
+  hr: ['hr', 'human resources', 'benefits', 'payroll', 'pto', 'time off'],
+  legal: ['legal', 'contract', 'agreement', 'terms', 'policy'],
+  personal: ['personal', 'family', 'friend'],
+  promotions: ['sale', 'discount', 'offer', 'deal', 'promo', 'marketing'],
+  social: ['linkedin', 'facebook', 'twitter', 'instagram', 'notification'],
+  system: ['alert', 'security', 'notification', 'update', 'reminder'],
+};
+
+function categorizeEmail(email: EmailMessage | Email): EmailCategory | undefined {
+  const searchText = `${email.subject} ${email.snippet} ${email.from}`.toLowerCase();
+  
+  for (const [category, keywords] of Object.entries(categoryKeywords)) {
+    if (keywords.some(keyword => searchText.includes(keyword))) {
+      return category as EmailCategory;
+    }
+  }
+  
+  return undefined;
+}
 
 export default function MailScreen() {
   const insets = useSafeAreaInsets();
@@ -23,31 +59,38 @@ export default function MailScreen() {
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
+  const [selectedFolder, setSelectedFolder] = useState<{ id: string; name: string; color: string; category?: EmailCategory } | null>(null);
 
   const allEmails = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
       ? mockRecentEmails.map(email => ({
           ...email,
           isStarred: starredEmails.has(email.id),
+          category: categorizeEmail(email),
         }))
-      : messages.map((msg: Email): EmailMessage => ({
-          id: msg.id,
-          threadId: msg.threadId || msg.id,
-          from: msg.from,
-          to: msg.to,
-          subject: msg.subject,
-          snippet: msg.snippet,
-          date: new Date(msg.date),
-          size: msg.sizeBytes || 0,
-          labels: msg.labels,
-          tags: [],
-          hasAttachments: msg.hasAttachments || false,
-          attachmentCount: 0,
-          isRead: msg.isRead,
-          isStarred: starredEmails.has(msg.id),
-          priority: undefined,
-          confidence: 1,
-        }));
+      : messages.map((msg: Email): EmailMessage => {
+          const email = {
+            id: msg.id,
+            threadId: msg.threadId || msg.id,
+            from: msg.from,
+            to: msg.to,
+            subject: msg.subject,
+            snippet: msg.snippet,
+            date: new Date(msg.date),
+            size: msg.sizeBytes || 0,
+            labels: msg.labels,
+            tags: [],
+            hasAttachments: msg.hasAttachments || false,
+            attachmentCount: 0,
+            isRead: msg.isRead,
+            isStarred: starredEmails.has(msg.id),
+            priority: undefined,
+            confidence: 1,
+            category: undefined as EmailCategory | undefined,
+          };
+          email.category = categorizeEmail(email);
+          return email;
+        });
 
     return emails;
   }, [isDemoMode, messages, starredEmails]);
@@ -55,18 +98,30 @@ export default function MailScreen() {
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;
 
-    switch (currentFolder) {
-      case 'starred':
-        filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
-        break;
-      case 'sent':
-        filtered = [];
-        break;
-      case 'archived':
-        filtered = [];
-        break;
-      default:
-        filtered = filtered.filter((email: EmailMessage) => email.labels.includes('inbox') || email.labels.includes('INBOX'));
+    if (currentView === 'folder-detail' && selectedFolder) {
+      if (selectedFolder.name === 'Action Required') {
+        filtered = filtered.filter((email: EmailMessage) => 
+          email.priority === 'action' || 
+          email.subject.toLowerCase().includes('action required') ||
+          email.subject.toLowerCase().includes('urgent')
+        );
+      } else if (selectedFolder.category) {
+        filtered = filtered.filter((email: EmailMessage) => email.category === selectedFolder.category);
+      }
+    } else {
+      switch (currentFolder) {
+        case 'starred':
+          filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
+          break;
+        case 'sent':
+          filtered = [];
+          break;
+        case 'archived':
+          filtered = [];
+          break;
+        default:
+          filtered = filtered.filter((email: EmailMessage) => email.labels.includes('inbox') || email.labels.includes('INBOX'));
+      }
     }
 
     if (searchQuery.trim()) {
@@ -79,7 +134,7 @@ export default function MailScreen() {
     }
 
     return filtered.sort((a: EmailMessage, b: EmailMessage) => b.date.getTime() - a.date.getTime());
-  }, [allEmails, currentFolder, searchQuery, starredEmails]);
+  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails]);
 
   const handleEmailPress = (email: EmailMessage) => {
     setSelectedEmail(email);
@@ -142,6 +197,108 @@ export default function MailScreen() {
     });
   };
 
+  const smartFolders = useMemo(() => {
+    if (isDemoMode || messages.length === 0) {
+      return mockSmartFolders;
+    }
+
+    const actionRequiredEmails = messages.filter(email => 
+      email.labels.includes('IMPORTANT') || 
+      email.subject.toLowerCase().includes('action required') ||
+      email.subject.toLowerCase().includes('urgent')
+    );
+
+    const categoryCounts = new Map<EmailCategory, number>();
+    allEmails.forEach(email => {
+      if (email.category) {
+        categoryCounts.set(email.category, (categoryCounts.get(email.category) || 0) + 1);
+      }
+    });
+
+    return [
+      {
+        id: '1',
+        name: 'Action Required',
+        icon: 'alert-circle',
+        color: '#FF3B30',
+        query: 'priority:action',
+        count: actionRequiredEmails.length,
+      },
+      {
+        id: '2',
+        name: 'Invoices',
+        icon: 'receipt',
+        color: '#FF9500',
+        query: 'category:invoices',
+        count: categoryCounts.get('invoices') || 0,
+        category: 'invoices' as EmailCategory,
+      },
+      {
+        id: '3',
+        name: 'Receipts',
+        icon: 'shopping-bag',
+        color: '#34C759',
+        query: 'category:receipts',
+        count: categoryCounts.get('receipts') || 0,
+        category: 'receipts' as EmailCategory,
+      },
+      {
+        id: '4',
+        name: 'Travel',
+        icon: 'plane',
+        color: '#5AC8FA',
+        query: 'category:travel',
+        count: categoryCounts.get('travel') || 0,
+        category: 'travel' as EmailCategory,
+      },
+      {
+        id: '5',
+        name: 'Promotions',
+        icon: 'tag',
+        color: '#FFCC00',
+        query: 'category:promotions',
+        count: categoryCounts.get('promotions') || 0,
+        category: 'promotions' as EmailCategory,
+      },
+      {
+        id: '6',
+        name: 'Social',
+        icon: 'users',
+        color: '#FF6482',
+        query: 'category:social',
+        count: categoryCounts.get('social') || 0,
+        category: 'social' as EmailCategory,
+      },
+      {
+        id: '7',
+        name: 'HR',
+        icon: 'briefcase',
+        color: '#5856D6',
+        query: 'category:hr',
+        count: categoryCounts.get('hr') || 0,
+        category: 'hr' as EmailCategory,
+      },
+      {
+        id: '8',
+        name: 'Legal',
+        icon: 'scale',
+        color: '#FF2D55',
+        query: 'category:legal',
+        count: categoryCounts.get('legal') || 0,
+        category: 'legal' as EmailCategory,
+      },
+      {
+        id: '9',
+        name: 'System',
+        icon: 'alert-circle',
+        color: '#8E8E93',
+        query: 'category:system',
+        count: categoryCounts.get('system') || 0,
+        category: 'system' as EmailCategory,
+      },
+    ].filter(folder => folder.count > 0);
+  }, [messages, allEmails, isDemoMode]);
+
   const formatDate = (date: Date): string => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -154,6 +311,166 @@ export default function MailScreen() {
     } else {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
+  };
+
+  const renderFolders = () => (
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View>
+          <Text style={styles.headerTitle}>Smart Folders</Text>
+          <Text style={styles.headerSubtitle}>AI-organized categories</Text>
+        </View>
+        <TouchableOpacity
+          testID="compose-button"
+          style={styles.composeButton}
+          onPress={handleCompose}
+        >
+          <PenSquare size={20} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+
+      {isDemoMode && (
+        <View style={styles.demoBadge}>
+          <Text style={styles.demoText}>Demo Mode - Sample Data</Text>
+        </View>
+      )}
+
+      <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+        {smartFolders.length === 0 ? (
+          <View style={styles.emptyState}>
+            <FolderOpen size={48} color={Colors.light.textSecondary} />
+            <Text style={styles.emptyText}>No folders yet</Text>
+            <Text style={styles.emptySubtext}>Sync your emails to create smart folders</Text>
+          </View>
+        ) : (
+          <View style={styles.foldersGrid}>
+            {smartFolders.map((folder) => {
+              const Icon = iconMap[folder.icon] || FolderOpen;
+              
+              return (
+                <TouchableOpacity 
+                  key={folder.id} 
+                  testID={`folder-${folder.id}`} 
+                  style={styles.folderCard} 
+                  onPress={() => {
+                    setSelectedFolder({
+                      id: folder.id,
+                      name: folder.name,
+                      color: folder.color,
+                      category: folder.category,
+                    });
+                    setCurrentView('folder-detail');
+                  }}
+                >
+                  <View style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}>
+                    <Icon size={28} color={folder.color} />
+                  </View>
+                  <View style={styles.folderContent}>
+                    <Text style={styles.folderName}>{folder.name}</Text>
+                    <Text style={styles.folderCount}>{folder.count} emails</Text>
+                  </View>
+                  <ChevronRight size={20} color={Colors.light.textSecondary} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+        <View style={{ height: 20 }} />
+      </ScrollView>
+    </View>
+  );
+
+  const renderFolderDetail = () => {
+    if (!selectedFolder) return null;
+
+    return (
+      <View style={styles.container}>
+        <View style={[styles.folderDetailHeader, { backgroundColor: selectedFolder.color, paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity 
+            onPress={() => setCurrentView('folders')} 
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ChevronLeft size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.folderDetailHeaderContent}>
+            <Text style={styles.folderDetailTitle}>{selectedFolder.name}</Text>
+            <Text style={styles.folderDetailSubtitle}>{filteredEmails.length} emails</Text>
+          </View>
+        </View>
+
+        <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+          {filteredEmails.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Mail size={48} color={Colors.light.textSecondary} />
+              <Text style={styles.emptyText}>No emails found</Text>
+            </View>
+          ) : (
+            filteredEmails.map((email: EmailMessage) => {
+              const categoryColor = email.category ? Colors.light.category[email.category] : Colors.light.primary;
+              
+              return (
+                <TouchableOpacity
+                  key={email.id}
+                  testID={`email-${email.id}`}
+                  style={[styles.emailCard, !email.isRead && styles.emailCardUnread, { borderLeftColor: categoryColor }]}
+                  onPress={() => handleEmailPress(email)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.emailCardContent}>
+                    <View style={styles.emailCardHeader}>
+                      <Text
+                        style={[styles.emailFrom, !email.isRead && styles.emailFromUnread]}
+                        numberOfLines={1}
+                      >
+                        {email.from.split('<')[0].trim() || email.from}
+                      </Text>
+                      <View style={styles.emailMeta}>
+                        <Text style={styles.emailDate}>{formatDate(email.date)}</Text>
+                        <TouchableOpacity
+                          testID={`star-${email.id}`}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleStar(email.id);
+                          }}
+                          style={styles.starButton}
+                        >
+                          <Star
+                            size={16}
+                            color={email.isStarred ? Colors.light.warning : Colors.light.textSecondary}
+                            fill={email.isStarred ? Colors.light.warning : 'none'}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <Text
+                      style={[styles.emailSubject, !email.isRead && styles.emailSubjectUnread]}
+                      numberOfLines={1}
+                    >
+                      {email.subject}
+                    </Text>
+                    <Text style={styles.emailSnippet} numberOfLines={2}>
+                      {email.snippet}
+                    </Text>
+                    {email.category && (
+                      <View style={styles.emailTags}>
+                        <View style={[styles.emailTag, { backgroundColor: categoryColor + '20' }]}>
+                          <Text style={[styles.emailTagText, { color: categoryColor }]}>
+                            {email.category}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                  {!email.isRead && <View style={styles.unreadDot} />}
+                </TouchableOpacity>
+              );
+            })
+          )}
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      </View>
+    );
   };
 
   const renderInbox = () => (
@@ -205,12 +522,12 @@ export default function MailScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.folderTab, currentFolder === 'sent' && styles.folderTabActive]}
-          onPress={() => setCurrentFolder('sent')}
+          style={[styles.folderTab]}
+          onPress={() => setCurrentView('folders')}
         >
-          <Send size={16} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
-          <Text style={[styles.folderTabText, currentFolder === 'sent' && styles.folderTabTextActive]}>
-            Sent
+          <FolderOpen size={16} color={Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText]}>
+            Smart Folders
           </Text>
         </TouchableOpacity>
       </View>
@@ -444,6 +761,8 @@ export default function MailScreen() {
   return (
     <View style={[styles.safeArea]}>
       {currentView === 'inbox' && renderInbox()}
+      {currentView === 'folders' && renderFolders()}
+      {currentView === 'folder-detail' && renderFolderDetail()}
       {currentView === 'detail' && renderEmailDetail()}
       {currentView === 'compose' && renderCompose()}
     </View>
@@ -470,6 +789,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: Colors.light.text,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: Colors.light.textSecondary,
+    marginTop: 2,
   },
   composeButton: {
     width: 44,
@@ -539,6 +863,98 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.textSecondary,
     marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    marginTop: 4,
+  },
+  demoBadge: {
+    backgroundColor: '#FFF4E5',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  demoText: {
+    fontSize: 14,
+    color: '#FF9500',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  foldersGrid: {
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 24,
+  },
+  folderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.surface,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  folderIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderContent: {
+    flex: 1,
+  },
+  folderName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  folderCount: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  folderDetailHeader: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+  },
+  folderDetailHeaderContent: {
+    gap: 4,
+  },
+  folderDetailTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  folderDetailSubtitle: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  emailTags: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginTop: 6,
+  },
+  emailTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  emailTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
   emailCard: {
     backgroundColor: Colors.light.surface,
