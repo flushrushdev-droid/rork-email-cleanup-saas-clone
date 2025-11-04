@@ -642,6 +642,16 @@ export default function MailScreen() {
                 </TouchableOpacity>
               );
             })}
+            <TouchableOpacity
+              testID="create-folder-button"
+              style={styles.smartFolderCard}
+              onPress={() => setIsModalVisible(true)}
+            >
+              <View style={[styles.smartFolderIcon, styles.createFolderIcon]}>
+                <Plus size={24} color={Colors.light.primary} />
+              </View>
+              <Text style={[styles.smartFolderName, styles.createFolderText]}>Create</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       )}
@@ -1086,6 +1096,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  createFolderIcon: {
+    backgroundColor: Colors.light.surface,
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    borderStyle: 'dashed',
+  },
+  createFolderText: {
+    color: Colors.light.primary,
   },
 
   emailList: {
