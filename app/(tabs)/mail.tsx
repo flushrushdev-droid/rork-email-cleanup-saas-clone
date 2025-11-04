@@ -1175,6 +1175,17 @@ export default function MailScreen() {
         />
       )}
 
+      {currentView === 'inbox' && (
+        <TouchableOpacity
+          testID="compose-fab"
+          style={[styles.composeFab, { bottom: insets.bottom + 90 }]}
+          onPress={handleCompose}
+          activeOpacity={0.8}
+        >
+          <PenSquare size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
+
       <Modal
         visible={isModalVisible}
         transparent
@@ -1282,6 +1293,21 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.light.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  composeFab: {
+    position: 'absolute',
+    left: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
