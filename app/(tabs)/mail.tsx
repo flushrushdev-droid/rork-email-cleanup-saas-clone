@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus } from 'lucide-react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
@@ -9,7 +9,7 @@ import Colors from '@/constants/colors';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
-type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred';
+type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred' | 'unread' | 'drafts' | 'spam' | 'trash' | 'important' | 'snoozed';
 
 const iconMap: Record<string, any> = {
   'alert-circle': AlertCircle,
@@ -114,10 +114,32 @@ export default function MailScreen() {
       }
     } else {
       switch (currentFolder) {
+        case 'unread':
+          filtered = filtered.filter((email: EmailMessage) => !email.isRead);
+          break;
         case 'starred':
           filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
           break;
+        case 'important':
+          filtered = filtered.filter((email: EmailMessage) => 
+            email.labels.includes('IMPORTANT') || 
+            email.priority === 'action' ||
+            email.subject.toLowerCase().includes('urgent')
+          );
+          break;
+        case 'snoozed':
+          filtered = [];
+          break;
         case 'sent':
+          filtered = [];
+          break;
+        case 'drafts':
+          filtered = [];
+          break;
+        case 'spam':
+          filtered = [];
+          break;
+        case 'trash':
           filtered = [];
           break;
         case 'archived':
@@ -541,7 +563,12 @@ export default function MailScreen() {
         )}
       </View>
 
-      <View style={styles.folderTabs}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={styles.folderTabsContainer}
+        contentContainerStyle={styles.folderTabs}
+      >
         <TouchableOpacity
           style={[styles.folderTab, currentFolder === 'inbox' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('inbox')}
@@ -549,6 +576,15 @@ export default function MailScreen() {
           <Inbox size={16} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'inbox' && styles.folderTabTextActive]}>
             Inbox
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'unread' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('unread')}
+        >
+          <MailOpen size={16} color={currentFolder === 'unread' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'unread' && styles.folderTabTextActive]}>
+            Unread
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -561,6 +597,69 @@ export default function MailScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'important' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('important')}
+        >
+          <AlertOctagon size={16} color={currentFolder === 'important' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'important' && styles.folderTabTextActive]}>
+            Important
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'snoozed' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('snoozed')}
+        >
+          <Clock size={16} color={currentFolder === 'snoozed' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'snoozed' && styles.folderTabTextActive]}>
+            Snoozed
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'sent' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('sent')}
+        >
+          <Send size={16} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'sent' && styles.folderTabTextActive]}>
+            Sent
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'drafts' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('drafts')}
+        >
+          <FileEdit size={16} color={currentFolder === 'drafts' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'drafts' && styles.folderTabTextActive]}>
+            Drafts
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'spam' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('spam')}
+        >
+          <AlertCircle size={16} color={currentFolder === 'spam' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'spam' && styles.folderTabTextActive]}>
+            Spam
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'trash' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('trash')}
+        >
+          <Trash2 size={16} color={currentFolder === 'trash' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'trash' && styles.folderTabTextActive]}>
+            Trash
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.folderTab, currentFolder === 'archived' && styles.folderTabActive]}
+          onPress={() => setCurrentFolder('archived')}
+        >
+          <Archive size={16} color={currentFolder === 'archived' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Text style={[styles.folderTabText, currentFolder === 'archived' && styles.folderTabTextActive]}>
+            Archived
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.folderTab]}
           onPress={() => setCurrentView('folders')}
         >
@@ -569,7 +668,7 @@ export default function MailScreen() {
             Smart Folders
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
         {filteredEmails.length === 0 ? (
@@ -939,11 +1038,13 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     paddingVertical: 0,
   },
+  folderTabsContainer: {
+    marginBottom: 16,
+  },
   folderTabs: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
   },
   folderTab: {
     flexDirection: 'row',
