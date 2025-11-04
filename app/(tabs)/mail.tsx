@@ -604,6 +604,45 @@ export default function MailScreen() {
         </TouchableOpacity>
       </View>
 
+      {smartFolders.length > 0 && (
+        <View style={styles.smartFoldersSection}>
+          <Text style={styles.smartFoldersTitle}>Smart Folders</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.smartFoldersScroll}
+          >
+            {smartFolders.map((folder) => {
+              const Icon = iconMap[folder.icon] || FolderOpen;
+              return (
+                <TouchableOpacity
+                  key={folder.id}
+                  testID={`smart-folder-${folder.id}`}
+                  style={styles.smartFolderCard}
+                  onPress={() => {
+                    setSelectedFolder({
+                      id: folder.id,
+                      name: folder.name,
+                      color: folder.color,
+                      category: folder.category,
+                    });
+                    setCurrentView('folder-detail');
+                  }}
+                >
+                  <View style={[styles.smartFolderIcon, { backgroundColor: folder.color + '20' }]}>
+                    <Icon size={20} color={folder.color} />
+                  </View>
+                  <Text style={styles.smartFolderName} numberOfLines={1}>{folder.name}</Text>
+                  <View style={[styles.smartFolderBadge, { backgroundColor: folder.color }]}>
+                    <Text style={styles.smartFolderCount}>{folder.count}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
       <ScrollView 
         style={styles.emailList} 
         showsVerticalScrollIndicator={false}
@@ -999,6 +1038,50 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  smartFoldersSection: {
+    marginBottom: 16,
+  },
+  smartFoldersTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
+  smartFoldersScroll: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  smartFolderCard: {
+    alignItems: 'center',
+    gap: 6,
+    width: 100,
+  },
+  smartFolderIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smartFolderName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.light.text,
+    textAlign: 'center',
+  },
+  smartFolderBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  smartFolderCount: {
+    fontSize: 11,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 
