@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { History, MailX, ChevronRight, Sparkles, Users } from 'lucide-react-native';
+import { History, MailX, ChevronRight, Sparkles, Users, UserX } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
@@ -24,6 +24,14 @@ export default function ToolsScreen() {
       icon: Users,
       color: '#007AFF',
       route: '/senders' as const,
+    },
+    {
+      id: 'blocked-senders',
+      title: 'Blocked Senders',
+      description: 'Manage and unblock blocked senders',
+      icon: UserX,
+      color: '#FF3B30',
+      route: '/blocked-senders' as const,
     },
     {
       id: 'unsubscribe',
