@@ -63,7 +63,11 @@ export default function AIAssistantScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Sparkles size={28} color={Colors.light.primary} />
@@ -72,11 +76,7 @@ export default function AIAssistantScreen() {
         <Text style={styles.subtitle}>Your intelligent email helper</Text>
       </View>
 
-      <KeyboardAvoidingView 
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={100}
-      >
+      <View style={styles.contentContainer}>
         {messages.length === 0 ? (
           <ScrollView contentContainerStyle={styles.emptyContainer}>
             <View style={styles.welcomeCard}>
@@ -164,34 +164,34 @@ export default function AIAssistantScreen() {
             <View style={{ height: 20 }} />
           </ScrollView>
         )}
+      </View>
 
-        <View style={styles.inputContainer}>
-          <View style={styles.inputBox}>
-            <TextInput
-              style={styles.input}
-              placeholder="Ask me anything about your emails..."
-              value={input}
-              onChangeText={setInput}
-              placeholderTextColor={Colors.light.textSecondary}
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity 
-              testID="ai-send"
-              style={[styles.sendButton, !input.trim() && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!input.trim() || isTyping}
-            >
-              {isTyping ? (
-                <Loader size={20} color="#FFFFFF" />
-              ) : (
-                <Send size={20} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          </View>
+      <View style={styles.inputContainer}>
+        <View style={styles.inputBox}>
+          <TextInput
+            style={styles.input}
+            placeholder="Ask me anything about your emails..."
+            value={input}
+            onChangeText={setInput}
+            placeholderTextColor={Colors.light.textSecondary}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity 
+            testID="ai-send"
+            style={[styles.sendButton, !input.trim() && styles.sendButtonDisabled]}
+            onPress={handleSend}
+            disabled={!input.trim() || isTyping}
+          >
+            {isTyping ? (
+              <Loader size={20} color="#FFFFFF" />
+            ) : (
+              <Send size={20} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.textSecondary,
   },
-  keyboardView: {
+  contentContainer: {
     flex: 1,
   },
   emptyContainer: {
@@ -288,7 +288,6 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     padding: 16,
-    paddingBottom: 80,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -349,10 +348,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   inputContainer: {
-    position: 'absolute' as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 16,
     backgroundColor: Colors.light.background,
     borderTopWidth: 1,
