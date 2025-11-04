@@ -579,7 +579,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'inbox' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('inbox')}
         >
-          <Inbox size={16} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Inbox size={14} color={currentFolder === 'inbox' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'inbox' && styles.folderTabTextActive]}>
             Inbox
           </Text>
@@ -588,7 +588,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'unread' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('unread')}
         >
-          <MailOpen size={16} color={currentFolder === 'unread' ? Colors.light.primary : Colors.light.textSecondary} />
+          <MailOpen size={14} color={currentFolder === 'unread' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'unread' && styles.folderTabTextActive]}>
             Unread
           </Text>
@@ -597,7 +597,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'starred' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('starred')}
         >
-          <Star size={16} color={currentFolder === 'starred' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Star size={14} color={currentFolder === 'starred' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'starred' && styles.folderTabTextActive]}>
             Starred
           </Text>
@@ -606,7 +606,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'important' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('important')}
         >
-          <AlertOctagon size={16} color={currentFolder === 'important' ? Colors.light.primary : Colors.light.textSecondary} />
+          <AlertOctagon size={14} color={currentFolder === 'important' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'important' && styles.folderTabTextActive]}>
             Important
           </Text>
@@ -615,7 +615,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'snoozed' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('snoozed')}
         >
-          <Clock size={16} color={currentFolder === 'snoozed' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Clock size={14} color={currentFolder === 'snoozed' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'snoozed' && styles.folderTabTextActive]}>
             Snoozed
           </Text>
@@ -624,7 +624,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'sent' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('sent')}
         >
-          <Send size={16} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Send size={14} color={currentFolder === 'sent' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'sent' && styles.folderTabTextActive]}>
             Sent
           </Text>
@@ -633,7 +633,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'drafts' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('drafts')}
         >
-          <FileEdit size={16} color={currentFolder === 'drafts' ? Colors.light.primary : Colors.light.textSecondary} />
+          <FileEdit size={14} color={currentFolder === 'drafts' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'drafts' && styles.folderTabTextActive]}>
             Drafts
           </Text>
@@ -642,7 +642,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'spam' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('spam')}
         >
-          <AlertCircle size={16} color={currentFolder === 'spam' ? Colors.light.primary : Colors.light.textSecondary} />
+          <AlertCircle size={14} color={currentFolder === 'spam' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'spam' && styles.folderTabTextActive]}>
             Spam
           </Text>
@@ -651,7 +651,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'trash' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('trash')}
         >
-          <Trash2 size={16} color={currentFolder === 'trash' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Trash2 size={14} color={currentFolder === 'trash' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'trash' && styles.folderTabTextActive]}>
             Trash
           </Text>
@@ -660,7 +660,7 @@ export default function MailScreen() {
           style={[styles.folderTab, currentFolder === 'archived' && styles.folderTabActive]}
           onPress={() => setCurrentFolder('archived')}
         >
-          <Archive size={16} color={currentFolder === 'archived' ? Colors.light.primary : Colors.light.textSecondary} />
+          <Archive size={14} color={currentFolder === 'archived' ? Colors.light.primary : Colors.light.textSecondary} />
           <Text style={[styles.folderTabText, currentFolder === 'archived' && styles.folderTabTextActive]}>
             Archived
           </Text>
@@ -669,7 +669,7 @@ export default function MailScreen() {
           style={[styles.folderTab]}
           onPress={() => setCurrentView('folders')}
         >
-          <FolderOpen size={16} color={Colors.light.textSecondary} />
+          <FolderOpen size={14} color={Colors.light.textSecondary} />
           <Text style={[styles.folderTabText]}>
             Smart Folders
           </Text>
@@ -1053,23 +1053,23 @@ const styles = StyleSheet.create({
   folderTabs: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 8,
+    gap: 6,
   },
   folderTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
     backgroundColor: Colors.light.surface,
-    height: 32,
+    height: 28,
   },
   folderTabActive: {
     backgroundColor: Colors.light.primary + '15',
   },
   folderTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: Colors.light.textSecondary,
   },
