@@ -679,7 +679,7 @@ export default function MailScreen() {
       <ScrollView 
         style={styles.emailList} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 80 }}
+        contentContainerStyle={{ paddingTop: 0, paddingBottom: insets.bottom + 80 }}
       >
         {filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   folderTabsContainer: {
-    marginBottom: 12,
+    marginBottom: 4,
   },
   folderTabs: {
     flexDirection: 'row',
