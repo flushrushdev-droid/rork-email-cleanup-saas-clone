@@ -97,6 +97,23 @@ export default function SendersScreen() {
     Alert.alert('Bulk action', `${action} ${selectedSenders.length} senders`);
   };
 
+  const handleBlockSender = (senderId: string, senderEmail: string) => {
+    Alert.alert(
+      'Block Sender',
+      `Block all emails from ${senderEmail}? All future emails will be automatically moved to spam.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Success', `${senderEmail} has been blocked`);
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'Top Senders', headerShown: true }} />
@@ -203,6 +220,7 @@ export default function SendersScreen() {
               <TouchableOpacity
                 testID={`sender-card-${sender.id}`}
                 onPress={() => handleViewSenderEmails(sender.id)}
+                onLongPress={() => toggleSender(sender.id)}
                 activeOpacity={0.7}
               >
               <View style={styles.senderHeader}>
@@ -272,13 +290,11 @@ export default function SendersScreen() {
               </View>
 
               <TouchableOpacity 
-                testID={`select-${sender.id}`}
-                style={styles.selectButton} 
-                onPress={() => toggleSender(sender.id)}
+                testID={`block-${sender.id}`}
+                style={styles.blockButton} 
+                onPress={() => handleBlockSender(sender.id, sender.email)}
               >
-                <Text style={styles.selectButtonText}>
-                  {isSelected ? 'Deselect' : 'Select'}
-                </Text>
+                <Text style={styles.blockButtonText}>Block Sender</Text>
               </TouchableOpacity>
             </View>
           );
@@ -556,19 +572,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  selectButton: {
+  blockButton: {
     marginTop: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: Colors.light.background,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.danger,
     alignItems: 'center',
   },
-  selectButtonText: {
+  blockButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.primary,
+    color: '#FFFFFF',
   },
 });
