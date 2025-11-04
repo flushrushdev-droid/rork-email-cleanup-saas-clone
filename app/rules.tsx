@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Plus, Zap, Clock, Mail, Tag, Archive, Trash2, ChevronRight, Play } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
@@ -96,7 +96,7 @@ export default function RulesScreen() {
           <Text style={styles.subtitle}>Create smart email workflows</Text>
         </View>
 
-        <TouchableOpacity testID="create-rule" style={styles.createButton} onPress={() => alert('Create Rule flow coming soon')}>
+        <TouchableOpacity testID="create-rule" style={styles.createButton} onPress={() => router.push('/create-rule')}>
           <Plus size={20} color={Colors.light.primary} />
           <Text style={styles.createButtonText}>Create New Rule</Text>
         </TouchableOpacity>
