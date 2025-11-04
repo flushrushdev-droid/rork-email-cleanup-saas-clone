@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { History, MailX, ChevronRight, Sparkles, Users, UserX } from 'lucide-react-native';
+import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
@@ -32,6 +32,14 @@ export default function ToolsScreen() {
       icon: UserX,
       color: '#FF3B30',
       route: '/blocked-senders' as const,
+    },
+    {
+      id: 'notes',
+      title: 'Notes',
+      description: 'Quick notes and reminders for emails',
+      icon: FileText,
+      color: '#34C759',
+      route: '/notes' as const,
     },
     {
       id: 'unsubscribe',
