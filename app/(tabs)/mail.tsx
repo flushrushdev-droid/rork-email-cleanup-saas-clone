@@ -387,13 +387,6 @@ export default function MailScreen() {
           <Text style={styles.headerTitle}>Smart Folders</Text>
           <Text style={styles.headerSubtitle}>AI-organized categories</Text>
         </View>
-        <TouchableOpacity
-          testID="compose-button"
-          style={styles.composeButton}
-          onPress={handleCompose}
-        >
-          <PenSquare size={20} color="#FFF" />
-        </TouchableOpacity>
       </View>
 
       {isDemoMode && (
@@ -560,13 +553,6 @@ export default function MailScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.headerTitle}>Mail</Text>
-        <TouchableOpacity
-          testID="compose-button"
-          style={styles.composeButton}
-          onPress={handleCompose}
-        >
-          <PenSquare size={20} color="#FFF" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -893,6 +879,17 @@ export default function MailScreen() {
       {currentView === 'detail' && renderEmailDetail()}
       {currentView === 'compose' && renderCompose()}
 
+      {currentView !== 'compose' && currentView !== 'detail' && (
+        <TouchableOpacity
+          testID="compose-fab"
+          style={[styles.fab, { bottom: insets.bottom + 100 }]}
+          onPress={handleCompose}
+          activeOpacity={0.8}
+        >
+          <PenSquare size={24} color="#FFF" />
+        </TouchableOpacity>
+      )}
+
       <Modal
         visible={isModalVisible}
         transparent
@@ -997,18 +994,20 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 2,
   },
-  composeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   searchContainer: {
     flexDirection: 'row',
