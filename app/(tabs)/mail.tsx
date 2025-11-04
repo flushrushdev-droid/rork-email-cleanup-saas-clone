@@ -387,7 +387,11 @@ export default function MailScreen() {
         </View>
       )}
 
-      <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.emailList} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+      >
         <TouchableOpacity 
           testID="create-folder" 
           style={styles.createFolderButton} 
@@ -436,7 +440,6 @@ export default function MailScreen() {
             })}
           </View>
         )}
-        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );
@@ -460,7 +463,11 @@ export default function MailScreen() {
           </View>
         </View>
 
-        <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.emailList} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+        >
           {filteredEmails.length === 0 ? (
             <View style={styles.emptyState}>
               <Mail size={48} color={Colors.light.textSecondary} />
@@ -528,7 +535,6 @@ export default function MailScreen() {
               );
             })
           )}
-          <View style={{ height: 20 }} />
         </ScrollView>
       </View>
     );
@@ -670,7 +676,11 @@ export default function MailScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      <ScrollView style={styles.emailList} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.emailList} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+      >
         {filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
             <Mail size={48} color={Colors.light.textSecondary} />
@@ -730,7 +740,6 @@ export default function MailScreen() {
             </TouchableOpacity>
           ))
         )}
-        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
   );
