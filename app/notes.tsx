@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,10 @@ import {
   TextInput,
   Modal,
   Alert,
+  Animated,
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { Plus, X, Trash2, Calendar, FileText } from 'lucide-react-native';
+import { Stack } from 'expo-router';
+import { Plus, X, Trash2, Calendar, FileText, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
 
@@ -22,6 +23,7 @@ interface Note {
   updatedAt: string;
   linkedEmailId?: string;
   linkedEmailSubject?: string;
+  dueDate?: string;
 }
 
 const demoNotes: Note[] = [
@@ -33,6 +35,7 @@ const demoNotes: Note[] = [
     updatedAt: '2025-01-10T10:00:00Z',
     linkedEmailId: 'email1',
     linkedEmailSubject: 'Re: Project Discussion',
+    dueDate: '2025-01-15T00:00:00Z',
   },
   {
     id: '2',
@@ -40,6 +43,7 @@ const demoNotes: Note[] = [
     content: 'Key points from team sync:\n- Q1 goals finalized\n- New features approved\n- Budget review next week',
     createdAt: '2025-01-09T14:30:00Z',
     updatedAt: '2025-01-09T14:30:00Z',
+    dueDate: '2025-01-12T00:00:00Z',
   },
   {
     id: '3',
@@ -54,6 +58,7 @@ const demoNotes: Note[] = [
     content: '1. Review quarterly report\n2. Schedule dentist appointment\n3. Update project documentation\n4. Plan team building event',
     createdAt: '2025-01-07T16:45:00Z',
     updatedAt: '2025-01-10T11:20:00Z',
+    dueDate: '2025-01-14T00:00:00Z',
   },
   {
     id: '5',
@@ -62,15 +67,35 @@ const demoNotes: Note[] = [
     createdAt: '2025-01-05T13:00:00Z',
     updatedAt: '2025-01-05T13:00:00Z',
   },
+  {
+    id: '6',
+    title: 'Q1 Planning',
+    content: 'Review objectives and key results for next quarter',
+    createdAt: '2025-01-11T09:00:00Z',
+    updatedAt: '2025-01-11T09:00:00Z',
+    dueDate: '2025-01-20T00:00:00Z',
+  },
+  {
+    id: '7',
+    title: 'Team Retrospective',
+    content: 'Gather feedback and discuss improvements',
+    createdAt: '2025-01-13T15:30:00Z',
+    updatedAt: '2025-01-13T15:30:00Z',
+    dueDate: '2025-01-13T00:00:00Z',
+  },
 ];
 
 export default function NotesScreen() {
-  const router = useRouter();
   const [notes, setNotes] = useState<Note[]>(demoNotes);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [dueDate, setDueDate] = useState<string | undefined>(undefined);
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [slideAnim] = useState(new Animated.Value(0));
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -89,10 +114,72 @@ export default function NotesScreen() {
     });
   };
 
+  const toggleCalendar = () => {
+    if (calendarVisible) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setCalendarVisible(false));
+    } else {
+      setCalendarVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    return { daysInMonth, startingDayOfWeek };
+  };
+
+  const getNotesForDate = (date: Date) => {
+    return notes.filter((note) => {
+      if (!note.dueDate) return false;
+      const noteDate = new Date(note.dueDate);
+      return (
+        noteDate.getDate() === date.getDate() &&
+        noteDate.getMonth() === date.getMonth() &&
+        noteDate.getFullYear() === date.getFullYear()
+      );
+    });
+  };
+
+  const filteredNotes = useMemo(() => {
+    if (!selectedDate) return notes;
+    return notes.filter((note) => {
+      if (!note.dueDate) return false;
+      const noteDate = new Date(note.dueDate);
+      return (
+        noteDate.getDate() === selectedDate.getDate() &&
+        noteDate.getMonth() === selectedDate.getMonth() &&
+        noteDate.getFullYear() === selectedDate.getFullYear()
+      );
+    });
+  }, [notes, selectedDate]);
+
+  const isSameDay = (date1: Date, date2: Date) => {
+    return (
+      date1.getDate() === date2.getDate() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getFullYear() === date2.getFullYear()
+    );
+  };
+
   const openCreateModal = () => {
     setEditingNote(null);
     setTitle('');
     setContent('');
+    setDueDate(undefined);
     setModalVisible(true);
   };
 
@@ -100,6 +187,7 @@ export default function NotesScreen() {
     setEditingNote(note);
     setTitle(note.title);
     setContent(note.content);
+    setDueDate(note.dueDate);
     setModalVisible(true);
   };
 
@@ -113,7 +201,7 @@ export default function NotesScreen() {
       setNotes(
         notes.map((note) =>
           note.id === editingNote.id
-            ? { ...note, title, content, updatedAt: new Date().toISOString() }
+            ? { ...note, title, content, dueDate, updatedAt: new Date().toISOString() }
             : note
         )
       );
@@ -122,6 +210,7 @@ export default function NotesScreen() {
         id: Date.now().toString(),
         title,
         content,
+        dueDate,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -131,6 +220,7 @@ export default function NotesScreen() {
     setModalVisible(false);
     setTitle('');
     setContent('');
+    setDueDate(undefined);
   };
 
   const handleDelete = (noteId: string) => {
@@ -155,28 +245,52 @@ export default function NotesScreen() {
           headerTintColor: Colors.light.text,
           headerShadowVisible: false,
           headerRight: () => (
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={openCreateModal}
-              testID="add-note-button"
-            >
-              <Plus size={24} color={Colors.light.primary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={toggleCalendar}
+                testID="calendar-button"
+              >
+                <Calendar size={24} color={calendarVisible ? Colors.light.primary : Colors.light.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openCreateModal}
+                testID="add-note-button"
+              >
+                <Plus size={24} color={Colors.light.primary} />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
 
+      {selectedDate && (
+        <View style={styles.filterBanner}>
+          <Text style={styles.filterText}>
+            Showing notes for {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </Text>
+          <TouchableOpacity onPress={() => setSelectedDate(null)}>
+            <X size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {notes.length === 0 ? (
+        {filteredNotes.length === 0 ? (
           <View style={styles.emptyState}>
             <FileText size={64} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyTitle}>No Notes Yet</Text>
+            <Text style={styles.emptyTitle}>
+              {selectedDate ? 'No Notes for This Date' : 'No Notes Yet'}
+            </Text>
             <Text style={styles.emptyDescription}>
-              Tap the + button to create your first note
+              {selectedDate
+                ? 'No notes scheduled for this date'
+                : 'Tap the + button to create your first note'}
             </Text>
           </View>
         ) : (
-          notes.map((note) => (
+          filteredNotes.map((note) => (
             <TouchableOpacity
               key={note.id}
               style={styles.noteCard}
@@ -204,7 +318,9 @@ export default function NotesScreen() {
               <View style={styles.noteFooter}>
                 <View style={styles.dateContainer}>
                   <Calendar size={14} color={Colors.light.textSecondary} />
-                  <Text style={styles.noteDate}>{formatDate(note.updatedAt)}</Text>
+                  <Text style={styles.noteDate}>
+                    {note.dueDate ? formatDate(note.dueDate) : formatDate(note.updatedAt)}
+                  </Text>
                 </View>
                 {note.linkedEmailSubject && (
                   <Text style={styles.linkedEmail} numberOfLines={1}>
@@ -217,6 +333,115 @@ export default function NotesScreen() {
         )}
         <View style={{ height: 80 }} />
       </ScrollView>
+
+      {calendarVisible && (
+        <Animated.View
+          style={[
+            styles.calendarSidebar,
+            {
+              transform: [
+                {
+                  translateX: slideAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [300, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                const newMonth = new Date(currentMonth);
+                newMonth.setMonth(newMonth.getMonth() - 1);
+                setCurrentMonth(newMonth);
+              }}
+            >
+              <ChevronLeft size={24} color={Colors.light.text} />
+            </TouchableOpacity>
+            <Text style={styles.calendarMonthYear}>
+              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                const newMonth = new Date(currentMonth);
+                newMonth.setMonth(newMonth.getMonth() + 1);
+                setCurrentMonth(newMonth);
+              }}
+            >
+              <ChevronRight size={24} color={Colors.light.text} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.calendarWeekDays}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+              <Text key={idx} style={styles.weekDayText}>
+                {day}
+              </Text>
+            ))}
+          </View>
+
+          <ScrollView style={styles.calendarDays}>
+            {(() => {
+              const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
+              const days = [];
+              const today = new Date();
+
+              for (let i = 0; i < startingDayOfWeek; i++) {
+                days.push(<View key={`empty-${i}`} style={styles.calendarDay} />);
+              }
+
+              for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(
+                  currentMonth.getFullYear(),
+                  currentMonth.getMonth(),
+                  day
+                );
+                const notesForDate = getNotesForDate(date);
+                const isToday = isSameDay(date, today);
+                const isSelected = selectedDate && isSameDay(date, selectedDate);
+                const hasNotes = notesForDate.length > 0;
+
+                days.push(
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.calendarDay,
+                      isToday && styles.calendarDayToday,
+                      isSelected && styles.calendarDaySelected,
+                    ]}
+                    onPress={() => {
+                      if (isSelected) {
+                        setSelectedDate(null);
+                      } else {
+                        setSelectedDate(date);
+                      }
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        isToday && styles.calendarDayTextToday,
+                        isSelected && styles.calendarDayTextSelected,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                    {hasNotes && (
+                      <View style={styles.noteDot}>
+                        <Text style={styles.noteDotText}>{notesForDate.length}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              }
+
+              return days;
+            })()}
+          </ScrollView>
+        </Animated.View>
+      )}
 
       <Modal
         visible={modalVisible}
@@ -257,6 +482,48 @@ export default function NotesScreen() {
                 textAlignVertical="top"
                 testID="note-content-input"
               />
+
+              <View style={styles.dueDateSection}>
+                <Text style={styles.dueDateLabel}>Due Date (Optional)</Text>
+                <TouchableOpacity
+                  style={styles.dueDateButton}
+                  onPress={() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    Alert.prompt(
+                      'Set Due Date',
+                      'Enter date (YYYY-MM-DD)',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Clear',
+                          onPress: () => setDueDate(undefined),
+                        },
+                        {
+                          text: 'Set',
+                          onPress: (text?: string) => {
+                            if (text) {
+                              setDueDate(new Date(text).toISOString());
+                            }
+                          },
+                        },
+                      ],
+                      'plain-text',
+                      dueDate ? new Date(dueDate).toISOString().split('T')[0] : today
+                    );
+                  }}
+                >
+                  <Calendar size={16} color={Colors.light.primary} />
+                  <Text style={styles.dueDateButtonText}>
+                    {dueDate
+                      ? new Date(dueDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : 'Set Due Date'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.modalFooter}>
@@ -443,5 +710,133 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  filterBanner: {
+    backgroundColor: Colors.light.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  calendarSidebar: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 280,
+    backgroundColor: Colors.light.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1000,
+    paddingTop: 16,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  calendarMonthYear: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
+  calendarWeekDays: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+  },
+  weekDayText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+  },
+  calendarDays: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 8,
+  } as any,
+  calendarDay: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+  },
+  calendarDayToday: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 8,
+  },
+  calendarDaySelected: {
+    backgroundColor: Colors.light.primary,
+    borderRadius: 8,
+  },
+  calendarDayText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  calendarDayTextToday: {
+    color: Colors.light.primary,
+    fontWeight: '700',
+  },
+  calendarDayTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  noteDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: Colors.light.primary,
+    borderRadius: 10,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  noteDotText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  dueDateSection: {
+    marginTop: 12,
+  },
+  dueDateLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 8,
+  },
+  dueDateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.light.background,
+    borderRadius: 12,
+  },
+  dueDateButtonText: {
+    fontSize: 15,
+    color: Colors.light.primary,
+    fontWeight: '500',
   },
 });
