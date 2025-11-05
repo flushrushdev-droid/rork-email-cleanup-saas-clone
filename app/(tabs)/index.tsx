@@ -189,6 +189,30 @@ export default function OverviewScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Action Required</Text>
+            <TouchableOpacity testID="action-view-all" onPress={() => router.push('/folders')}>
+              <Text style={styles.seeAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          {(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))
+            .map((email) => (
+              <TouchableOpacity key={email.id} style={styles.emailCard} onPress={() => Alert.alert('Email', email.subject)}>
+                <View style={styles.emailHeader}>
+                  <View style={styles.emailIconContainer}>
+                    <AlertCircle size={20} color={Colors.light.danger} />
+                  </View>
+                  <View style={styles.emailContent}>
+                    <Text style={styles.emailSubject} numberOfLines={1}>{email.subject}</Text>
+                    <Text style={styles.emailFrom} numberOfLines={1}>{email.from}</Text>
+                    <Text style={styles.emailSnippet} numberOfLines={2}>{email.snippet}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Top Noise Sources</Text>
             <TouchableOpacity testID="see-all-noise" onPress={() => router.push('/senders')}>
               <Text style={styles.seeAll}>See All</Text>
@@ -221,30 +245,6 @@ export default function OverviewScreen() {
                     </Text>
                   </View>
                   <Text style={styles.emailCount}>{sender.totalEmails} emails</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Action Required</Text>
-            <TouchableOpacity testID="action-view-all" onPress={() => router.push('/folders')}>
-              <Text style={styles.seeAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))
-            .map((email) => (
-              <TouchableOpacity key={email.id} style={styles.emailCard} onPress={() => Alert.alert('Email', email.subject)}>
-                <View style={styles.emailHeader}>
-                  <View style={styles.emailIconContainer}>
-                    <AlertCircle size={20} color={Colors.light.danger} />
-                  </View>
-                  <View style={styles.emailContent}>
-                    <Text style={styles.emailSubject} numberOfLines={1}>{email.subject}</Text>
-                    <Text style={styles.emailFrom} numberOfLines={1}>{email.from}</Text>
-                    <Text style={styles.emailSnippet} numberOfLines={2}>{email.snippet}</Text>
-                  </View>
                 </View>
               </TouchableOpacity>
             ))}
