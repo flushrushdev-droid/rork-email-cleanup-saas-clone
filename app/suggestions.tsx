@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Sparkles, CheckCircle2, XCircle, Archive, Trash2, FolderOpen } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
@@ -14,6 +14,7 @@ interface Suggestion {
   description: string;
   emailCount: number;
   reason: string;
+  affectedEmails?: string[];
 }
 
 export default function SuggestionsScreen() {
@@ -25,6 +26,13 @@ export default function SuggestionsScreen() {
       description: 'You have 45 promotional emails from the past 30 days',
       emailCount: 45,
       reason: 'These emails are rarely opened',
+      affectedEmails: [
+        'newsletters@medium.com',
+        'deals@retailer.com',
+        'marketing@store.com',
+        'promotions@shop.com',
+        'offers@brand.com',
+      ],
     },
     {
       id: '2',
@@ -33,6 +41,11 @@ export default function SuggestionsScreen() {
       description: 'Newsletter emails older than 60 days',
       emailCount: 23,
       reason: 'Never opened in the last 2 months',
+      affectedEmails: [
+        'weekly@newsletter.com',
+        'digest@news.com',
+        'updates@techblog.com',
+      ],
     },
     {
       id: '3',
@@ -41,6 +54,12 @@ export default function SuggestionsScreen() {
       description: 'Social media notifications to a dedicated folder',
       emailCount: 67,
       reason: 'Frequent but low priority',
+      affectedEmails: [
+        'noreply@linkedin.com',
+        'notifications@twitter.com',
+        'notify@facebook.com',
+        'alerts@instagram.com',
+      ],
     },
   ]);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -54,6 +73,18 @@ export default function SuggestionsScreen() {
 
   const handleDismiss = (suggestionId: string) => {
     setSuggestions(suggestions.filter((s) => s.id !== suggestionId));
+  };
+
+  const handleViewAffectedEmails = (suggestion: Suggestion) => {
+    router.push({
+      pathname: '/affected-emails',
+      params: {
+        title: suggestion.title,
+        emails: JSON.stringify(suggestion.affectedEmails || []),
+        count: suggestion.emailCount.toString(),
+        type: suggestion.type,
+      },
+    });
   };
 
   const getIcon = (type: SuggestionType) => {
@@ -125,9 +156,13 @@ export default function SuggestionsScreen() {
                       <Text style={styles.suggestionTitle}>{suggestion.title}</Text>
                       <Text style={styles.suggestionDescription}>{suggestion.description}</Text>
                       <View style={styles.metaRow}>
-                        <View style={styles.badge}>
+                        <TouchableOpacity
+                          style={styles.badge}
+                          onPress={() => handleViewAffectedEmails(suggestion)}
+                          activeOpacity={0.7}
+                        >
                           <Text style={styles.badgeText}>{suggestion.emailCount} emails</Text>
-                        </View>
+                        </TouchableOpacity>
                         <Text style={styles.reason}>{suggestion.reason}</Text>
                       </View>
                     </View>
