@@ -190,7 +190,7 @@ export default function OverviewScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Top Noise Sources</Text>
-            <TouchableOpacity testID="see-all-noise" onPress={() => router.push('/unsubscribe')}>
+            <TouchableOpacity testID="see-all-noise" onPress={() => router.push('/senders')}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
