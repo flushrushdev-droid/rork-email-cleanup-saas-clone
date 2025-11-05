@@ -13,7 +13,6 @@ import {
   Activity,
   Trash,
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useHistory } from '@/contexts/HistoryContext';
 import Colors from '@/constants/colors';
 import type { HistoryEntry, HistoryActionType } from '@/constants/types';
@@ -151,30 +150,6 @@ export default function HistoryScreen() {
       />
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}>
-        <LinearGradient
-          colors={[Colors.light.primary, Colors.light.secondary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.statsCard}
-        >
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.totalActions}</Text>
-              <Text style={styles.statLabel}>Total Actions</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.last7DaysCount}</Text>
-              <Text style={styles.statLabel}>Last 7 Days</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.last30DaysCount}</Text>
-              <Text style={styles.statLabel}>Last 30 Days</Text>
-            </View>
-          </View>
-        </LinearGradient>
-
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Summary (60 Days)</Text>
           
@@ -274,41 +249,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
-  statsCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
+
   summarySection: {
     marginBottom: 24,
   },
