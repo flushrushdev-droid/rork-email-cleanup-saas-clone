@@ -2619,6 +2619,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     margin: 2,
     borderRadius: 8,
+    minWidth: 36,
   },
   todayCell: {
     backgroundColor: Colors.light.surface,
@@ -2632,6 +2633,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: Colors.light.text,
+    textAlign: 'center',
   },
   emptyDayText: {
     opacity: 0,
