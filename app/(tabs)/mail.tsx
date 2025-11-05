@@ -1545,20 +1545,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: Colors.light.surface,
     borderWidth: 1,
     borderColor: Colors.light.border,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterButtonActive: {
     backgroundColor: Colors.light.primary,
     borderColor: Colors.light.primary,
   },
   filterButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.light.text,
   },
   filterButtonTextActive: {
