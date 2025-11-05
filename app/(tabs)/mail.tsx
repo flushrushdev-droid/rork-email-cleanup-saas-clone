@@ -1551,6 +1551,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.surface,
     borderWidth: 1,
     borderColor: Colors.light.border,
+    height: 10,
   },
   filterButtonActive: {
     backgroundColor: Colors.light.primary,
