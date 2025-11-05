@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler, Animated, Dimensions } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar, Sparkles, ChevronDown } from 'lucide-react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar, Sparkles, ChevronDown, Video, MapPin, Bell } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -84,6 +84,21 @@ export default function MailScreen() {
   const [showToneDropdown, setShowToneDropdown] = useState(false);
   const [showLengthDropdown, setShowLengthDropdown] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
+  const [isNewMeetingModalVisible, setIsNewMeetingModalVisible] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState('');
+  const [meetingTime, setMeetingTime] = useState('');
+  const [meetingLocation, setMeetingLocation] = useState('');
+  const [meetingDescription, setMeetingDescription] = useState('');
+  const [meetingType, setMeetingType] = useState<'in-person' | 'video'>('video');
+  const [events, setEvents] = useState<Array<{
+    id: string;
+    title: string;
+    date: Date;
+    time: string;
+    location: string;
+    description: string;
+    type: 'in-person' | 'video';
+  }>>([]);
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -485,6 +500,56 @@ export default function MailScreen() {
     }
   };
 
+  const handleCreateMeeting = () => {
+    if (!meetingTitle.trim() || !meetingTime.trim()) {
+      Alert.alert('Missing Information', 'Please enter meeting title and time');
+      return;
+    }
+
+    const newEvent = {
+      id: Date.now().toString(),
+      title: meetingTitle,
+      date: selectedDate,
+      time: meetingTime,
+      location: meetingLocation,
+      description: meetingDescription,
+      type: meetingType,
+    };
+
+    setEvents(prev => [...prev, newEvent]);
+    Alert.alert('Success', 'Meeting created successfully!');
+    
+    setMeetingTitle('');
+    setMeetingTime('');
+    setMeetingLocation('');
+    setMeetingDescription('');
+    setMeetingType('video');
+    setIsNewMeetingModalVisible(false);
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    Alert.alert(
+      'Delete Event',
+      'Are you sure you want to delete this event?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => setEvents(prev => prev.filter(e => e.id !== eventId)),
+        },
+      ]
+    );
+  };
+
+  const getEventsForSelectedDate = () => {
+    return events.filter(event => {
+      return event.date.getDate() === selectedDate.getDate() &&
+             event.date.getMonth() === selectedDate.getMonth() &&
+             event.date.getFullYear() === selectedDate.getFullYear();
+    });
+  };
+
   const renderCalendar = () => {
     const today = new Date();
     const currentMonth = selectedDate.getMonth();
@@ -600,11 +665,65 @@ export default function MailScreen() {
           </View>
           
           <View style={styles.calendarEvents}>
-            <Text style={styles.eventsTitle}>Events</Text>
-            <View style={styles.emptyEvents}>
-              <Calendar size={32} color={Colors.light.textSecondary} />
-              <Text style={styles.emptyEventsText}>No events for this day</Text>
+            <View style={styles.eventsHeader}>
+              <Text style={styles.eventsTitle}>Events</Text>
+              <TouchableOpacity 
+                style={styles.newMeetingButton}
+                onPress={() => setIsNewMeetingModalVisible(true)}
+              >
+                <Plus size={18} color="#FFFFFF" />
+                <Text style={styles.newMeetingButtonText}>New</Text>
+              </TouchableOpacity>
             </View>
+            
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              style={styles.eventsList}
+            >
+              {getEventsForSelectedDate().length === 0 ? (
+                <View style={styles.emptyEvents}>
+                  <Calendar size={32} color={Colors.light.textSecondary} />
+                  <Text style={styles.emptyEventsText}>No events for this day</Text>
+                  <TouchableOpacity 
+                    style={styles.addEventButton}
+                    onPress={() => setIsNewMeetingModalVisible(true)}
+                  >
+                    <Text style={styles.addEventButtonText}>Add Event</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                getEventsForSelectedDate().map(event => (
+                  <View key={event.id} style={styles.eventCard}>
+                    <View style={styles.eventCardHeader}>
+                      <View style={[styles.eventTypeIcon, { backgroundColor: event.type === 'video' ? '#5AC8FA20' : '#34C75920' }]}>
+                        {event.type === 'video' ? (
+                          <Video size={16} color="#5AC8FA" />
+                        ) : (
+                          <MapPin size={16} color="#34C759" />
+                        )}
+                      </View>
+                      <Text style={styles.eventTime}>{event.time}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteEvent(event.id)}
+                        style={styles.deleteEventButton}
+                      >
+                        <Trash2 size={16} color={Colors.light.danger} />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    {event.location && (
+                      <View style={styles.eventLocation}>
+                        <MapPin size={14} color={Colors.light.textSecondary} />
+                        <Text style={styles.eventLocationText}>{event.location}</Text>
+                      </View>
+                    )}
+                    {event.description && (
+                      <Text style={styles.eventDescription} numberOfLines={2}>{event.description}</Text>
+                    )}
+                  </View>
+                ))
+              )}
+            </ScrollView>
           </View>
         </View>
       </Animated.View>
@@ -1276,6 +1395,118 @@ export default function MailScreen() {
       )}
 
 
+
+      <Modal
+        visible={isNewMeetingModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsNewMeetingModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.aiModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setIsNewMeetingModalVisible(false)}
+          />
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>New Meeting</Text>
+              <TouchableOpacity onPress={() => setIsNewMeetingModalVisible(false)}>
+                <X size={24} color={Colors.light.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Title *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Meeting title"
+                  placeholderTextColor={Colors.light.textSecondary}
+                  value={meetingTitle}
+                  onChangeText={setMeetingTitle}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Date</Text>
+                <View style={styles.dateDisplay}>
+                  <Calendar size={16} color={Colors.light.primary} />
+                  <Text style={styles.dateDisplayText}>
+                    {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Time *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g., 2:00 PM - 3:00 PM"
+                  placeholderTextColor={Colors.light.textSecondary}
+                  value={meetingTime}
+                  onChangeText={setMeetingTime}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Meeting Type</Text>
+                <View style={styles.meetingTypeContainer}>
+                  <TouchableOpacity
+                    style={[styles.meetingTypeButton, meetingType === 'video' && styles.meetingTypeButtonActive]}
+                    onPress={() => setMeetingType('video')}
+                  >
+                    <Video size={18} color={meetingType === 'video' ? '#FFFFFF' : Colors.light.text} />
+                    <Text style={[styles.meetingTypeText, meetingType === 'video' && styles.meetingTypeTextActive]}>Video Call</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.meetingTypeButton, meetingType === 'in-person' && styles.meetingTypeButtonActive]}
+                    onPress={() => setMeetingType('in-person')}
+                  >
+                    <MapPin size={18} color={meetingType === 'in-person' ? '#FFFFFF' : Colors.light.text} />
+                    <Text style={[styles.meetingTypeText, meetingType === 'in-person' && styles.meetingTypeTextActive]}>In Person</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Location</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={meetingType === 'video' ? 'Zoom, Meet, etc.' : 'Meeting room or address'}
+                  placeholderTextColor={Colors.light.textSecondary}
+                  value={meetingLocation}
+                  onChangeText={setMeetingLocation}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Meeting agenda or notes"
+                  placeholderTextColor={Colors.light.textSecondary}
+                  value={meetingDescription}
+                  onChangeText={setMeetingDescription}
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.createButtonModal, !meetingTitle.trim() || !meetingTime.trim() ? styles.createButtonDisabled : null]}
+              onPress={handleCreateMeeting}
+              disabled={!meetingTitle.trim() || !meetingTime.trim()}
+            >
+              <Text style={styles.createButtonModalText}>Create Meeting</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={isAIModalVisible}
@@ -2448,6 +2679,139 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textSecondary,
     marginTop: 12,
+  },
+  eventsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  newMeetingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Colors.light.primary,
+  },
+  newMeetingButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  eventsList: {
+    flex: 1,
+  },
+  eventCard: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.light.primary,
+  },
+  eventCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  eventTypeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eventTime: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+  },
+  deleteEventButton: {
+    padding: 4,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  eventLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+  },
+  eventLocationText: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  eventDescription: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    lineHeight: 18,
+  },
+  addEventButton: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: Colors.light.primary,
+  },
+  addEventButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  dateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  dateDisplayText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  meetingTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  meetingTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: Colors.light.surface,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  meetingTypeButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  meetingTypeText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  meetingTypeTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  createButtonDisabled: {
+    opacity: 0.5,
   },
   emailActionButtons: {
     flexDirection: 'row',
