@@ -809,50 +809,6 @@ export default function MailScreen() {
         )}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScrollView}
-        contentContainerStyle={styles.filterContainer}
-      >
-        <TouchableOpacity
-          style={[styles.filterButton, activeFilter === 'all' && styles.filterButtonActive]}
-          onPress={() => setActiveFilter('all')}
-        >
-          <Text style={[styles.filterButtonText, activeFilter === 'all' && styles.filterButtonTextActive]}>All</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, activeFilter === 'unread' && styles.filterButtonActive]}
-          onPress={() => setActiveFilter('unread')}
-        >
-          <Text style={[styles.filterButtonText, activeFilter === 'unread' && styles.filterButtonTextActive]}>Unread</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, activeFilter === 'starred' && styles.filterButtonActive]}
-          onPress={() => setActiveFilter('starred')}
-        >
-          <Text style={[styles.filterButtonText, activeFilter === 'starred' && styles.filterButtonTextActive]}>Starred</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, activeFilter === 'drafts' && styles.filterButtonActive]}
-          onPress={() => setActiveFilter('drafts')}
-        >
-          <Text style={[styles.filterButtonText, activeFilter === 'drafts' && styles.filterButtonTextActive]}>Drafts</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, activeFilter === 'sent' && styles.filterButtonActive]}
-          onPress={() => setActiveFilter('sent')}
-        >
-          <Text style={[styles.filterButtonText, activeFilter === 'sent' && styles.filterButtonTextActive]}>Sent</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, activeFilter === 'trash' && styles.filterButtonActive]}
-          onPress={() => setActiveFilter('trash')}
-        >
-          <Text style={[styles.filterButtonText, activeFilter === 'trash' && styles.filterButtonTextActive]}>Trash</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
       {smartFolders.length > 0 && (
         <View style={styles.smartFoldersSection}>
           <Text style={styles.smartFoldersTitle}>Smart Folders</Text>
@@ -1536,35 +1492,7 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     paddingVertical: 0,
   },
-  filterScrollView: {
-    marginBottom: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  filterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: Colors.light.surface,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    height: 10,
-  },
-  filterButtonActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
-  },
-  filterButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  filterButtonTextActive: {
-    color: '#FFFFFF',
-  },
+
   smartFoldersSection: {
     marginTop: 12,
     marginBottom: 16,
