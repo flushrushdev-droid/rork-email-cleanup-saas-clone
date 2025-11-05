@@ -291,19 +291,19 @@ export default function SendersScreen() {
 
               <View style={styles.bottomActions}>
                 <TouchableOpacity 
-                  testID={`block-${sender.id}`}
-                  style={styles.blockButton} 
-                  onPress={() => handleBlockSender(sender.id, sender.email)}
-                >
-                  <Text style={styles.blockButtonText}>Block Sender</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
                   testID={`auto-rule-${sender.id}`}
                   style={styles.autoRuleButton} 
                   onPress={() => Alert.alert('Auto Rule', `Create automatic rule for ${sender.email}`)}
                 >
                   <Text style={styles.autoRuleButtonText}>Auto Rule</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  testID={`block-${sender.id}`}
+                  style={styles.blockButton} 
+                  onPress={() => handleBlockSender(sender.id, sender.email)}
+                >
+                  <Text style={styles.blockButtonText}>Block Sender</Text>
                 </TouchableOpacity>
               </View>
             </View>
