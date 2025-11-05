@@ -1568,6 +1568,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   smartFoldersSection: {
+    marginTop: 12,
     marginBottom: 16,
   },
   smartFoldersTitle: {
