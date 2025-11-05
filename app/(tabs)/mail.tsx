@@ -65,7 +65,7 @@ export default function MailScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts' | 'trash' | 'sent'>('all');
   const [drafts, setDrafts] = useState<Array<{
     id: string;
     to: string;
@@ -212,6 +212,12 @@ export default function MailScreen() {
           filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
           break;
         case 'drafts':
+          filtered = [];
+          break;
+        case 'trash':
+          filtered = [];
+          break;
+        case 'sent':
           filtered = [];
           break;
         default:
@@ -803,7 +809,12 @@ export default function MailScreen() {
         )}
       </View>
 
-      <View style={styles.filterContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScrollView}
+        contentContainerStyle={styles.filterContainer}
+      >
         <TouchableOpacity
           style={[styles.filterButton, activeFilter === 'all' && styles.filterButtonActive]}
           onPress={() => setActiveFilter('all')}
@@ -828,7 +839,19 @@ export default function MailScreen() {
         >
           <Text style={[styles.filterButtonText, activeFilter === 'drafts' && styles.filterButtonTextActive]}>Drafts</Text>
         </TouchableOpacity>
-      </View>
+        <TouchableOpacity
+          style={[styles.filterButton, activeFilter === 'sent' && styles.filterButtonActive]}
+          onPress={() => setActiveFilter('sent')}
+        >
+          <Text style={[styles.filterButtonText, activeFilter === 'sent' && styles.filterButtonTextActive]}>Sent</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, activeFilter === 'trash' && styles.filterButtonActive]}
+          onPress={() => setActiveFilter('trash')}
+        >
+          <Text style={[styles.filterButtonText, activeFilter === 'trash' && styles.filterButtonTextActive]}>Trash</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       {smartFolders.length > 0 && (
         <View style={styles.smartFoldersSection}>
@@ -932,6 +955,18 @@ export default function MailScreen() {
               </TouchableOpacity>
             ))
           )
+        ) : activeFilter === 'sent' ? (
+          <View style={styles.emptyState}>
+            <Send size={48} color={Colors.light.textSecondary} />
+            <Text style={styles.emptyText}>No sent emails</Text>
+            <Text style={styles.emptySubtext}>Your sent messages will appear here</Text>
+          </View>
+        ) : activeFilter === 'trash' ? (
+          <View style={styles.emptyState}>
+            <Trash2 size={48} color={Colors.light.textSecondary} />
+            <Text style={styles.emptyText}>Trash is empty</Text>
+            <Text style={styles.emptySubtext}>Deleted emails will appear here</Text>
+          </View>
         ) : filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
             <Mail size={48} color={Colors.light.textSecondary} />
@@ -1501,11 +1536,13 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     paddingVertical: 0,
   },
+  filterScrollView: {
+    marginBottom: 16,
+  },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
   },
   filterButton: {
     paddingHorizontal: 16,
