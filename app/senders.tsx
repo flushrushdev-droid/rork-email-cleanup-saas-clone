@@ -296,6 +296,14 @@ export default function SendersScreen() {
               >
                 <Text style={styles.blockButtonText}>Block Sender</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity 
+                testID={`auto-rule-${sender.id}`}
+                style={styles.autoRuleButton} 
+                onPress={() => Alert.alert('Auto Rule', `Create automatic rule for ${sender.email}`)}
+              >
+                <Text style={styles.autoRuleButtonText}>Auto Rule</Text>
+              </TouchableOpacity>
             </View>
           );
         })}
@@ -581,6 +589,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   blockButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  autoRuleButton: {
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.light.primary,
+    alignItems: 'center',
+  },
+  autoRuleButtonText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
