@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   actionButtonDanger: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.background,
     borderWidth: 1,
     borderColor: Colors.light.danger,
   },
