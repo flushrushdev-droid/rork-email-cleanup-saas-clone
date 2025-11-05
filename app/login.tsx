@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Mail, Shield, Zap, Lock, RefreshCw } from 'lucide-react-native';
+import { Mail, Shield, Zap, Lock } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,8 +9,6 @@ export default function LoginScreen() {
   const { signIn, signInDemo, isLoading, error, isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-
   const handleSignIn = async () => {
     try {
       await signIn();
@@ -37,29 +35,8 @@ export default function LoginScreen() {
     }
   };
 
-  const handleRefresh = async () => {
-    console.log('Refresh button pressed');
-    setIsRefreshing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      router.replace('/login');
-    } catch (err) {
-      console.error('Refresh error:', err);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={[styles.refreshButton, { top: 16 + insets.top }]}
-        onPress={handleRefresh}
-        disabled={isRefreshing}
-        activeOpacity={0.7}
-      >
-        <RefreshCw size={20} color="#007AFF" />
-      </TouchableOpacity>
       <View style={[styles.content, { paddingTop: 60 + insets.top, paddingBottom: 40 + insets.bottom }]}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
@@ -306,21 +283,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     paddingHorizontal: 20,
-  },
-  refreshButton: {
-    position: 'absolute',
-    right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 10,
   },
 });
