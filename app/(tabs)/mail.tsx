@@ -1545,15 +1545,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: Colors.light.surface,
     borderWidth: 1,
     borderColor: Colors.light.border,
-    minWidth: 60,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 36,
   },
   filterButtonActive: {
     backgroundColor: Colors.light.primary,
