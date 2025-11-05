@@ -809,6 +809,35 @@ export default function MailScreen() {
         )}
       </View>
 
+      <View style={styles.filterButtonsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterButtonsScroll}
+        >
+          {(['all', 'unread', 'starred', 'drafts', 'sent', 'trash'] as const).map((filter) => (
+            <TouchableOpacity
+              key={filter}
+              testID={`filter-${filter}`}
+              style={[
+                styles.filterButton,
+                activeFilter === filter && styles.filterButtonActive,
+              ]}
+              onPress={() => setActiveFilter(filter)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  activeFilter === filter && styles.filterButtonTextActive,
+                ]}
+              >
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {smartFolders.length > 0 && (
         <View style={styles.smartFoldersSection}>
           <Text style={styles.smartFoldersTitle}>Smart Folders</Text>
@@ -1493,6 +1522,34 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
 
+  filterButtonsContainer: {
+    marginBottom: 16,
+  },
+  filterButtonsScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.light.surface,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  filterButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.light.text,
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
   smartFoldersSection: {
     marginTop: 12,
     marginBottom: 16,
