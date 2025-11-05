@@ -1015,6 +1015,30 @@ export default function MailScreen() {
     </View>
   );
 
+  const handleReply = (email: EmailMessage) => {
+    const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
+    setComposeTo(senderEmail);
+    setComposeSubject(`Re: ${email.subject}`);
+    setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
+    setCurrentView('compose');
+  };
+
+  const handleReplyAll = (email: EmailMessage) => {
+    const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
+    const allRecipients = [senderEmail, ...email.to].filter(e => e !== 'sarah.chen@company.com').join(', ');
+    setComposeTo(allRecipients);
+    setComposeSubject(`Re: ${email.subject}`);
+    setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
+    setCurrentView('compose');
+  };
+
+  const handleForward = (email: EmailMessage) => {
+    setComposeTo('');
+    setComposeSubject(`Fwd: ${email.subject}`);
+    setComposeBody(`\n\n---\nForwarded message:\nFrom: ${email.from}\nDate: ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\nSubject: ${email.subject}\n\n${email.snippet}`);
+    setCurrentView('compose');
+  };
+
   const renderEmailDetail = () => {
     if (!selectedEmail) return null;
 
@@ -1057,7 +1081,11 @@ export default function MailScreen() {
           </View>
         </View>
 
-        <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.detailContent} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           <Text style={styles.detailSubject}>{selectedEmail.subject}</Text>
           
           <View style={styles.detailFrom}>
@@ -1101,9 +1129,34 @@ export default function MailScreen() {
               {'\n\n'}Best regards,{'\n'}{selectedEmail.from.split('<')[0].trim()}
             </Text>
           </View>
-
-          <View style={{ height: 40 }} />
         </ScrollView>
+
+        <View style={styles.emailActionButtons}>
+          <TouchableOpacity
+            testID="reply-button"
+            style={styles.emailActionButton}
+            onPress={() => handleReply(selectedEmail)}
+          >
+            <Mail size={18} color="#FFFFFF" />
+            <Text style={styles.emailActionButtonText}>Reply</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="reply-all-button"
+            style={styles.emailActionButton}
+            onPress={() => handleReplyAll(selectedEmail)}
+          >
+            <Users size={18} color="#FFFFFF" />
+            <Text style={styles.emailActionButtonText}>Reply All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="forward-button"
+            style={styles.emailActionButton}
+            onPress={() => handleForward(selectedEmail)}
+          >
+            <Send size={18} color="#FFFFFF" />
+            <Text style={styles.emailActionButtonText}>Forward</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -2395,5 +2448,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textSecondary,
     marginTop: 12,
+  },
+  emailActionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: Colors.light.background,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
+  emailActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary,
+  },
+  emailActionButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
