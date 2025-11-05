@@ -289,21 +289,23 @@ export default function SendersScreen() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
-                testID={`block-${sender.id}`}
-                style={styles.blockButton} 
-                onPress={() => handleBlockSender(sender.id, sender.email)}
-              >
-                <Text style={styles.blockButtonText}>Block Sender</Text>
-              </TouchableOpacity>
+              <View style={styles.bottomActions}>
+                <TouchableOpacity 
+                  testID={`block-${sender.id}`}
+                  style={styles.blockButton} 
+                  onPress={() => handleBlockSender(sender.id, sender.email)}
+                >
+                  <Text style={styles.blockButtonText}>Block Sender</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                testID={`auto-rule-${sender.id}`}
-                style={styles.autoRuleButton} 
-                onPress={() => Alert.alert('Auto Rule', `Create automatic rule for ${sender.email}`)}
-              >
-                <Text style={styles.autoRuleButtonText}>Auto Rule</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  testID={`auto-rule-${sender.id}`}
+                  style={styles.autoRuleButton} 
+                  onPress={() => Alert.alert('Auto Rule', `Create automatic rule for ${sender.email}`)}
+                >
+                  <Text style={styles.autoRuleButtonText}>Auto Rule</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           );
         })}
@@ -580,8 +582,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  blockButton: {
+  bottomActions: {
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 12,
+  },
+  blockButton: {
+    flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -594,7 +601,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   autoRuleButton: {
-    marginTop: 8,
+    flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
