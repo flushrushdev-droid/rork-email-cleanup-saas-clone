@@ -1537,7 +1537,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   filterScrollView: {
-    marginBottom: 4,
+    marginBottom: 16,
   },
   filterContainer: {
     flexDirection: 'row',
