@@ -1545,7 +1545,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: Colors.light.surface,
@@ -1557,7 +1557,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.primary,
   },
   filterButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: Colors.light.text,
   },
