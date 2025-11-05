@@ -284,7 +284,7 @@ export default function SendersScreen() {
                   <Text style={styles.actionButtonText}>Delete</Text>
                 </TouchableOpacity>
                 <TouchableOpacity testID={`permanent-delete-${sender.id}`} style={[styles.actionButton, styles.actionButtonDanger]} onPress={() => handlePermanentDelete(sender.id, sender.email)}>
-                  <Trash2 size={16} color="#FFFFFF" />
+                  <Trash2 size={16} color={Colors.light.danger} />
                   <Text style={styles.actionButtonDangerText}>Delete Forever</Text>
                 </TouchableOpacity>
               </View>
@@ -575,12 +575,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   actionButtonDanger: {
-    backgroundColor: Colors.light.danger,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Colors.light.danger,
   },
   actionButtonDangerText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.light.danger,
   },
   bottomActions: {
     flexDirection: 'row',
