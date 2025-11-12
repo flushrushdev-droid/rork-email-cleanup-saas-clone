@@ -4,7 +4,7 @@ import { Search, SlidersHorizontal, TrendingUp, Mail, HardDrive, Archive, BellOf
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { mockSenders, calculateSavings, formatBytes, getNoiseColor } from '@/mocks/emailData';
 
 type FilterType = 'all' | 'marketing' | 'high-noise' | 'trusted';
@@ -12,6 +12,7 @@ type SortType = 'noise' | 'volume' | 'size' | 'engagement';
 
 export default function SendersScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ q?: string }>();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
@@ -115,73 +116,73 @@ export default function SendersScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ title: 'Top Senders', headerShown: true }} />
       
       <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Search size={20} color={Colors.light.textSecondary} />
+        <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
+          <Search size={20} color={colors.textSecondary} />
           <TextInput
             testID="senders-search"
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search senders..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
-        <TouchableOpacity style={styles.filterButton} onPress={() => Alert.alert('Filters', 'Advanced filters coming soon')}>
-          <SlidersHorizontal size={20} color={Colors.light.primary} />
+        <TouchableOpacity style={[styles.filterButton, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Filters', 'Advanced filters coming soon')}>
+          <SlidersHorizontal size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.filtersContainer}>
+      <View style={[styles.filtersContainer, { backgroundColor: colors.background }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
           <TouchableOpacity
-            style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'all' && { backgroundColor: colors.primary }]}
             onPress={() => setFilter('all')}
           >
-            <Text style={[styles.filterChipText, filter === 'all' && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, { color: colors.text }, filter === 'all' && styles.filterChipTextActive]}>
               All ({mockSenders.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.filterChip, filter === 'marketing' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'marketing' && { backgroundColor: colors.primary }]}
             onPress={() => setFilter('marketing')}
           >
-            <Text style={[styles.filterChipText, filter === 'marketing' && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, { color: colors.text }, filter === 'marketing' && styles.filterChipTextActive]}>
               Marketing ({mockSenders.filter(s => s.isMarketing).length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.filterChip, filter === 'high-noise' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'high-noise' && { backgroundColor: colors.primary }]}
             onPress={() => setFilter('high-noise')}
           >
-            <Text style={[styles.filterChipText, filter === 'high-noise' && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, { color: colors.text }, filter === 'high-noise' && styles.filterChipTextActive]}>
               High Noise ({mockSenders.filter(s => s.noiseScore >= 7).length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.filterChip, filter === 'trusted' && styles.filterChipActive]}
+            style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'trusted' && { backgroundColor: colors.primary }]}
             onPress={() => setFilter('trusted')}
           >
-            <Text style={[styles.filterChipText, filter === 'trusted' && styles.filterChipTextActive]}>
+            <Text style={[styles.filterChipText, { color: colors.text }, filter === 'trusted' && styles.filterChipTextActive]}>
               Trusted ({mockSenders.filter(s => s.isTrusted).length})
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      <View style={styles.sortContainer}>
-        <Text style={styles.sortLabel}>Sort by:</Text>
+      <View style={[styles.sortContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.sortLabel, { color: colors.textSecondary }]}>Sort by:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortScroll}>
           {(['noise', 'volume', 'size', 'engagement'] as SortType[]).map((type) => (
             <TouchableOpacity
               key={type}
-              style={[styles.sortChip, sortBy === type && styles.sortChipActive]}
+              style={[styles.sortChip, { backgroundColor: colors.surface }, sortBy === type && { backgroundColor: colors.secondary }]}
               onPress={() => setSortBy(type)}
             >
-              <Text style={[styles.sortChipText, sortBy === type && styles.sortChipTextActive]}>
+              <Text style={[styles.sortChipText, { color: colors.text }, sortBy === type && styles.sortChipTextActive]}>
                 {type === 'noise' ? 'Noise Score' : type === 'volume' ? 'Email Count' : type === 'size' ? 'Storage' : 'Engagement'}
               </Text>
             </TouchableOpacity>
@@ -190,20 +191,20 @@ export default function SendersScreen() {
       </View>
 
       {selectedSenders.length > 0 && (
-        <View style={styles.bulkActions}>
+        <View style={[styles.bulkActions, { backgroundColor: colors.secondary }]}>
           <Text style={styles.bulkText}>{selectedSenders.length} selected</Text>
           <View style={styles.bulkButtons}>
             <TouchableOpacity testID="bulk-mute" style={styles.bulkButton} onPress={() => handleBulk('mute')}>
-              <BellOff size={18} color={Colors.light.text} />
+              <BellOff size={18} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity testID="bulk-label" style={styles.bulkButton} onPress={() => handleBulk('label')}>
-              <Tag size={18} color={Colors.light.text} />
+              <Tag size={18} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity testID="bulk-archive" style={styles.bulkButton} onPress={() => handleBulk('archive')}>
-              <Archive size={18} color={Colors.light.text} />
+              <Archive size={18} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity testID="bulk-delete" style={styles.bulkButton} onPress={() => handleBulk('delete')}>
-              <Trash2 size={18} color={Colors.light.danger} />
+              <Trash2 size={18} color={colors.danger} />
             </TouchableOpacity>
           </View>
         </View>
@@ -217,7 +218,7 @@ export default function SendersScreen() {
           return (
             <View
               key={sender.id}
-              style={[styles.senderCard, isSelected && styles.senderCardSelected]}
+              style={[styles.senderCard, { backgroundColor: colors.surface }, isSelected && { borderColor: colors.primary }]}
             >
               <TouchableOpacity
                 testID={`sender-card-${sender.id}`}
@@ -227,12 +228,12 @@ export default function SendersScreen() {
               >
               <View style={styles.senderHeader}>
                 <View style={styles.senderInfo}>
-                  <View style={[styles.senderAvatar, { backgroundColor: sender.isTrusted ? Colors.light.success : sender.isBlocked ? Colors.light.danger : Colors.light.primary }]}>
+                  <View style={[styles.senderAvatar, { backgroundColor: sender.isTrusted ? colors.success : sender.isBlocked ? colors.danger : colors.primary }]}>
                     <Text style={styles.senderInitial}>{sender.displayName?.[0] || sender.email[0].toUpperCase()}</Text>
                   </View>
                   <View style={styles.senderDetails}>
-                    <Text style={styles.senderName} numberOfLines={1}>{sender.displayName || sender.email}</Text>
-                    <Text style={styles.senderEmail} numberOfLines={1}>{sender.email}</Text>
+                    <Text style={[styles.senderName, { color: colors.text }]} numberOfLines={1}>{sender.displayName || sender.email}</Text>
+                    <Text style={[styles.senderEmail, { color: colors.textSecondary }]} numberOfLines={1}>{sender.email}</Text>
                   </View>
                 </View>
                 <View style={[styles.noiseBadge, { backgroundColor: getNoiseColor(sender.noiseScore) + '20' }]}>
@@ -242,59 +243,54 @@ export default function SendersScreen() {
                 </View>
               </View>
 
-              <View style={styles.statsRow}>
+              <View style={[styles.statsRow, { borderColor: colors.border }]}>
                 <View style={styles.statBox}>
-                  <Mail size={16} color={Colors.light.textSecondary} />
-                  <Text style={styles.statValue}>{sender.totalEmails}</Text>
-                  <Text style={styles.statLabel}>Emails</Text>
+                  <Mail size={16} color={colors.textSecondary} />
+                  <Text style={[styles.statValue, { color: colors.text }]}>{sender.totalEmails}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Emails</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <HardDrive size={16} color={Colors.light.textSecondary} />
-                  <Text style={styles.statValue}>{formatBytes(sender.totalSize)}</Text>
-                  <Text style={styles.statLabel}>Storage</Text>
+                  <HardDrive size={16} color={colors.textSecondary} />
+                  <Text style={[styles.statValue, { color: colors.text }]}>{formatBytes(sender.totalSize)}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Storage</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <TrendingUp size={16} color={Colors.light.textSecondary} />
-                  <Text style={styles.statValue}>{sender.engagementRate}%</Text>
-                  <Text style={styles.statLabel}>Engagement</Text>
+                  <TrendingUp size={16} color={colors.textSecondary} />
+                  <Text style={[styles.statValue, { color: colors.text }]}>{sender.engagementRate}%</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Engagement</Text>
                 </View>
               </View>
 
-              <LinearGradient
-                colors={['#F2F2F7', '#E5E5EA']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.savingsBar}
-              >
+              <View style={[styles.savingsBar, { backgroundColor: colors.background }]}>
                 <View style={styles.savingItem}>
-                  <Text style={styles.savingLabel}>Potential Savings:</Text>
-                  <Text style={styles.savingValue}>{savings.time} min • {savings.space} MB</Text>
+                  <Text style={[styles.savingLabel, { color: colors.textSecondary }]}>Potential Savings:</Text>
+                  <Text style={[styles.savingValue, { color: colors.text }]}>{savings.time} min • {savings.space} MB</Text>
                 </View>
-              </LinearGradient>
+              </View>
 
               </TouchableOpacity>
 
               <View style={styles.actions}>
                 {sender.hasUnsubscribe && (
-                  <TouchableOpacity testID={`unsubscribe-${sender.id}`} style={[styles.actionButton, styles.actionButtonPrimary]} onPress={() => handleUnsubscribe(sender.email)}>
+                  <TouchableOpacity testID={`unsubscribe-${sender.id}`} style={[styles.actionButton, { backgroundColor: colors.primary }]} onPress={() => handleUnsubscribe(sender.email)}>
                     <BellOff size={16} color="#FFFFFF" />
                     <Text style={styles.actionButtonPrimaryText}>Unsubscribe</Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity testID={`delete-${sender.id}`} style={styles.actionButton} onPress={() => handleDelete(sender.id, sender.email)}>
-                  <Trash size={16} color={Colors.light.text} />
-                  <Text style={styles.actionButtonText}>Delete</Text>
+                <TouchableOpacity testID={`delete-${sender.id}`} style={[styles.actionButton, { backgroundColor: colors.background }]} onPress={() => handleDelete(sender.id, sender.email)}>
+                  <Trash size={16} color={colors.text} />
+                  <Text style={[styles.actionButtonText, { color: colors.text }]}>Delete</Text>
                 </TouchableOpacity>
-                <TouchableOpacity testID={`permanent-delete-${sender.id}`} style={[styles.actionButton, styles.actionButtonDanger]} onPress={() => handlePermanentDelete(sender.id, sender.email)}>
-                  <Trash2 size={16} color={Colors.light.danger} />
-                  <Text style={styles.actionButtonDangerText}>Delete Forever</Text>
+                <TouchableOpacity testID={`permanent-delete-${sender.id}`} style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.danger }]} onPress={() => handlePermanentDelete(sender.id, sender.email)}>
+                  <Trash2 size={16} color={colors.danger} />
+                  <Text style={[styles.actionButtonDangerText, { color: colors.danger }]}>Delete Forever</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.bottomActions}>
                 <TouchableOpacity 
                   testID={`auto-rule-${sender.id}`}
-                  style={styles.autoRuleButton} 
+                  style={[styles.autoRuleButton, { backgroundColor: colors.primary }]} 
                   onPress={() => Alert.alert('Auto Rule', `Create automatic rule for ${sender.email}`)}
                 >
                   <Text style={styles.autoRuleButtonText}>Auto Rule</Text>
@@ -302,7 +298,7 @@ export default function SendersScreen() {
 
                 <TouchableOpacity 
                   testID={`block-${sender.id}`}
-                  style={styles.blockButton} 
+                  style={[styles.blockButton, { backgroundColor: colors.danger }]} 
                   onPress={() => handleBlockSender(sender.id, sender.email)}
                 >
                   <Text style={styles.blockButtonText}>Block Sender</Text>
@@ -320,7 +316,6 @@ export default function SendersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -333,7 +328,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -342,18 +336,15 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: Colors.light.text,
   },
   filterButton: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: Colors.light.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   filtersContainer: {
-    backgroundColor: Colors.light.background,
     paddingBottom: 12,
     zIndex: 10,
   },
@@ -365,16 +356,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: Colors.light.surface,
     marginRight: 8,
-  },
-  filterChipActive: {
-    backgroundColor: Colors.light.primary,
   },
   filterChipText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
+    fontWeight: '600' as const,
   },
   filterChipTextActive: {
     color: '#FFFFFF',
@@ -385,14 +371,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 16,
-    backgroundColor: Colors.light.background,
     gap: 12,
     zIndex: 9,
   },
   sortLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
+    fontWeight: '600' as const,
   },
   sortScroll: {
     flex: 1,
@@ -402,16 +386,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: Colors.light.surface,
     marginRight: 8,
-  },
-  sortChipActive: {
-    backgroundColor: Colors.light.secondary,
   },
   sortChipText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: Colors.light.text,
+    fontWeight: '500' as const,
   },
   sortChipTextActive: {
     color: '#FFFFFF',
@@ -422,14 +401,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: Colors.light.secondary,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 12,
   },
   bulkText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#FFFFFF',
   },
   bulkButtons: {
@@ -448,7 +426,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   senderCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -457,10 +434,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
-  },
-  senderCardSelected: {
     borderWidth: 2,
-    borderColor: Colors.light.primary,
+    borderColor: 'transparent',
   },
 
   senderHeader: {
@@ -485,7 +460,7 @@ const styles = StyleSheet.create({
   },
   senderInitial: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '700' as const,
     color: '#FFFFFF',
   },
   senderDetails: {
@@ -493,13 +468,11 @@ const styles = StyleSheet.create({
   },
   senderName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
+    fontWeight: '600' as const,
     marginBottom: 2,
   },
   senderEmail: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   noiseBadge: {
     paddingHorizontal: 12,
@@ -508,7 +481,7 @@ const styles = StyleSheet.create({
   },
   noiseScore: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   statsRow: {
     flexDirection: 'row',
@@ -517,7 +490,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: Colors.light.border,
   },
   statBox: {
     alignItems: 'center',
@@ -526,13 +498,11 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontWeight: '700' as const,
     marginTop: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
     marginTop: 2,
   },
   savingsBar: {
@@ -547,13 +517,11 @@ const styles = StyleSheet.create({
   },
   savingLabel: {
     fontSize: 13,
-    fontWeight: '500',
-    color: Colors.light.textSecondary,
+    fontWeight: '500' as const,
   },
   savingValue: {
     fontSize: 14,
-    fontWeight: '700',
-    color: Colors.light.text,
+    fontWeight: '700' as const,
   },
   actions: {
     flexDirection: 'row',
@@ -568,30 +536,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: Colors.light.background,
-  },
-  actionButtonPrimary: {
-    backgroundColor: Colors.light.primary,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   actionButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: Colors.light.text,
+    fontWeight: '600' as const,
   },
   actionButtonPrimaryText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#FFFFFF',
-  },
-  actionButtonDanger: {
-    backgroundColor: Colors.light.background,
-    borderWidth: 1,
-    borderColor: Colors.light.danger,
   },
   actionButtonDangerText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: Colors.light.danger,
+    fontWeight: '600' as const,
   },
   bottomActions: {
     flexDirection: 'row',
@@ -603,12 +562,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: Colors.light.danger,
     alignItems: 'center',
   },
   blockButtonText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#FFFFFF',
   },
   autoRuleButton: {
@@ -616,12 +574,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: Colors.light.primary,
     alignItems: 'center',
   },
   autoRuleButtonText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#FFFFFF',
   },
 });
