@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Animated, StyleSheet, Modal, Platform, TextInput, Pressable } from 'react-native';
 import { SafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, X, ChevronLeft, ChevronRight, Plus, Video, MapPin, Trash2, Clock } from 'lucide-react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+
 import Colors from '@/constants/colors';
 import type { CalendarEvent, CalendarFeedback } from '@/hooks/useCalendar';
 
@@ -35,9 +35,6 @@ interface CalendarRenderProps {
   pendingDeleteEvent?: CalendarEvent;
   toggleCalendar: () => void;
   handleCreateMeeting: () => void;
-  handleDateChange: (event: any, date?: Date) => void;
-  handleStartTimeChange: (event: any, date?: Date) => void;
-  handleEndTimeChange: (event: any, date?: Date) => void;
   handleDeleteEvent: (eventId: string) => void;
   cancelDeleteEvent: () => void;
   confirmDeleteEvent: () => void;
@@ -58,7 +55,9 @@ export function CalendarSidebar(props: CalendarRenderProps) {
     meetingTitle,
     setMeetingTitle,
     startTime,
+    setStartTime,
     endTime,
+    setEndTime,
     meetingLocation,
     setMeetingLocation,
     meetingDescription,
@@ -75,9 +74,6 @@ export function CalendarSidebar(props: CalendarRenderProps) {
     pendingDeleteEvent,
     toggleCalendar,
     handleCreateMeeting,
-    handleDateChange,
-    handleStartTimeChange,
-    handleEndTimeChange,
     handleDeleteEvent,
     cancelDeleteEvent,
     confirmDeleteEvent,
@@ -135,45 +131,213 @@ export function CalendarSidebar(props: CalendarRenderProps) {
     setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
   };
 
-  const renderIOSPicker = (
-    visible: boolean,
-    title: string,
-    mode: 'date' | 'time',
-    value: Date,
-    onChange: (event: any, date?: Date) => void,
-    onClose: () => void,
-  ) => {
-    if (!visible) {
-      return null;
+  const [tempHour, setTempHour] = React.useState<string>('12');
+  const [tempMinute, setTempMinute] = React.useState<string>('00');
+  const [tempAMPM, setTempAMPM] = React.useState<'AM' | 'PM'>('PM');
+  const [tempYear, setTempYear] = React.useState<string>('2025');
+  const [tempMonth, setTempMonth] = React.useState<string>('1');
+  const [tempDay, setTempDay] = React.useState<string>('1');
+
+  React.useEffect(() => {
+    if (showDatePicker) {
+      setTempYear(selectedDate.getFullYear().toString());
+      setTempMonth((selectedDate.getMonth() + 1).toString());
+      setTempDay(selectedDate.getDate().toString());
     }
+  }, [showDatePicker, selectedDate]);
+
+  React.useEffect(() => {
+    if (showStartTimePicker) {
+      let hours = startTime.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      setTempHour(hours.toString());
+      setTempMinute(startTime.getMinutes().toString().padStart(2, '0'));
+      setTempAMPM(ampm);
+    }
+  }, [showStartTimePicker, startTime]);
+
+  React.useEffect(() => {
+    if (showEndTimePicker) {
+      let hours = endTime.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      setTempHour(hours.toString());
+      setTempMinute(endTime.getMinutes().toString().padStart(2, '0'));
+      setTempAMPM(ampm);
+    }
+  }, [showEndTimePicker, endTime]);
+
+  const handleDateConfirm = () => {
+    const year = parseInt(tempYear, 10);
+    const month = parseInt(tempMonth, 10) - 1;
+    const day = parseInt(tempDay, 10);
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      const newDate = new Date(selectedDate);
+      newDate.setFullYear(year, month, day);
+      setSelectedDate(newDate);
+    }
+    setShowDatePicker(false);
+  };
+
+  const handleTimeConfirm = (isStart: boolean) => {
+    let hour = parseInt(tempHour, 10);
+    const minute = parseInt(tempMinute, 10);
+    if (!isNaN(hour) && !isNaN(minute)) {
+      if (tempAMPM === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (tempAMPM === 'AM' && hour === 12) {
+        hour = 0;
+      }
+      const newDate = new Date(isStart ? startTime : endTime);
+      newDate.setHours(hour, minute, 0, 0);
+      if (isStart) {
+        setStartTime(newDate);
+        setShowStartTimePicker(false);
+      } else {
+        setEndTime(newDate);
+        setShowEndTimePicker(false);
+      }
+    } else {
+      if (isStart) {
+        setShowStartTimePicker(false);
+      } else {
+        setShowEndTimePicker(false);
+      }
+    }
+  };
+
+  const renderDatePicker = () => {
+    if (!showDatePicker) return null;
 
     return (
-      <View style={styles.iosPickerPortal} pointerEvents="box-none">
-        <Pressable
-          testID={`ios-${mode}-picker-backdrop`}
-          style={styles.iosPickerBackdrop}
-          onPress={onClose}
-        />
-        <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}
-        >
-          <View style={styles.datePickerHeader}>
-            <Text style={styles.datePickerTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.datePickerDone}>Done</Text>
-            </TouchableOpacity>
-          </View>
-          <DateTimePicker
-            value={value}
-            mode={mode}
-            display="spinner"
-            onChange={(event, date) => {
-              console.log('CalendarSidebar picker change', { mode, date });
-              onChange(event, date ?? value);
-            }}
-            themeVariant="light"
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.iosPickerOverlay}>
+          <Pressable
+            testID="ios-date-picker-backdrop"
+            style={styles.iosPickerBackdrop}
+            onPress={() => setShowDatePicker(false)}
           />
+          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>Select Date</Text>
+              <TouchableOpacity onPress={handleDateConfirm} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={styles.datePickerDone}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dateInputsRow}>
+              <View style={styles.dateInputGroup}>
+                <Text style={styles.dateInputLabel}>Month</Text>
+                <TextInput
+                  style={styles.dateInput}
+                  value={tempMonth}
+                  onChangeText={setTempMonth}
+                  keyboardType="number-pad"
+                  placeholder="MM"
+                  maxLength={2}
+                />
+              </View>
+              <View style={styles.dateInputGroup}>
+                <Text style={styles.dateInputLabel}>Day</Text>
+                <TextInput
+                  style={styles.dateInput}
+                  value={tempDay}
+                  onChangeText={setTempDay}
+                  keyboardType="number-pad"
+                  placeholder="DD"
+                  maxLength={2}
+                />
+              </View>
+              <View style={[styles.dateInputGroup, { flex: 1.5 }]}>
+                <Text style={styles.dateInputLabel}>Year</Text>
+                <TextInput
+                  style={styles.dateInput}
+                  value={tempYear}
+                  onChangeText={setTempYear}
+                  keyboardType="number-pad"
+                  placeholder="YYYY"
+                  maxLength={4}
+                />
+              </View>
+            </View>
+          </View>
         </View>
-      </View>
+      </Modal>
+    );
+  };
+
+  const renderTimePicker = (visible: boolean, isStart: boolean, title: string) => {
+    if (!visible) return null;
+
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => isStart ? setShowStartTimePicker(false) : setShowEndTimePicker(false)}
+      >
+        <View style={styles.iosPickerOverlay}>
+          <Pressable
+            testID={`ios-time-picker-backdrop-${isStart ? 'start' : 'end'}`}
+            style={styles.iosPickerBackdrop}
+            onPress={() => isStart ? setShowStartTimePicker(false) : setShowEndTimePicker(false)}
+          />
+          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>{title}</Text>
+              <TouchableOpacity onPress={() => handleTimeConfirm(isStart)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={styles.datePickerDone}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.timeInputsRow}>
+              <View style={styles.timeInputGroup}>
+                <Text style={styles.dateInputLabel}>Hour</Text>
+                <TextInput
+                  style={styles.dateInput}
+                  value={tempHour}
+                  onChangeText={setTempHour}
+                  keyboardType="number-pad"
+                  placeholder="12"
+                  maxLength={2}
+                />
+              </View>
+              <Text style={styles.timeSeparator}>:</Text>
+              <View style={styles.timeInputGroup}>
+                <Text style={styles.dateInputLabel}>Minute</Text>
+                <TextInput
+                  style={styles.dateInput}
+                  value={tempMinute}
+                  onChangeText={setTempMinute}
+                  keyboardType="number-pad"
+                  placeholder="00"
+                  maxLength={2}
+                />
+              </View>
+              <View style={styles.ampmContainer}>
+                <TouchableOpacity
+                  style={[styles.ampmButton, tempAMPM === 'AM' && styles.ampmButtonActive]}
+                  onPress={() => setTempAMPM('AM')}
+                >
+                  <Text style={[styles.ampmText, tempAMPM === 'AM' && styles.ampmTextActive]}>AM</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.ampmButton, tempAMPM === 'PM' && styles.ampmButtonActive]}
+                  onPress={() => setTempAMPM('PM')}
+                >
+                  <Text style={[styles.ampmText, tempAMPM === 'PM' && styles.ampmTextActive]}>PM</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     );
   };
 
@@ -487,164 +651,9 @@ export function CalendarSidebar(props: CalendarRenderProps) {
         </View>
       </Modal>
 
-      {Platform.OS === 'ios'
-        ? renderIOSPicker(
-            showDatePicker,
-            'Select Date',
-            'date',
-            selectedDate,
-            handleDateChange,
-            () => setShowDatePicker(false),
-          )
-        : null}
-
-      {showDatePicker && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-
-      {showDatePicker && Platform.OS === 'web' && (
-        <Modal
-          visible={showDatePicker}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowDatePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {Platform.OS === 'ios'
-        ? renderIOSPicker(
-            showStartTimePicker,
-            'Select Start Time',
-            'time',
-            startTime,
-            handleStartTimeChange,
-            () => setShowStartTimePicker(false),
-          )
-        : null}
-
-      {showStartTimePicker && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={startTime}
-          mode="time"
-          display="default"
-          onChange={handleStartTimeChange}
-        />
-      )}
-
-      {showStartTimePicker && Platform.OS === 'web' && (
-        <Modal
-          visible={showStartTimePicker}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowStartTimePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowStartTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Start Time</Text>
-                <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display="default"
-                onChange={handleStartTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {Platform.OS === 'ios'
-        ? renderIOSPicker(
-            showEndTimePicker,
-            'Select End Time',
-            'time',
-            endTime,
-            handleEndTimeChange,
-            () => setShowEndTimePicker(false),
-          )
-        : null}
-
-      {showEndTimePicker && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={endTime}
-          mode="time"
-          display="default"
-          onChange={handleEndTimeChange}
-        />
-      )}
-
-      {showEndTimePicker && Platform.OS === 'web' && (
-        <Modal
-          visible={showEndTimePicker}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowEndTimePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowEndTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select End Time</Text>
-                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display="default"
-                onChange={handleEndTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
+      {renderDatePicker()}
+      {renderTimePicker(showStartTimePicker, true, 'Select Start Time')}
+      {renderTimePicker(showEndTimePicker, false, 'Select End Time')}
 
       <Modal
         visible={Boolean(pendingDeleteEventId)}
@@ -1163,14 +1172,10 @@ const styles = StyleSheet.create({
   aiModalBackdrop: {
     flex: 1,
   },
-  iosPickerPortal: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  iosPickerOverlay: {
+    flex: 1,
     justifyContent: 'flex-end',
-    zIndex: 1500,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   iosPickerBackdrop: {
     position: 'absolute',
@@ -1231,5 +1236,71 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     backgroundColor: 'transparent',
+  },
+  dateInputsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 20,
+  },
+  timeInputsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    paddingVertical: 20,
+  },
+  dateInputGroup: {
+    flex: 1,
+  },
+  timeInputGroup: {
+    flex: 1,
+  },
+  dateInputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+    marginBottom: 8,
+  },
+  dateInput: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    textAlign: 'center',
+  },
+  timeSeparator: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.light.text,
+    marginBottom: 8,
+  },
+  ampmContainer: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  ampmButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.light.surface,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  ampmButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  ampmText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  ampmTextActive: {
+    color: '#FFFFFF',
   },
 });
