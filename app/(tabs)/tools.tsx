@@ -4,11 +4,12 @@ import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield 
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ToolsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   const tools = [
     {
@@ -16,7 +17,7 @@ export default function ToolsScreen() {
       title: 'Automation Rules',
       description: 'Create smart email workflows',
       icon: Shield,
-      color: Colors.light.success,
+      color: '#34C759',
       route: '/rules' as const,
     },
     {
@@ -24,7 +25,7 @@ export default function ToolsScreen() {
       title: 'History',
       description: 'View app activity from the past 60 days',
       icon: History,
-      color: Colors.light.secondary,
+      color: '#8E8E93',
       route: '/history' as const,
     },
     {
@@ -56,7 +57,7 @@ export default function ToolsScreen() {
       title: 'Unsubscribe Manager',
       description: 'Manage newsletter subscriptions',
       icon: MailX,
-      color: Colors.light.danger,
+      color: '#FF3B30',
       route: '/unsubscribe' as const,
     },
     {
@@ -70,10 +71,10 @@ export default function ToolsScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>Tools</Text>
-        <Text style={styles.subtitle}>Manage your inbox efficiently</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Tools</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your inbox efficiently</Text>
       </View>
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
@@ -83,7 +84,7 @@ export default function ToolsScreen() {
             <TouchableOpacity
               key={tool.id}
               testID={`tool-${tool.id}`}
-              style={styles.toolCard}
+              style={[styles.toolCard, { backgroundColor: colors.surface }]}
               onPress={() => router.push(tool.route)}
               activeOpacity={0.7}
             >
@@ -91,10 +92,10 @@ export default function ToolsScreen() {
                 <Icon size={28} color={tool.color} />
               </View>
               <View style={styles.toolContent}>
-                <Text style={styles.toolTitle}>{tool.title}</Text>
-                <Text style={styles.toolDescription}>{tool.description}</Text>
+                <Text style={[styles.toolTitle, { color: colors.text }]}>{tool.title}</Text>
+                <Text style={[styles.toolDescription, { color: colors.textSecondary }]}>{tool.description}</Text>
               </View>
-              <ChevronRight size={20} color={Colors.light.textSecondary} />
+              <ChevronRight size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           );
         })}
@@ -106,7 +107,6 @@ export default function ToolsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     paddingHorizontal: 16,
@@ -115,12 +115,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
   },
   scrollContent: {
     padding: 16,
@@ -128,7 +126,6 @@ const styles = StyleSheet.create({
   toolCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
@@ -152,12 +149,10 @@ const styles = StyleSheet.create({
   toolTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   toolDescription: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     lineHeight: 20,
   },
 });
