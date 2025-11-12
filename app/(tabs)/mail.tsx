@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler, Animated, Dimensions, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar, Sparkles, ChevronDown, Video, MapPin, Bell, Save } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler } from 'react-native';
+import { Mail, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, FileEdit, Calendar, Sparkles, ChevronDown, Save } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +8,8 @@ import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { mockRecentEmails, mockSmartFolders } from '@/mocks/emailData';
 import Colors from '@/constants/colors';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
+import { useCalendar } from '@/hooks/useCalendar';
+import { CalendarSidebar } from '@/components/CalendarSidebar';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred' | 'unread' | 'drafts' | 'spam' | 'trash' | 'important' | 'snoozed';
@@ -76,9 +77,6 @@ export default function MailScreen() {
     body: string;
     date: Date;
   }>>([]);
-  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const calendarSlideAnim = useState(new Animated.Value(Dimensions.get('window').width))[0];
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
   const [aiFormat, setAiFormat] = useState('professional');
   const [aiTone, setAiTone] = useState('friendly');
@@ -87,33 +85,11 @@ export default function MailScreen() {
   const [showToneDropdown, setShowToneDropdown] = useState(false);
   const [showLengthDropdown, setShowLengthDropdown] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
-  const [isNewMeetingModalVisible, setIsNewMeetingModalVisible] = useState(false);
-  const [meetingTitle, setMeetingTitle] = useState('');
-  const [meetingTime, setMeetingTime] = useState('');
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date(new Date().getTime() + 60 * 60 * 1000));
-  const [meetingLocation, setMeetingLocation] = useState('');
-  const [meetingDescription, setMeetingDescription] = useState('');
-  const [meetingType, setMeetingType] = useState<'in-person' | 'video'>('video');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [events, setEvents] = useState<Array<{
-    id: string;
-    title: string;
-    date: Date;
-    time: string;
-    location: string;
-    description: string;
-    type: 'in-person' | 'video';
-  }>>([]);
+  
+  const calendar = useCalendar();
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (isCalendarVisible) {
-        toggleCalendar();
-        return true;
-      }
       if (currentView === 'detail') {
         setCurrentView('inbox');
         return true;
@@ -130,7 +106,7 @@ export default function MailScreen() {
     });
 
     return () => backHandler.remove();
-  }, [currentView, isCalendarVisible]);
+  }, [currentView]);
 
   const allEmails = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
