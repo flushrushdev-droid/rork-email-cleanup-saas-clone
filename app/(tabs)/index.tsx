@@ -7,12 +7,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 
 import Colors from '@/constants/colors';
-import { mockInboxHealth, mockSenders, mockRecentEmails } from '@/mocks/emailData';
+import { mockInboxHealth, mockRecentEmails } from '@/mocks/emailData';
 
 export default function OverviewScreen() {
   const router = useRouter();
   const { isAuthenticated, user, isLoading, isDemoMode } = useAuth();
-  const { syncMailbox, isSyncing, messages, senders, syncProgress, profile } = useGmailSync();
+  const { syncMailbox, isSyncing, messages, syncProgress, profile } = useGmailSync();
   
   const handleSync = useCallback(async () => {
     if (isDemoMode) {
@@ -206,45 +206,6 @@ export default function OverviewScreen() {
                     <Text style={styles.emailFrom} numberOfLines={1}>{email.from}</Text>
                     <Text style={styles.emailSnippet} numberOfLines={2}>{email.snippet}</Text>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Top Noise Sources</Text>
-            <TouchableOpacity testID="see-all-noise" onPress={() => router.push('/senders')}>
-              <Text style={styles.seeAll}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          {(senders.length > 0 ? senders : mockSenders)
-            .sort((a, b) => b.noiseScore - a.noiseScore)
-            .slice(0, 5)
-            .map((sender) => (
-              <TouchableOpacity
-                key={sender.id}
-                testID={`noise-sender-${sender.id}`}
-                style={styles.senderCard}
-                onPress={() => router.push({ pathname: '/senders', params: { q: sender.email } })}
-                activeOpacity={0.7}
-              >
-                <View style={styles.senderInfo}>
-                  <View style={styles.senderAvatar}>
-                    <Text style={styles.senderInitial}>{sender.displayName?.[0] || sender.email[0].toUpperCase()}</Text>
-                  </View>
-                  <View style={styles.senderDetails}>
-                    <Text style={styles.senderName} numberOfLines={1}>{sender.displayName || sender.email}</Text>
-                    <Text style={styles.senderEmail} numberOfLines={1}>{sender.email}</Text>
-                  </View>
-                </View>
-                <View style={styles.senderStats}>
-                  <View style={[styles.noiseBadge, { backgroundColor: sender.noiseScore >= 8 ? '#FFE5E5' : sender.noiseScore >= 6 ? '#FFF4E5' : '#E5F9E5' }]}>
-                    <Text style={[styles.noiseScore, { color: sender.noiseScore >= 8 ? Colors.light.danger : sender.noiseScore >= 6 ? Colors.light.warning : Colors.light.success }]}>
-                      {sender.noiseScore.toFixed(1)}
-                    </Text>
-                  </View>
-                  <Text style={styles.emailCount}>{sender.totalEmails} emails</Text>
                 </View>
               </TouchableOpacity>
             ))}
