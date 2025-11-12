@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Sparkles, Send, Loader } from 'lucide-react-native';
-import { useRorkAgent, createRorkTool } from '@rork/toolkit-sdk';
+import { useRorkAgent, createRorkTool } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
 import Colors from '@/constants/colors';

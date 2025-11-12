@@ -5,19 +5,46 @@ import { Mail, Calendar, Paperclip, Star, Archive, Trash2, MoreHorizontal } from
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Colors from '@/constants/colors';
-import { mockRecentEmails, mockSenders, formatBytes } from '@/mocks/emailData';
+import { mockRecentEmails, mockSenders, formatBytes, generateMockEmailsForSender } from '@/mocks/emailData';
 import { EmailMessage } from '@/constants/types';
 
 export default function SenderEmailsScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ senderId: string }>();
+  const params = useLocalSearchParams<{ senderId?: string; senderEmail?: string; senderName?: string }>();
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
 
-  const sender = mockSenders.find(s => s.id === params.senderId);
+  const sender = params.senderId 
+    ? mockSenders.find(s => s.id === params.senderId)
+    : params.senderEmail
+      ? mockSenders.find(s => s.email === params.senderEmail) || {
+          id: 'temp',
+          email: params.senderEmail,
+          displayName: params.senderName || params.senderEmail.split('@')[0],
+          domain: params.senderEmail.split('@')[1],
+          totalEmails: 9,
+          totalSize: 4500000,
+          avgSize: 500000,
+          frequency: 3,
+          firstSeen: new Date('2024-01-01'),
+          lastSeen: new Date(),
+          noiseScore: 7.5,
+          engagementRate: 15,
+          isMarketing: true,
+          hasUnsubscribe: true,
+          isMuted: false,
+          isTrusted: false,
+          isBlocked: false,
+          category: 'promotions' as const,
+        }
+      : undefined;
   
-  const senderEmails: EmailMessage[] = mockRecentEmails.filter(
-    email => sender && email.from === sender.email
-  );
+  let senderEmails: EmailMessage[] = sender 
+    ? mockRecentEmails.filter(email => email.from === sender.email)
+    : [];
+
+  if (sender && senderEmails.length === 0) {
+    senderEmails = generateMockEmailsForSender(sender.email, 9);
+  }
 
   if (!sender) {
     return (
@@ -79,7 +106,7 @@ export default function SenderEmailsScreen() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: sender.displayName || sender.email,
+          title: sender?.displayName || sender?.email || 'Sender Emails',
           headerShown: true 
         }} 
       />

@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Mail, Archive, Trash2, FolderOpen } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
@@ -8,6 +8,7 @@ import Colors from '@/constants/colors';
 type SuggestionType = 'archive' | 'delete' | 'move';
 
 export default function AffectedEmailsScreen() {
+  const router = useRouter();
   const params = useLocalSearchParams();
   const title = params.title as string;
   const emails = JSON.parse(params.emails as string) as string[];
@@ -64,7 +65,20 @@ export default function AffectedEmailsScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Text style={styles.sectionTitle}>Email Senders</Text>
           {emails.map((email, index) => (
-            <View key={index} style={styles.emailCard}>
+            <TouchableOpacity
+              key={index}
+              style={styles.emailCard}
+              onPress={() => {
+                router.push({
+                  pathname: '/sender-emails',
+                  params: {
+                    senderEmail: email,
+                    senderName: email.split('@')[0],
+                  },
+                });
+              }}
+              activeOpacity={0.7}
+            >
               <View style={styles.emailIcon}>
                 <Mail size={20} color={Colors.light.textSecondary} />
               </View>
@@ -74,7 +88,7 @@ export default function AffectedEmailsScreen() {
                   {Math.floor(parseInt(count) / emails.length)} emails
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
           <View style={{ height: 100 }} />
         </ScrollView>
