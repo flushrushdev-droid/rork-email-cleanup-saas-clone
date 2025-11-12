@@ -18,6 +18,7 @@ import type { MailFolder } from '@/utils/emailFilters';
 import { AIModal } from '@/components/mail/AIModal';
 import { ComposeView } from '@/components/mail/ComposeView';
 import { EmailDetailView } from '@/components/mail/EmailDetailView';
+import { FoldersView } from '@/components/mail/FoldersView';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
@@ -762,7 +763,14 @@ export default function MailScreen() {
   return (
     <View style={[styles.safeArea]}>
       {currentView === 'inbox' && renderInbox()}
-      {currentView === 'folders' && renderFolders()}
+      {currentView === 'folders' && (
+        <FoldersView
+          insets={insets}
+          isDemoMode={isDemoMode}
+          smartFolders={smartFolders}
+          onCreateFolder={() => setIsModalVisible(true)}
+        />
+      )}
       {currentView === 'folder-detail' && renderFolderDetail()}
       {currentView === 'detail' && selectedEmail && (
         <EmailDetailView
@@ -1076,44 +1084,6 @@ const styles = StyleSheet.create({
     color: '#FF9500',
     textAlign: 'center',
     fontWeight: '600',
-  },
-  foldersGrid: {
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 24,
-  },
-  folderCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.light.surface,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  folderIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  folderContent: {
-    flex: 1,
-  },
-  folderName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginBottom: 4,
-  },
-  folderCount: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
   },
   folderDetailHeader: {
     paddingTop: 60,
