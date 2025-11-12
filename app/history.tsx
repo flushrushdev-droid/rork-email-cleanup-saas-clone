@@ -142,7 +142,7 @@ export default function HistoryScreen() {
           title: 'History',
           headerShown: true,
           headerRight: () => (
-            <TouchableOpacity onPress={handleClearHistory}>
+            <TouchableOpacity onPress={handleClearHistory} style={{ marginRight: 16 }}>
               <Trash size={20} color={Colors.light.danger} />
             </TouchableOpacity>
           ),
