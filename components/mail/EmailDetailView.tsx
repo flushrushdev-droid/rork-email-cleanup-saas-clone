@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'rea
 import { Archive, Trash2, Star, ChevronLeft, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
+import Colors from '@/constants/colors';
 import type { EmailMessage } from '@/constants/types';
 
 interface EmailDetailViewProps {
