@@ -370,7 +370,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   headerButton: {
-    marginRight: 16,
+    marginRight: 8,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     padding: 16,
