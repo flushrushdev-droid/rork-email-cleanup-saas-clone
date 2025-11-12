@@ -665,13 +665,11 @@ export function CalendarSidebar(props: CalendarRenderProps) {
             <Text style={styles.confirmTitle}>Delete meeting?</Text>
             {pendingDeleteEvent ? (
               <Text style={styles.confirmDescription}>
-                "{pendingDeleteEvent.title}" scheduled for {pendingDeleteEvent.time} on{' '}
-                {pendingDeleteEvent.date.toLocaleDateString('en-US', {
+                "{pendingDeleteEvent.title}" scheduled for {pendingDeleteEvent.time} on {pendingDeleteEvent.date.toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric',
-                })}{' '}
-                will be removed.
+                })} will be removed.
               </Text>
             ) : (
               <Text style={styles.confirmDescription}>This meeting will be removed permanently.</Text>
