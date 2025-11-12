@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
-import { Mail, Send, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileEdit, Calendar, Plus } from 'lucide-react-native';
+import { Mail, Send, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, FileEdit, Calendar, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -306,97 +306,6 @@ export default function MailScreen() {
   };
 
   const smartFolders = useSmartFolders(messages, allEmails, isDemoMode);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const renderFolders = () => (
-    <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <View>
-          <Text style={styles.headerTitle}>Smart Folders</Text>
-          <Text style={styles.headerSubtitle}>AI-organized categories</Text>
-        </View>
-      </View>
-
-      {isDemoMode && (
-        <View style={styles.demoBadge}>
-          <Text style={styles.demoText}>Demo Mode - Sample Data</Text>
-        </View>
-      )}
-
-      <ScrollView 
-        style={styles.emailList} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
-      >
-        <TouchableOpacity 
-          testID="create-folder" 
-          style={styles.createFolderButton} 
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Plus size={20} color={Colors.light.primary} />
-          <Text style={styles.createFolderButtonText}>Create Custom Folder</Text>
-        </TouchableOpacity>
-
-        {smartFolders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <FolderOpen size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No folders yet</Text>
-            <Text style={styles.emptySubtext}>Sync your emails to create smart folders</Text>
-          </View>
-        ) : (
-          <View style={styles.foldersGrid}>
-            {smartFolders.map((folder) => {
-              const Icon = iconMap[folder.icon] || FolderOpen;
-              
-              return (
-                <TouchableOpacity 
-                  key={folder.id} 
-                  testID={`folder-${folder.id}`} 
-                  style={styles.folderCard} 
-                  onPress={() => {
-                    router.push({
-                      pathname: '/folder-details',
-                      params: {
-                        folderName: folder.name,
-                        category: folder.category || '',
-                        folderColor: folder.color,
-                      },
-                    });
-                  }}
-                >
-                  <View style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}>
-                    <Icon size={28} color={folder.color} />
-                  </View>
-                  <View style={styles.folderContent}>
-                    <Text style={styles.folderName}>{folder.name}</Text>
-                    <Text style={styles.folderCount}>{folder.count} emails</Text>
-                  </View>
-                  <ChevronRight size={20} color={Colors.light.textSecondary} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
-    </View>
-  );
 
   const renderFolderDetail = () => {
     if (!selectedFolder) return null;
