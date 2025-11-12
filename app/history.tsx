@@ -133,15 +133,15 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
-options={{
-    title: 'History',
-    headerTransparent: true,
-    headerBlurEffect: undefined, // <- important: no blur = no circular background
-    headerShadowVisible: false,
-    headerRight: () => (
-      <TouchableOpacity onPress={handleClearHistory} style={{ backgroundColor: 'transparent' }}>
-        <Trash2 size={22} color={Colors.light.danger} />
-      </TouchableOpacity>
+      <Stack.Screen
+        options={{
+          title: 'History',
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerRight: () => (
+            <TouchableOpacity onPress={handleClearHistory}>
+              <Trash2 size={22} color={Colors.light.danger} />
+            </TouchableOpacity>
           ),
         }}
       />
