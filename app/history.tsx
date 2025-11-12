@@ -13,6 +13,7 @@ import {
   Activity,
 } from 'lucide-react-native';
 import { useHistory } from '@/contexts/HistoryContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import Colors from '@/constants/colors';
 import type { HistoryEntry, HistoryActionType } from '@/constants/types';
 
@@ -29,18 +30,7 @@ const ACTION_ICONS: Record<HistoryActionType, React.ComponentType<any>> = {
   bulk_archive: Archive,
 };
 
-const ACTION_COLORS: Record<HistoryActionType, string> = {
-  email_deleted: Colors.light.danger,
-  email_archived: Colors.light.info,
-  email_marked_read: Colors.light.success,
-  newsletter_unsubscribed: Colors.light.warning,
-  folder_created: Colors.light.primary,
-  rule_created: Colors.light.secondary,
-  sender_blocked: Colors.light.danger,
-  sender_muted: Colors.light.textSecondary,
-  bulk_delete: Colors.light.danger,
-  bulk_archive: Colors.light.info,
-};
+
 
 const ACTION_LABELS: Record<HistoryActionType, string> = {
   email_deleted: 'Deleted',
@@ -57,6 +47,7 @@ const ACTION_LABELS: Record<HistoryActionType, string> = {
 
 export default function HistoryScreen() {
   const { entries, getStats, clearHistory } = useHistory();
+  const { colors } = useTheme();
   const [filter, setFilter] = useState<HistoryActionType | 'all'>('all');
   const insets = useSafeAreaInsets();
   
@@ -92,26 +83,42 @@ export default function HistoryScreen() {
     return date.toLocaleDateString();
   };
 
+  const getActionColor = (type: HistoryActionType): string => {
+    const colorMap: Record<HistoryActionType, keyof typeof colors> = {
+      email_deleted: 'danger',
+      email_archived: 'info',
+      email_marked_read: 'success',
+      newsletter_unsubscribed: 'warning',
+      folder_created: 'primary',
+      rule_created: 'secondary',
+      sender_blocked: 'danger',
+      sender_muted: 'textSecondary',
+      bulk_delete: 'danger',
+      bulk_archive: 'info',
+    };
+    return colors[colorMap[type]];
+  };
+
   const renderHistoryItem = (entry: HistoryEntry) => {
     const Icon = ACTION_ICONS[entry.type];
-    const color = ACTION_COLORS[entry.type];
+    const color = getActionColor(entry.type);
     const label = ACTION_LABELS[entry.type];
 
     return (
-      <View key={entry.id} style={styles.historyItem}>
+      <View key={entry.id} style={[styles.historyItem, { backgroundColor: colors.surface }]}>
         <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
           <Icon size={20} color={color} />
         </View>
         <View style={styles.historyContent}>
-          <Text style={styles.historyLabel}>{label}</Text>
-          <Text style={styles.historyDescription} numberOfLines={2}>
+          <Text style={[styles.historyLabel, { color: colors.text }]}>{label}</Text>
+          <Text style={[styles.historyDescription, { color: colors.textSecondary }]} numberOfLines={2}>
             {entry.description}
           </Text>
           {entry.metadata?.count && entry.metadata.count > 1 && (
-            <Text style={styles.countBadge}>{entry.metadata.count} items</Text>
+            <Text style={[styles.countBadge, { color: colors.primary }]}>{entry.metadata.count} items</Text>
           )}
         </View>
-        <Text style={styles.historyTime}>{formatDate(entry.timestamp)}</Text>
+        <Text style={[styles.historyTime, { color: colors.textSecondary }]}>{formatDate(entry.timestamp)}</Text>
       </View>
     );
   };
@@ -132,7 +139,7 @@ export default function HistoryScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           title: 'History',
@@ -141,61 +148,73 @@ export default function HistoryScreen() {
       />
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={{ height: insets.top }} />
         <TouchableOpacity 
-          style={styles.clearHistoryButton}
+          style={[styles.clearHistoryButton, { 
+            backgroundColor: colors.surface,
+            borderColor: colors.danger + '30',
+          }]}
           onPress={handleClearHistory}
           activeOpacity={0.7}
         >
-          <Trash2 size={20} color={Colors.light.danger} />
-          <Text style={styles.clearHistoryText}>Clear History</Text>
+          <Trash2 size={20} color={colors.danger} />
+          <Text style={[styles.clearHistoryText, { color: colors.danger }]}>Clear History</Text>
         </TouchableOpacity>
 
         <View style={styles.summarySection}>
-          <Text style={styles.sectionTitle}>Summary (60 Days)</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Summary (60 Days)</Text>
           
           <View style={styles.summaryGrid}>
-            <View style={styles.summaryCard}>
-              <View style={[styles.summaryIcon, { backgroundColor: Colors.light.danger + '20' }]}>
-                <Trash2 size={24} color={Colors.light.danger} />
+            <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: colors.danger + '20' }]}>
+                <Trash2 size={24} color={colors.danger} />
               </View>
-              <Text style={styles.summaryValue}>{stats.deletedEmails}</Text>
-              <Text style={styles.summaryLabel}>Emails Deleted</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.deletedEmails}</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Emails Deleted</Text>
             </View>
 
-            <View style={styles.summaryCard}>
-              <View style={[styles.summaryIcon, { backgroundColor: Colors.light.info + '20' }]}>
-                <Archive size={24} color={Colors.light.info} />
+            <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: colors.info + '20' }]}>
+                <Archive size={24} color={colors.info} />
               </View>
-              <Text style={styles.summaryValue}>{stats.archivedEmails}</Text>
-              <Text style={styles.summaryLabel}>Emails Archived</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.archivedEmails}</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Emails Archived</Text>
             </View>
 
-            <View style={styles.summaryCard}>
-              <View style={[styles.summaryIcon, { backgroundColor: Colors.light.warning + '20' }]}>
-                <MailX size={24} color={Colors.light.warning} />
+            <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: colors.warning + '20' }]}>
+                <MailX size={24} color={colors.warning} />
               </View>
-              <Text style={styles.summaryValue}>{stats.unsubscribedCount}</Text>
-              <Text style={styles.summaryLabel}>Unsubscribed</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.unsubscribedCount}</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Unsubscribed</Text>
             </View>
 
-            <View style={styles.summaryCard}>
-              <View style={[styles.summaryIcon, { backgroundColor: Colors.light.primary + '20' }]}>
-                <FolderPlus size={24} color={Colors.light.primary} />
+            <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: colors.primary + '20' }]}>
+                <FolderPlus size={24} color={colors.primary} />
               </View>
-              <Text style={styles.summaryValue}>{stats.foldersCreated}</Text>
-              <Text style={styles.summaryLabel}>Folders Created</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.foldersCreated}</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Folders Created</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.filterSection}>
-          <Text style={styles.sectionTitle}>Filter by Action</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Filter by Action</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
             <TouchableOpacity
-              style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                filter === 'all' && { backgroundColor: colors.primary, borderColor: colors.primary }
+              ]}
               onPress={() => setFilter('all')}
             >
-              <Text style={[styles.filterChipText, filter === 'all' && styles.filterChipTextActive]}>
+              <Text style={[
+                styles.filterChipText,
+                { color: colors.text },
+                filter === 'all' && styles.filterChipTextActive
+              ]}>
                 All ({entries.length})
               </Text>
             </TouchableOpacity>
@@ -207,10 +226,18 @@ export default function HistoryScreen() {
               return (
                 <TouchableOpacity
                   key={type}
-                  style={[styles.filterChip, filter === type && styles.filterChipActive]}
+                  style={[
+                    styles.filterChip,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    filter === type && { backgroundColor: colors.primary, borderColor: colors.primary }
+                  ]}
                   onPress={() => setFilter(type as HistoryActionType)}
                 >
-                  <Text style={[styles.filterChipText, filter === type && styles.filterChipTextActive]}>
+                  <Text style={[
+                    styles.filterChipText,
+                    { color: colors.text },
+                    filter === type && styles.filterChipTextActive
+                  ]}>
                     {label} ({count})
                   </Text>
                 </TouchableOpacity>
@@ -220,13 +247,13 @@ export default function HistoryScreen() {
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
           
           {filteredEntries.length === 0 ? (
             <View style={styles.emptyState}>
-              <Calendar size={48} color={Colors.light.textSecondary} />
-              <Text style={styles.emptyText}>No history yet</Text>
-              <Text style={styles.emptySubtext}>
+              <Calendar size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.text }]}>No history yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                 Your actions will appear here
               </Text>
             </View>
