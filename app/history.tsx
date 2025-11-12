@@ -122,6 +122,11 @@ export default function HistoryScreen() {
         options={{
           title: 'History',
           headerShown: true,
+          headerRight: () => (
+            <View style={{ marginRight: 16 }}>
+              <Trash2 size={22} color={Colors.light.danger} />
+            </View>
+          ),
         }}
       />
 
