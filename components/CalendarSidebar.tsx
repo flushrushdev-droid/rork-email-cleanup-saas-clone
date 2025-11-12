@@ -1440,11 +1440,11 @@ const styles = StyleSheet.create({
     right: 0,
     height: 44,
     marginTop: -22,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: 'transparent',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    zIndex: 1,
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    zIndex: 0,
     pointerEvents: 'none',
   },
   wheelScrollContent: {
@@ -1454,6 +1454,7 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
   },
   wheelItemText: {
     fontSize: 20,
