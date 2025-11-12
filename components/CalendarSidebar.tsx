@@ -1457,13 +1457,13 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   wheelItemText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '500',
     color: Colors.light.textSecondary,
   },
   wheelItemTextActive: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: Colors.light.text,
   },
 });
