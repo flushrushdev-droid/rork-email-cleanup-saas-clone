@@ -14,7 +14,7 @@ import {
 import { Stack } from 'expo-router';
 import { X, Trash2, Calendar, FileText } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Note {
   id: string;
@@ -87,6 +87,7 @@ const demoNotes: Note[] = [
 ];
 
 export default function NotesScreen() {
+  const { colors } = useTheme();
   const [notes, setNotes] = useState<Note[]>(demoNotes);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -175,30 +176,30 @@ export default function NotesScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           title: 'Notes',
-          headerStyle: { backgroundColor: Colors.light.surface },
-          headerTintColor: Colors.light.text,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
           headerShadowVisible: false,
         }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity 
-          style={styles.addNoteButton}
+          style={[styles.addNoteButton, { backgroundColor: colors.surface, borderColor: colors.primary + '30' }]}
           onPress={openCreateModal}
           activeOpacity={0.7}
           testID="add-note-button"
         >
-          <Text style={styles.addNoteText}>Create New Note</Text>
+          <Text style={[styles.addNoteText, { color: colors.primary }]}>Create New Note</Text>
         </TouchableOpacity>
         {notes.length === 0 ? (
           <View style={styles.emptyState}>
-            <FileText size={64} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyTitle}>No Notes Yet</Text>
-            <Text style={styles.emptyDescription}>
+            <FileText size={64} color={colors.textSecondary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Notes Yet</Text>
+            <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
               Tap the + button to create your first note
             </Text>
           </View>
@@ -206,13 +207,13 @@ export default function NotesScreen() {
           notes.map((note) => (
             <TouchableOpacity
               key={note.id}
-              style={styles.noteCard}
+              style={[styles.noteCard, { backgroundColor: colors.surface }]}
               onPress={() => openEditModal(note)}
               activeOpacity={0.7}
               testID={`note-${note.id}`}
             >
               <View style={styles.noteHeader}>
-                <Text style={styles.noteTitle} numberOfLines={1}>
+                <Text style={[styles.noteTitle, { color: colors.text }]} numberOfLines={1}>
                   {note.title}
                 </Text>
                 <TouchableOpacity
@@ -220,23 +221,23 @@ export default function NotesScreen() {
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   testID={`delete-note-${note.id}`}
                 >
-                  <Trash2 size={18} color={Colors.light.danger} />
+                  <Trash2 size={18} color={colors.danger} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.noteContent} numberOfLines={3}>
+              <Text style={[styles.noteContent, { color: colors.textSecondary }]} numberOfLines={3}>
                 {note.content}
               </Text>
 
               <View style={styles.noteFooter}>
                 <View style={styles.dateContainer}>
-                  <Calendar size={14} color={Colors.light.textSecondary} />
-                  <Text style={styles.noteDate}>
+                  <Calendar size={14} color={colors.textSecondary} />
+                  <Text style={[styles.noteDate, { color: colors.textSecondary }]}>
                     {note.dueDate ? formatDate(note.dueDate) : formatDate(note.updatedAt)}
                   </Text>
                 </View>
                 {note.linkedEmailSubject && (
-                  <Text style={styles.linkedEmail} numberOfLines={1}>
+                  <Text style={[styles.linkedEmail, { color: colors.primary }]} numberOfLines={1}>
                     {note.linkedEmailSubject}
                   </Text>
                 )}
@@ -257,14 +258,14 @@ export default function NotesScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingNote ? 'Edit Note' : 'New Note'}</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{editingNote ? 'Edit Note' : 'New Note'}</Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <X size={24} color={Colors.light.text} />
+                <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -275,9 +276,9 @@ export default function NotesScreen() {
               showsVerticalScrollIndicator={false}
             >
               <TextInput
-                style={styles.titleInput}
+                style={[styles.titleInput, { backgroundColor: colors.background, color: colors.text }]}
                 placeholder="Note title"
-                placeholderTextColor={Colors.light.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={title}
                 onChangeText={setTitle}
                 autoFocus
@@ -285,9 +286,9 @@ export default function NotesScreen() {
               />
 
               <TextInput
-                style={styles.contentInput}
+                style={[styles.contentInput, { backgroundColor: colors.background, color: colors.text }]}
                 placeholder="Write your note here..."
-                placeholderTextColor={Colors.light.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={content}
                 onChangeText={setContent}
                 multiline
@@ -296,9 +297,9 @@ export default function NotesScreen() {
               />
 
               <View style={styles.dueDateSection}>
-                <Text style={styles.dueDateLabel}>Due Date (Optional)</Text>
+                <Text style={[styles.dueDateLabel, { color: colors.text }]}>Due Date (Optional)</Text>
                 <TouchableOpacity
-                  style={styles.dueDateButton}
+                  style={[styles.dueDateButton, { backgroundColor: colors.background }]}
                   onPress={() => {
                     const today = new Date().toISOString().split('T')[0];
                     Alert.prompt(
@@ -324,8 +325,8 @@ export default function NotesScreen() {
                     );
                   }}
                 >
-                  <Calendar size={16} color={Colors.light.primary} />
-                  <Text style={styles.dueDateButtonText}>
+                  <Calendar size={16} color={colors.primary} />
+                  <Text style={[styles.dueDateButtonText, { color: colors.primary }]}>
                     {dueDate
                       ? new Date(dueDate).toLocaleDateString('en-US', {
                           month: 'short',
@@ -338,16 +339,16 @@ export default function NotesScreen() {
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.background }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
                 onPress={handleSave}
                 testID="save-note-button"
               >
@@ -366,7 +367,6 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
 
   scrollContent: {
@@ -381,18 +381,15 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.light.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
   noteCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -411,13 +408,11 @@ const styles = StyleSheet.create({
   noteTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
     flex: 1,
     marginRight: 12,
   },
   noteContent: {
     fontSize: 15,
-    color: Colors.light.textSecondary,
     lineHeight: 22,
     marginBottom: 12,
   },
@@ -434,11 +429,9 @@ const styles = StyleSheet.create({
   },
   noteDate: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   linkedEmail: {
     fontSize: 12,
-    color: Colors.light.primary,
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
@@ -449,7 +442,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.light.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     height: '85%',
@@ -461,12 +453,10 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   modalBody: {
     flex: 1,
@@ -478,18 +468,14 @@ const styles = StyleSheet.create({
   titleInput: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.light.background,
     borderRadius: 12,
     marginBottom: 12,
   },
   contentInput: {
     fontSize: 16,
-    color: Colors.light.text,
     padding: 16,
-    backgroundColor: Colors.light.background,
     borderRadius: 12,
     minHeight: 150,
     maxHeight: 250,
@@ -500,7 +486,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
   },
   modalButton: {
     flex: 1,
@@ -508,17 +493,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: Colors.light.background,
-  },
+  cancelButton: {},
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
   },
-  saveButton: {
-    backgroundColor: Colors.light.primary,
-  },
+  saveButton: {},
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -531,7 +511,6 @@ const styles = StyleSheet.create({
   dueDateLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 8,
   },
   dueDateButton: {
@@ -540,24 +519,20 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.light.background,
     borderRadius: 12,
   },
   dueDateButtonText: {
     fontSize: 15,
-    color: Colors.light.primary,
     fontWeight: '500',
   },
   addNoteButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: Colors.light.primary + '30',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -567,6 +542,5 @@ const styles = StyleSheet.create({
   addNoteText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.primary,
   },
 });
