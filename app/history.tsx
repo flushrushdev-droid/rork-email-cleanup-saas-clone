@@ -397,6 +397,5 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerButton: {
-    padding: 4,
   },
 });
