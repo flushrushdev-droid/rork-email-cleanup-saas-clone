@@ -1,20 +1,21 @@
 import React, { useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, CheckCircle2, Trash2, FolderOpen } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, Trash2, FolderOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 
-import Colors from '@/constants/colors';
 import { mockInboxHealth, mockRecentEmails } from '@/mocks/emailData';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function OverviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user, isLoading, isDemoMode } = useAuth();
   const { syncMailbox, isSyncing, messages, syncProgress, profile } = useGmailSync();
+  const { colors } = useTheme();
   
   const handleSync = useCallback(async () => {
     if (isDemoMode) {
@@ -53,25 +54,25 @@ export default function OverviewScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.title}>Inbox Health</Text>
-              <Text style={styles.subtitle}>{user?.email || 'Your email management overview'}</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Inbox Health</Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{user?.email || 'Your email management overview'}</Text>
             </View>
             {!isDemoMode && (
               <TouchableOpacity 
                 testID="sync-button"
-                style={styles.syncButton}
+                style={[styles.syncButton, { backgroundColor: colors.surface }]}
                 onPress={handleSync}
                 disabled={isSyncing}
               >
                 {isSyncing ? (
-                  <ActivityIndicator size="small" color={Colors.light.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <RefreshCw size={20} color={Colors.light.primary} />
+                  <RefreshCw size={20} color={colors.primary} />
                 )}
               </TouchableOpacity>
             )}
@@ -82,15 +83,15 @@ export default function OverviewScreen() {
             </View>
           )}
           {!isDemoMode && isSyncing && (
-            <View style={styles.syncProgress}>
-              <Text style={styles.syncText}>
+            <View style={[styles.syncProgress, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.syncText, { color: colors.textSecondary }]}>
                 Syncing... {syncProgress.current}/{syncProgress.total} messages
               </Text>
             </View>
           )}
           {profile && (
             <View style={styles.profileInfo}>
-              <Text style={styles.profileText}>
+              <Text style={[styles.profileText, { color: colors.textSecondary }]}>
                 {profile.messagesTotal.toLocaleString()} total messages • {profile.threadsTotal.toLocaleString()} threads
               </Text>
             </View>
@@ -169,29 +170,29 @@ export default function OverviewScreen() {
         </LinearGradient>
 
         <View style={styles.savingsContainer}>
-          <View style={styles.savingCard}>
-            <View style={styles.savingIconContainer}>
-              <Clock size={24} color={Colors.light.primary} />
+          <View style={[styles.savingCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.savingIconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Clock size={24} color={colors.primary} />
             </View>
             <View style={styles.savingContent}>
-              <Text style={styles.savingValue}>{health.projectedTimeSaved} min</Text>
-              <Text style={styles.savingLabel}>Time Saved Monthly</Text>
+              <Text style={[styles.savingValue, { color: colors.text }]}>{health.projectedTimeSaved} min</Text>
+              <Text style={[styles.savingLabel, { color: colors.textSecondary }]}>Time Saved Monthly</Text>
             </View>
           </View>
-          <View style={styles.savingCard}>
-            <View style={styles.savingIconContainer}>
-              <HardDrive size={24} color={Colors.light.secondary} />
+          <View style={[styles.savingCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.savingIconContainer, { backgroundColor: colors.secondary + '20' }]}>
+              <HardDrive size={24} color={colors.secondary} />
             </View>
             <View style={styles.savingContent}>
-              <Text style={styles.savingValue}>{health.projectedSpaceSaved} MB</Text>
-              <Text style={styles.savingLabel}>Space Saved</Text>
+              <Text style={[styles.savingValue, { color: colors.text }]}>{health.projectedSpaceSaved} MB</Text>
+              <Text style={[styles.savingLabel, { color: colors.textSecondary }]}>Space Saved</Text>
             </View>
           </View>
         </View>
 
         <TouchableOpacity 
           testID="suggestions-card"
-          style={styles.suggestionsCard}
+          style={[styles.suggestionsCard, { backgroundColor: colors.surface }]}
           onPress={() => router.push('/suggestions')}
           activeOpacity={0.7}
         >
@@ -201,53 +202,53 @@ export default function OverviewScreen() {
                 <Sparkles size={24} color="#FFA500" />
               </View>
               <View>
-                <Text style={styles.suggestionsTitle}>Suggestions</Text>
-                <Text style={styles.suggestionsSubtitle}>3 smart recommendations</Text>
+                <Text style={[styles.suggestionsTitle, { color: colors.text }]}>Suggestions</Text>
+                <Text style={[styles.suggestionsSubtitle, { color: colors.textSecondary }]}>3 smart recommendations</Text>
               </View>
             </View>
-            <ChevronRight size={20} color={Colors.light.textSecondary} />
+            <ChevronRight size={20} color={colors.textSecondary} />
           </View>
           
           <View style={styles.suggestionsList}>
             <View style={styles.suggestionItem}>
-              <View style={[styles.suggestionIconSmall, { backgroundColor: Colors.light.primary + '20' }]}>
-                <Archive size={14} color={Colors.light.primary} />
+              <View style={[styles.suggestionIconSmall, { backgroundColor: colors.primary + '20' }]}>
+                <Archive size={14} color={colors.primary} />
               </View>
-              <Text style={styles.suggestionText} numberOfLines={1}>Archive 45 promotional emails</Text>
+              <Text style={[styles.suggestionText, { color: colors.text }]} numberOfLines={1}>Archive 45 promotional emails</Text>
             </View>
             <View style={styles.suggestionItem}>
-              <View style={[styles.suggestionIconSmall, { backgroundColor: Colors.light.danger + '20' }]}>
-                <Trash2 size={14} color={Colors.light.danger} />
+              <View style={[styles.suggestionIconSmall, { backgroundColor: colors.danger + '20' }]}>
+                <Trash2 size={14} color={colors.danger} />
               </View>
-              <Text style={styles.suggestionText} numberOfLines={1}>Delete 23 old newsletters</Text>
+              <Text style={[styles.suggestionText, { color: colors.text }]} numberOfLines={1}>Delete 23 old newsletters</Text>
             </View>
             <View style={styles.suggestionItem}>
-              <View style={[styles.suggestionIconSmall, { backgroundColor: Colors.light.secondary + '20' }]}>
-                <FolderOpen size={14} color={Colors.light.secondary} />
+              <View style={[styles.suggestionIconSmall, { backgroundColor: colors.secondary + '20' }]}>
+                <FolderOpen size={14} color={colors.secondary} />
               </View>
-              <Text style={styles.suggestionText} numberOfLines={1}>Move 67 social notifications</Text>
+              <Text style={[styles.suggestionText, { color: colors.text }]} numberOfLines={1}>Move 67 social notifications</Text>
             </View>
           </View>
         </TouchableOpacity>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Action Required</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Action Required</Text>
             <TouchableOpacity testID="action-view-all" onPress={() => router.push('/folders')}>
-              <Text style={styles.seeAll}>View All</Text>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
             </TouchableOpacity>
           </View>
           {(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))
             .map((email) => (
-              <TouchableOpacity key={email.id} style={styles.emailCard} onPress={() => Alert.alert('Email', email.subject)}>
+              <TouchableOpacity key={email.id} style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.danger }]} onPress={() => Alert.alert('Email', email.subject)}>
                 <View style={styles.emailHeader}>
                   <View style={styles.emailIconContainer}>
-                    <AlertCircle size={20} color={Colors.light.danger} />
+                    <AlertCircle size={20} color={colors.danger} />
                   </View>
                   <View style={styles.emailContent}>
-                    <Text style={styles.emailSubject} numberOfLines={1}>{email.subject}</Text>
-                    <Text style={styles.emailFrom} numberOfLines={1}>{email.from}</Text>
-                    <Text style={styles.emailSnippet} numberOfLines={2}>{email.snippet}</Text>
+                    <Text style={[styles.emailSubject, { color: colors.text }]} numberOfLines={1}>{email.subject}</Text>
+                    <Text style={[styles.emailFrom, { color: colors.textSecondary }]} numberOfLines={1}>{email.from}</Text>
+                    <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>{email.snippet}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -263,7 +264,6 @@ export default function OverviewScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -281,7 +281,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.light.surface,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -291,14 +290,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   syncProgress: {
-    backgroundColor: Colors.light.surface,
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
   },
   syncText: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     textAlign: 'center',
   },
   demoBadge: {
@@ -320,17 +317,14 @@ const styles = StyleSheet.create({
   },
   profileText: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
   },
   healthCard: {
     borderRadius: 20,
@@ -409,7 +403,6 @@ const styles = StyleSheet.create({
   },
   savingCard: {
     flex: 1,
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -425,7 +418,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#F2F2F7',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -435,12 +427,10 @@ const styles = StyleSheet.create({
   savingValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   savingLabel: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   section: {
     marginBottom: 24,
@@ -454,83 +444,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   seeAll: {
     fontSize: 14,
-    color: Colors.light.primary,
     fontWeight: '600',
-  },
-  senderCard: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  senderInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  senderAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.light.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  senderInitial: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  senderDetails: {
-    flex: 1,
-  },
-  senderName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginBottom: 2,
-  },
-  senderEmail: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  senderStats: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  noiseBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  noiseScore: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  emailCount: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   emailCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.light.danger,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -555,21 +478,17 @@ const styles = StyleSheet.create({
   emailSubject: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   emailFrom: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     marginBottom: 6,
   },
   emailSnippet: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     lineHeight: 20,
   },
   suggestionsCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
@@ -601,12 +520,10 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   suggestionsSubtitle: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   suggestionsList: {
     gap: 10,
@@ -626,6 +543,5 @@ const styles = StyleSheet.create({
   suggestionText: {
     flex: 1,
     fontSize: 14,
-    color: Colors.light.text,
   },
 });

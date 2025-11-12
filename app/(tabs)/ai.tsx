@@ -5,10 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRorkAgent, createRorkTool } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AIAssistantScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -66,16 +67,16 @@ export default function AIAssistantScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.titleContainer}>
-          <Sparkles size={28} color={Colors.light.primary} />
-          <Text style={styles.title}>AI Assistant</Text>
+          <Sparkles size={28} color={colors.primary} />
+          <Text style={[styles.title, { color: colors.text }]}>AI Assistant</Text>
         </View>
-        <Text style={styles.subtitle}>Your intelligent email helper</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Your intelligent email helper</Text>
       </View>
 
       <View style={styles.contentContainer}>
@@ -200,7 +201,6 @@ export default function AIAssistantScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     paddingHorizontal: 16,
