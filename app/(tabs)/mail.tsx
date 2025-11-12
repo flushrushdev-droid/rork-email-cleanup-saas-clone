@@ -2673,12 +2673,13 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
+    minHeight: 44,
   },
   dayCell: {
     flex: 1,
+    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
     margin: 2,
     borderRadius: 8,
   },
