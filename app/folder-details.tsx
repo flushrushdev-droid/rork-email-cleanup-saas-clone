@@ -4,11 +4,11 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
 import { mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Email, EmailCategory } from '@/constants/types';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { Email, EmailCategory, EmailMessage } from '@/constants/types';
 
 const categoryKeywords: Record<EmailCategory, string[]> = {
   invoices: ['invoice', 'bill', 'payment', 'billing', 'charge'],
@@ -38,6 +38,7 @@ export default function FolderDetailsScreen() {
   const params = useLocalSearchParams<{ folderName: string; category?: string; folderColor: string }>();
   const { messages } = useGmailSync();
   const { isDemoMode } = useAuth();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
   const emailsWithCategories = useMemo(() => {
@@ -73,6 +74,13 @@ export default function FolderDetailsScreen() {
     return emailsWithCategories;
   }, [emailsWithCategories, params.folderName, params.category]);
 
+  const handleEmailPress = (email: EmailMessage) => {
+    router.push({
+      pathname: '/(tabs)/mail',
+      params: { emailId: email.id },
+    });
+  };
+
   return (
     <>
       <Stack.Screen 
@@ -80,8 +88,8 @@ export default function FolderDetailsScreen() {
           headerShown: false,
         }} 
       />
-      <View style={styles.container}>
-        <View style={[styles.header, { backgroundColor: params.folderColor || Colors.light.primary, paddingTop: insets.top + 16 }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: params.folderColor || colors.primary, paddingTop: insets.top + 16 }]}>
           <TouchableOpacity 
             onPress={() => router.back()} 
             style={styles.backButton}
@@ -98,30 +106,31 @@ export default function FolderDetailsScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {filteredEmails.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateTitle}>No emails</Text>
-              <Text style={styles.emptyStateText}>This folder is empty</Text>
+              <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No emails</Text>
+              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>This folder is empty</Text>
             </View>
           ) : (
             <View style={styles.emailList}>
               {filteredEmails.map((email) => {
-                const categoryColor = email.category ? Colors.light.category[email.category] : Colors.light.primary;
+                const categoryColor = email.category ? colors.category[email.category] : colors.primary;
                 
                 return (
                   <TouchableOpacity 
                     key={email.id} 
-                    style={[styles.emailCard, { borderLeftColor: categoryColor }]}
+                    style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: categoryColor }]}
+                    onPress={() => handleEmailPress(email as EmailMessage)}
                     activeOpacity={0.7}
                   >
                     <View style={styles.emailHeader}>
                       <View style={styles.emailMeta}>
-                        <Text style={styles.emailFrom} numberOfLines={1}>{email.from}</Text>
-                        <Text style={styles.emailDate}>
+                        <Text style={[styles.emailFrom, { color: colors.textSecondary }]} numberOfLines={1}>{email.from}</Text>
+                        <Text style={[styles.emailDate, { color: colors.textSecondary }]}>
                           {new Date(email.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.emailSubject} numberOfLines={1}>{email.subject}</Text>
-                    <Text style={styles.emailSnippet} numberOfLines={2}>{email.snippet}</Text>
+                    <Text style={[styles.emailSubject, { color: colors.text }]} numberOfLines={1}>{email.subject}</Text>
+                    <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>{email.snippet}</Text>
                     <View style={styles.emailTags}>
                       {email.category && (
                         <View style={[styles.emailTag, { backgroundColor: categoryColor + '20' }]}>
@@ -131,8 +140,8 @@ export default function FolderDetailsScreen() {
                         </View>
                       )}
                       {email.priority && email.priority !== 'low' && (
-                        <View style={[styles.emailTag, { backgroundColor: Colors.light.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] + '20' }]}>
-                          <Text style={[styles.emailTagText, { color: Colors.light.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] }]}>
+                        <View style={[styles.emailTag, { backgroundColor: colors.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] + '20' }]}>
+                          <Text style={[styles.emailTagText, { color: colors.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] }]}>
                             {email.priority}
                           </Text>
                         </View>
@@ -153,7 +162,6 @@ export default function FolderDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     paddingTop: 60,
@@ -192,15 +200,12 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   emptyStateText: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     textAlign: 'center',
   },
   emailCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -222,22 +227,18 @@ const styles = StyleSheet.create({
   emailFrom: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.light.textSecondary,
     flex: 1,
   },
   emailDate: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   emailSubject: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 6,
   },
   emailSnippet: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     lineHeight: 20,
     marginBottom: 10,
   },

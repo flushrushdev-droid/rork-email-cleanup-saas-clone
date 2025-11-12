@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
 import { Mail, Star, PenSquare, ChevronLeft, X } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +28,7 @@ type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
 
 export default function MailScreen() {
+  const params = useLocalSearchParams<{ emailId?: string }>();
   const { colors } = useTheme();
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
@@ -52,6 +54,16 @@ export default function MailScreen() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
+    if (params.emailId && allEmails.length > 0) {
+      const email = allEmails.find(e => e.id === params.emailId);
+      if (email) {
+        setSelectedEmail(email);
+        setCurrentView('detail');
+      }
+    }
+  }, [params.emailId, allEmails]);
+
+  useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (currentView === 'detail') {
         setCurrentView('inbox');
@@ -71,7 +83,7 @@ export default function MailScreen() {
     return () => backHandler.remove();
   }, [currentView]);
 
-  const allEmails = useMemo(() => {
+  const allEmails: EmailMessage[] = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
       ? mockRecentEmails.map(email => ({
           ...email,
