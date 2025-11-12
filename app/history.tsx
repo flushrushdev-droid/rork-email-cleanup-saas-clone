@@ -135,8 +135,9 @@ export default function HistoryScreen() {
                 );
               }}
               style={{ marginRight: 16 }}
+              activeOpacity={0.7}
             >
-              <Trash2 size={24} color={Colors.light.text} />
+              <Trash2 size={24} color={Colors.light.danger} />
             </TouchableOpacity>
           ),
         }}
