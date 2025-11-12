@@ -930,7 +930,7 @@ export default function MailScreen() {
 
     return (
       <View style={styles.container}>
-        <View style={styles.detailHeader}>
+        <View style={[styles.detailHeader, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity
             testID="back-to-inbox"
             style={styles.backButton}
@@ -1017,7 +1017,7 @@ export default function MailScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.emailActionButtons}>
+        <View style={[styles.emailActionButtons, { paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity
             testID="reply-button"
             style={styles.emailActionButton}
