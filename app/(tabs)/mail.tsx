@@ -1596,11 +1596,15 @@ export default function MailScreen() {
             </ScrollView>
 
             <TouchableOpacity
-              style={[styles.createButtonModal, !meetingTitle.trim() || !meetingTime.trim() ? styles.createButtonDisabled : null]}
+              style={[
+                styles.createMeetingButton,
+                (!meetingTitle.trim() || !meetingTime.trim()) && styles.createMeetingButtonDisabled
+              ]}
               onPress={handleCreateMeeting}
               disabled={!meetingTitle.trim() || !meetingTime.trim()}
+              activeOpacity={0.8}
             >
-              <Text style={styles.createButtonModalText}>Create Meeting</Text>
+              <Text style={styles.createMeetingButtonText}>Create Meeting</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -2639,6 +2643,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  createMeetingButton: {
+    backgroundColor: Colors.light.primary,
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.light.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+    marginTop: 8,
+  },
+  createMeetingButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  createMeetingButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   draftCard: {
     backgroundColor: Colors.light.surface,
