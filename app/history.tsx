@@ -123,7 +123,7 @@ export default function HistoryScreen() {
           title: 'History',
           headerShown: true,
           headerRight: () => (
-            <Trash2 size={22} color={Colors.light.danger} style={{ marginRight: 10 }} />
+            <Trash2 size={22} color={Colors.light.danger} style={{ marginRight: 100 }} />
           ),
         }}
       />
