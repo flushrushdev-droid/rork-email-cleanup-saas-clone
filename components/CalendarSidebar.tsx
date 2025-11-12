@@ -663,15 +663,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
               <Trash2 size={24} color={Colors.light.danger} />
             </View>
             <Text style={styles.confirmTitle}>Delete meeting?</Text>
-            <Text style={styles.confirmDescription}>
-              {pendingDeleteEvent
-                ? `"${pendingDeleteEvent.title}" scheduled for ${pendingDeleteEvent.time} on ${pendingDeleteEvent.date.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })} will be removed`
-                : 'This meeting will be removed permanently'}
-            </Text>
+            <Text style={styles.confirmDescription}>{pendingDeleteEvent ? `"${pendingDeleteEvent.title}" scheduled for ${pendingDeleteEvent.time} on ${pendingDeleteEvent.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} will be removed` : 'This meeting will be removed permanently'}</Text>
             <View style={styles.confirmActions}>
               <TouchableOpacity
                 style={styles.confirmCancelButton}
@@ -939,9 +931,10 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
   },
   deleteEventButton: {
-    padding: 6,
+    padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    height: 36,
   },
   eventTitle: {
     fontSize: 16,
