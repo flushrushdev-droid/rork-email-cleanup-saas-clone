@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText } from 'lucide-react-native';
+import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
@@ -9,6 +9,14 @@ export default function ToolsScreen() {
   const router = useRouter();
 
   const tools = [
+    {
+      id: 'automation-rules',
+      title: 'Automation Rules',
+      description: 'Create smart email workflows',
+      icon: Shield,
+      color: Colors.light.success,
+      route: '/rules' as const,
+    },
     {
       id: 'history',
       title: 'History',
