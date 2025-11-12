@@ -172,7 +172,7 @@ export default function CreateRuleScreen() {
             />
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: dropdown.visible && dropdown.type !== 'action' ? 2 : 1 }]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Conditions (When)</Text>
               <Text style={styles.sectionSubtitle}>All conditions must be met</Text>
@@ -267,13 +267,13 @@ export default function CreateRuleScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={styles.addButton} onPress={addCondition}>
+            <TouchableOpacity style={[styles.addButton, { zIndex: 0 }]} onPress={addCondition}>
               <Plus size={18} color={Colors.light.primary} />
               <Text style={styles.addButtonText}>Add Condition</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, { zIndex: dropdown.visible && dropdown.type === 'action' ? 2 : 1 }]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Actions (Then)</Text>
               <Text style={styles.sectionSubtitle}>What to do when conditions match</Text>
@@ -336,7 +336,7 @@ export default function CreateRuleScreen() {
               </View>
             ))}
 
-            <TouchableOpacity style={styles.addButton} onPress={addAction}>
+            <TouchableOpacity style={[styles.addButton, { zIndex: 0 }]} onPress={addAction}>
               <Plus size={18} color={Colors.light.primary} />
               <Text style={styles.addButtonText}>Add Action</Text>
             </TouchableOpacity>
