@@ -1,18 +1,26 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler } from 'react-native';
-import { Mail, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, FileEdit, Calendar, Sparkles, ChevronDown, Save } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
+import { Mail, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileEdit, Calendar, Sparkles, Save, Plus, ChevronDown } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
-import { mockRecentEmails, mockSmartFolders } from '@/mocks/emailData';
+import { mockRecentEmails } from '@/mocks/emailData';
 import Colors from '@/constants/colors';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
 import { useCalendar } from '@/hooks/useCalendar';
 import { CalendarSidebar } from '@/components/CalendarSidebar';
+import { categorizeEmail } from '@/utils/emailCategories';
+import { filterEmailsByFolder, filterEmailsByQuery, sortEmailsByDate } from '@/utils/emailFilters';
+import { useEmailActions } from '@/hooks/useEmailActions';
+import { useDrafts } from '@/hooks/useDrafts';
+import { useSmartFolders } from '@/hooks/useSmartFolders';
+import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
+import { AIModal } from '@/components/mail/AIModal';
+import { formatDate } from '@/utils/dateFormat';
+import type { MailFolder } from '@/utils/emailFilters';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
-type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred' | 'unread' | 'drafts' | 'spam' | 'trash' | 'important' | 'snoozed';
 
 const iconMap: Record<string, any> = {
   'alert-circle': AlertCircle,
@@ -21,33 +29,9 @@ const iconMap: Record<string, any> = {
   'plane': Plane,
   'tag': Tag,
   'users': Users,
-  'file-text': FileText,
-  'briefcase': Briefcase,
-  'scale': Scale,
-};
-
-const categoryKeywords: Record<EmailCategory, string[]> = {
-  invoices: ['invoice', 'bill', 'payment', 'billing', 'charge'],
-  receipts: ['receipt', 'order confirmation', 'purchase', 'transaction'],
-  travel: ['flight', 'hotel', 'booking', 'reservation', 'trip', 'travel'],
-  hr: ['hr', 'human resources', 'benefits', 'payroll', 'pto', 'time off'],
-  legal: ['legal', 'contract', 'agreement', 'terms', 'policy'],
-  personal: ['personal', 'family', 'friend'],
-  promotions: ['sale', 'discount', 'offer', 'deal', 'promo', 'marketing'],
-  social: ['linkedin', 'facebook', 'twitter', 'instagram', 'notification'],
-  system: ['alert', 'security', 'notification', 'update', 'reminder'],
-};
-
-function categorizeEmail(email: EmailMessage | Email): EmailCategory | undefined {
-  const searchText = `${email.subject} ${email.snippet} ${email.from}`.toLowerCase();
-  
-  for (const [category, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(keyword => searchText.includes(keyword))) {
-      return category as EmailCategory;
-    }
-  }
-  
-  return undefined;
+  'file-text': FileEdit,
+  'briefcase': FileEdit,
+  'scale': FileEdit,
 }
 
 export default function MailScreen() {
@@ -68,14 +52,7 @@ export default function MailScreen() {
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts' | 'trash' | 'sent'>('all');
-  const [drafts, setDrafts] = useState<{
-    id: string;
-    to: string;
-    cc?: string;
-    subject: string;
-    body: string;
-    date: Date;
-  }[]>([]);
+  const { drafts, saveDraft, loadDraft, deleteDraft } = useDrafts();
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
   const [aiFormat, setAiFormat] = useState('professional');
   const [aiTone, setAiTone] = useState('friendly');
@@ -247,48 +224,23 @@ export default function MailScreen() {
   };
 
   const handleSaveDraft = () => {
-    if (!composeTo && !composeSubject && !composeBody) {
-      Alert.alert('Error', 'Draft is empty');
-      return;
+    if (saveDraft(composeTo, composeCc, composeSubject, composeBody)) {
+      setCurrentView('inbox');
+      setActiveFilter('drafts');
     }
-
-    const newDraft = {
-      id: Date.now().toString(),
-      to: composeTo,
-      cc: composeCc,
-      subject: composeSubject,
-      body: composeBody,
-      date: new Date(),
-    };
-
-    setDrafts(prev => [newDraft, ...prev]);
-    Alert.alert('Success', 'Draft saved successfully');
-    setCurrentView('inbox');
-    setActiveFilter('drafts');
   };
 
   const handleLoadDraft = (draft: typeof drafts[0]) => {
-    setComposeTo(draft.to);
-    setComposeCc(draft.cc || '');
-    setComposeSubject(draft.subject);
-    setComposeBody(draft.body);
+    const loaded = loadDraft(draft);
+    setComposeTo(loaded.to);
+    setComposeCc(loaded.cc || '');
+    setComposeSubject(loaded.subject);
+    setComposeBody(loaded.body);
     setCurrentView('compose');
-    setDrafts(prev => prev.filter(d => d.id !== draft.id));
   };
 
   const handleDeleteDraft = (draftId: string) => {
-    Alert.alert(
-      'Delete Draft',
-      'Are you sure you want to delete this draft?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => setDrafts(prev => prev.filter(d => d.id !== draftId)),
-        },
-      ]
-    );
+    deleteDraft(draftId);
   };
 
   const handleSend = () => {
@@ -464,19 +416,7 @@ export default function MailScreen() {
 
 
 
-  const formatDate = (date: Date): string => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = diff / (1000 * 60 * 60);
 
-    if (hours < 24) {
-      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    } else if (hours < 24 * 7) {
-      return date.toLocaleDateString('en-US', { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
 
 
 
