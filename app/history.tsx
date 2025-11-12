@@ -136,8 +136,7 @@ export default function HistoryScreen() {
       <Stack.Screen
         options={{
           title: 'History',
-          headerTransparent: true,
-          headerShadowVisible: false,
+          headerShown: true,
           headerRight: () => (
             <TouchableOpacity onPress={handleClearHistory}>
               <Trash2 size={22} color={Colors.light.danger} />
