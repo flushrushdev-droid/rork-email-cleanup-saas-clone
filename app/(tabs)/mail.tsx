@@ -1282,7 +1282,7 @@ export default function MailScreen() {
 
   const renderCompose = () => (
     <View style={styles.container}>
-      <View style={styles.composeHeader}>
+      <View style={[styles.composeHeader, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           testID="cancel-compose"
           onPress={() => setCurrentView('inbox')}
