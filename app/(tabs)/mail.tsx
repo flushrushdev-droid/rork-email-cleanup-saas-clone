@@ -1290,22 +1290,7 @@ export default function MailScreen() {
           <X size={24} color={Colors.light.text} />
         </TouchableOpacity>
         <Text style={styles.composeTitle}>New Message</Text>
-        <View style={styles.composeHeaderActions}>
-          <TouchableOpacity
-            testID="save-draft"
-            style={styles.saveDraftButton}
-            onPress={handleSaveDraft}
-          >
-            <FileEdit size={20} color={Colors.light.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="send-email"
-            style={styles.sendButton}
-            onPress={handleSend}
-          >
-            <Send size={20} color={Colors.light.primary} />
-          </TouchableOpacity>
-        </View>
+        <View style={styles.composeHeaderActions} />
       </View>
 
       <ScrollView style={styles.composeForm} keyboardShouldPersistTaps="handled">
@@ -1348,6 +1333,24 @@ export default function MailScreen() {
             placeholderTextColor={Colors.light.textSecondary}
           />
         </View>
+
+        <TouchableOpacity
+          testID="save-draft"
+          style={styles.composeSaveDraftButton}
+          onPress={handleSaveDraft}
+        >
+          <FileEdit size={20} color={Colors.light.text} />
+          <Text style={styles.composeSaveDraftButtonText}>Save Draft</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="send-email"
+          style={styles.composeSendButton}
+          onPress={handleSend}
+        >
+          <Send size={20} color={Colors.light.primary} />
+          <Text style={styles.composeSendButtonText}>Send Email</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.attachButton}>
           <Paperclip size={20} color={Colors.light.primary} />
@@ -2532,6 +2535,41 @@ const styles = StyleSheet.create({
   },
   saveDraftButton: {
     padding: 4,
+  },
+  composeSaveDraftButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  composeSaveDraftButtonText: {
+    fontSize: 15,
+    color: Colors.light.text,
+    fontWeight: '500',
+  },
+  composeSendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.primary,
+    backgroundColor: Colors.light.primary,
+  },
+  composeSendButtonText: {
+    fontSize: 15,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   calendarButton: {
     padding: 4,
