@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
-import { Mail, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileEdit, Calendar, Plus } from 'lucide-react-native';
+import { Mail, Send, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileEdit, Calendar, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,7 @@ import { formatDate } from '@/utils/dateFormat';
 import type { MailFolder } from '@/utils/emailFilters';
 import { AIModal } from '@/components/mail/AIModal';
 import { ComposeView } from '@/components/mail/ComposeView';
+import { EmailDetailView } from '@/components/mail/EmailDetailView';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
@@ -754,131 +755,7 @@ export default function MailScreen() {
     setCurrentView('compose');
   };
 
-  const renderEmailDetail = () => {
-    if (!selectedEmail) return null;
 
-    const hasMultipleRecipients = selectedEmail.to.length > 1;
-
-    return (
-      <View style={styles.container}>
-        <View style={[styles.detailHeader, { paddingTop: insets.top + 12 }]}>
-          <TouchableOpacity
-            testID="back-to-inbox"
-            style={styles.backButton}
-            onPress={() => setCurrentView('inbox')}
-          >
-            <ChevronLeft size={24} color={Colors.light.text} />
-          </TouchableOpacity>
-          <View style={styles.detailActions}>
-            <TouchableOpacity
-              testID="star-email"
-              style={styles.actionButton}
-              onPress={() => handleStar(selectedEmail.id)}
-            >
-              <Star
-                size={20}
-                color={selectedEmail.isStarred ? Colors.light.warning : Colors.light.text}
-                fill={selectedEmail.isStarred ? Colors.light.warning : 'none'}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="archive-email"
-              style={styles.actionButton}
-              onPress={() => handleArchive(selectedEmail)}
-            >
-              <Archive size={20} color={Colors.light.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="delete-email"
-              style={styles.actionButton}
-              onPress={() => Alert.alert('Delete', 'Delete this email?')}
-            >
-              <Trash2 size={20} color={Colors.light.danger} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <ScrollView 
-          style={styles.detailContent} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        >
-          <Text style={styles.detailSubject}>{selectedEmail.subject}</Text>
-          
-          <View style={styles.detailFrom}>
-            <View style={styles.detailAvatar}>
-              <Text style={styles.detailAvatarText}>
-                {selectedEmail.from[0].toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.detailSenderInfo}>
-              <Text style={styles.detailSenderName}>
-                {selectedEmail.from.split('<')[0].trim() || selectedEmail.from}
-              </Text>
-              <Text style={styles.detailSenderEmail}>
-                {selectedEmail.from.match(/<(.+?)>/) ?.[1] || selectedEmail.from}
-              </Text>
-            </View>
-            <Text style={styles.detailDate}>
-              {selectedEmail.date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </Text>
-          </View>
-
-          {selectedEmail.hasAttachments && (
-            <View style={styles.attachmentsSection}>
-              <View style={styles.attachmentItem}>
-                <Paperclip size={16} color={Colors.light.textSecondary} />
-                <Text style={styles.attachmentName}>attachment.pdf</Text>
-                <Text style={styles.attachmentSize}>234 KB</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.detailBody}>
-            <Text style={styles.detailBodyText}>{selectedEmail.snippet}</Text>
-            <Text style={styles.detailBodyText}>
-              {'\n\n'}Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-              {'\n\n'}Best regards,{'\n'}{selectedEmail.from.split('<')[0].trim()}
-            </Text>
-          </View>
-        </ScrollView>
-
-        <View style={[styles.emailActionButtons, { paddingBottom: insets.bottom + 12 }]}>
-          <TouchableOpacity
-            testID="reply-button"
-            style={styles.emailActionButton}
-            onPress={() => handleReply(selectedEmail)}
-          >
-            <Mail size={18} color="#FFFFFF" />
-            <Text style={styles.emailActionButtonText}>Reply</Text>
-          </TouchableOpacity>
-          {hasMultipleRecipients && (
-            <TouchableOpacity
-              testID="reply-all-button"
-              style={styles.emailActionButton}
-              onPress={() => handleReplyAll(selectedEmail)}
-            >
-              <Users size={18} color="#FFFFFF" />
-              <Text style={styles.emailActionButtonText}>Reply All</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            testID="forward-button"
-            style={styles.emailActionButton}
-            onPress={() => handleForward(selectedEmail)}
-          >
-            <Send size={18} color="#FFFFFF" />
-            <Text style={styles.emailActionButtonText}>Forward</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
 
 
 
@@ -887,7 +764,18 @@ export default function MailScreen() {
       {currentView === 'inbox' && renderInbox()}
       {currentView === 'folders' && renderFolders()}
       {currentView === 'folder-detail' && renderFolderDetail()}
-      {currentView === 'detail' && renderEmailDetail()}
+      {currentView === 'detail' && selectedEmail && (
+        <EmailDetailView
+          selectedEmail={selectedEmail}
+          insets={insets}
+          onBack={() => setCurrentView('inbox')}
+          onStar={handleStar}
+          onArchive={handleArchive}
+          onReply={handleReply}
+          onReplyAll={handleReplyAll}
+          onForward={handleForward}
+        />
+      )}
       {currentView === 'compose' && (
         <ComposeView
           insets={insets}
@@ -1331,108 +1219,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     marginLeft: 8,
   },
-  detailHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
   backButton: {
-    padding: 4,
-  },
-  detailActions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  actionButton: {
-    padding: 4,
-  },
-  detailContent: {
-    flex: 1,
-  },
-  detailSubject: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.light.text,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  detailFrom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  detailAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.light.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailAvatarText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  detailSenderInfo: {
-    flex: 1,
-  },
-  detailSenderName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginBottom: 2,
-  },
-  detailSenderEmail: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  detailDate: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  attachmentsSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.light.border,
-    backgroundColor: Colors.light.surface,
-  },
-  attachmentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    backgroundColor: Colors.light.background,
-    borderRadius: 8,
-  },
-  attachmentName: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.light.text,
-  },
-  attachmentSize: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-  detailBody: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  detailBodyText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: Colors.light.text,
-  },
-  sendButton: {
     padding: 4,
   },
   createFolderButton: {
@@ -1903,30 +1690,6 @@ const styles = StyleSheet.create({
   },
   createButtonDisabled: {
     opacity: 0.5,
-  },
-  emailActionButtons: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-    backgroundColor: Colors.light.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-  },
-  emailActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: Colors.light.primary,
-  },
-  emailActionButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   datePickerOverlay: {
     flex: 1,
