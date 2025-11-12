@@ -8,6 +8,8 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { Plus, X, Trash2, Calendar, FileText } from 'lucide-react-native';
@@ -252,7 +254,10 @@ export default function NotesScreen() {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingNote ? 'Edit Note' : 'New Note'}</Text>
@@ -264,7 +269,12 @@ export default function NotesScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalBody}>
+            <ScrollView
+              style={styles.modalBody}
+              contentContainerStyle={styles.modalBodyContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <TextInput
                 style={styles.titleInput}
                 placeholder="Note title"
@@ -327,7 +337,7 @@ export default function NotesScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </ScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
@@ -348,7 +358,7 @@ export default function NotesScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -462,8 +472,10 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   modalBody: {
+    flex: 1,
+  },
+  modalBodyContent: {
     padding: 20,
-    minHeight: 300,
   },
   titleInput: {
     fontSize: 18,
@@ -482,7 +494,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
     borderRadius: 12,
     minHeight: 200,
-    maxHeight: 400,
   },
   modalFooter: {
     flexDirection: 'row',
