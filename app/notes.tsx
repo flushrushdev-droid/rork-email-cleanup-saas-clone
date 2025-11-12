@@ -182,18 +182,21 @@ export default function NotesScreen() {
           headerStyle: { backgroundColor: Colors.light.surface },
           headerTintColor: Colors.light.text,
           headerShadowVisible: false,
+          headerRight: () => (
+            <View style={styles.headerButtonContainer}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openCreateModal}
+                testID="add-note-button"
+              >
+                <Plus size={20} color={Colors.light.primary} />
+              </TouchableOpacity>
+            </View>
+          ),
         }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={openCreateModal}
-          testID="add-note-button"
-        >
-          <Plus size={20} color="#FFFFFF" />
-          <Text style={styles.addButtonText}>New Note</Text>
-        </TouchableOpacity>
         {notes.length === 0 ? (
           <View style={styles.emptyState}>
             <FileText size={64} color={Colors.light.textSecondary} />
@@ -368,26 +371,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.light.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 20,
-    gap: 8,
-    shadowColor: Colors.light.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+  headerButtonContainer: {
+    marginRight: 16,
   },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  headerButton: {
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: 16,
