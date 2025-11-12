@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-nati
 import { FolderOpen, Plus, ChevronRight, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, FileEdit } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { EdgeInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailCategory } from '@/constants/types';
 
 const iconMap: Record<string, any> = {
@@ -40,12 +40,14 @@ export function FoldersView({
   smartFolders, 
   onCreateFolder 
 }: FoldersViewProps) {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View>
-          <Text style={styles.headerTitle}>Smart Folders</Text>
-          <Text style={styles.headerSubtitle}>AI-organized categories</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Smart Folders</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>AI-organized categories</Text>
         </View>
       </View>
 
@@ -62,18 +64,18 @@ export function FoldersView({
       >
         <TouchableOpacity 
           testID="create-folder" 
-          style={styles.createFolderButton} 
+          style={[styles.createFolderButton, { backgroundColor: colors.surface, borderColor: colors.primary }]} 
           onPress={onCreateFolder}
         >
-          <Plus size={20} color={Colors.light.primary} />
-          <Text style={styles.createFolderButtonText}>Create Custom Folder</Text>
+          <Plus size={20} color={colors.primary} />
+          <Text style={[styles.createFolderButtonText, { color: colors.primary }]}>Create Custom Folder</Text>
         </TouchableOpacity>
 
         {smartFolders.length === 0 ? (
           <View style={styles.emptyState}>
-            <FolderOpen size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No folders yet</Text>
-            <Text style={styles.emptySubtext}>Sync your emails to create smart folders</Text>
+            <FolderOpen size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No folders yet</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Sync your emails to create smart folders</Text>
           </View>
         ) : (
           <View style={styles.foldersGrid}>
@@ -85,7 +87,7 @@ export function FoldersView({
                 <TouchableOpacity 
                   key={folder.id} 
                   testID={`folder-${folder.id}`} 
-                  style={styles.folderCard} 
+                  style={[styles.folderCard, { backgroundColor: colors.surface }]} 
                   onPress={() => {
                     router.push({
                       pathname: '/folder-details',
@@ -101,10 +103,10 @@ export function FoldersView({
                     <Icon size={28} color={folder.color} />
                   </View>
                   <View style={styles.folderContent}>
-                    <Text style={styles.folderName}>{folder.name}</Text>
-                    <Text style={styles.folderCount}>{folder.count} emails</Text>
+                    <Text style={[styles.folderName, { color: colors.text }]}>{folder.name}</Text>
+                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{folder.count} emails</Text>
                   </View>
-                  <ChevronRight size={20} color={Colors.light.textSecondary} />
+                  <ChevronRight size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               );
             })}

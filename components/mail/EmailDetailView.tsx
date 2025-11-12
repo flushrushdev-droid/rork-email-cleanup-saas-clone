@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Archive, Trash2, Star, ChevronLeft, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage } from '@/constants/types';
 
 interface EmailDetailViewProps {
@@ -26,17 +26,18 @@ export function EmailDetailView({
   onReplyAll,
   onForward,
 }: EmailDetailViewProps) {
+  const { colors } = useTheme();
   const hasMultipleRecipients = selectedEmail.to.length > 1;
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.detailHeader, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.detailHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           testID="back-to-inbox"
           style={styles.backButton}
           onPress={onBack}
         >
-          <ChevronLeft size={24} color={Colors.light.text} />
+          <ChevronLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.detailActions}>
           <TouchableOpacity
@@ -46,8 +47,8 @@ export function EmailDetailView({
           >
             <Star
               size={20}
-              color={selectedEmail.isStarred ? Colors.light.warning : Colors.light.text}
-              fill={selectedEmail.isStarred ? Colors.light.warning : 'none'}
+              color={selectedEmail.isStarred ? colors.warning : colors.text}
+              fill={selectedEmail.isStarred ? colors.warning : 'none'}
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -55,14 +56,14 @@ export function EmailDetailView({
             style={styles.actionButton}
             onPress={() => onArchive(selectedEmail)}
           >
-            <Archive size={20} color={Colors.light.text} />
+            <Archive size={20} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
             testID="delete-email"
             style={styles.actionButton}
             onPress={() => Alert.alert('Delete', 'Delete this email?')}
           >
-            <Trash2 size={20} color={Colors.light.danger} />
+            <Trash2 size={20} color={colors.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -72,23 +73,23 @@ export function EmailDetailView({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <Text style={styles.detailSubject}>{selectedEmail.subject}</Text>
+        <Text style={[styles.detailSubject, { color: colors.text }]}>{selectedEmail.subject}</Text>
         
         <View style={styles.detailFrom}>
-          <View style={styles.detailAvatar}>
+          <View style={[styles.detailAvatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.detailAvatarText}>
               {selectedEmail.from[0].toUpperCase()}
             </Text>
           </View>
           <View style={styles.detailSenderInfo}>
-            <Text style={styles.detailSenderName}>
+            <Text style={[styles.detailSenderName, { color: colors.text }]}>
               {selectedEmail.from.split('<')[0].trim() || selectedEmail.from}
             </Text>
-            <Text style={styles.detailSenderEmail}>
+            <Text style={[styles.detailSenderEmail, { color: colors.textSecondary }]}>
               {selectedEmail.from.match(/<(.+?)>/) ?.[1] || selectedEmail.from}
             </Text>
           </View>
-          <Text style={styles.detailDate}>
+          <Text style={[styles.detailDate, { color: colors.textSecondary }]}>
             {selectedEmail.date.toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -99,28 +100,28 @@ export function EmailDetailView({
         </View>
 
         {selectedEmail.hasAttachments && (
-          <View style={styles.attachmentsSection}>
-            <View style={styles.attachmentItem}>
-              <Paperclip size={16} color={Colors.light.textSecondary} />
-              <Text style={styles.attachmentName}>attachment.pdf</Text>
-              <Text style={styles.attachmentSize}>234 KB</Text>
+          <View style={[styles.attachmentsSection, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+            <View style={[styles.attachmentItem, { backgroundColor: colors.background }]}>
+              <Paperclip size={16} color={colors.textSecondary} />
+              <Text style={[styles.attachmentName, { color: colors.text }]}>attachment.pdf</Text>
+              <Text style={[styles.attachmentSize, { color: colors.textSecondary }]}>234 KB</Text>
             </View>
           </View>
         )}
 
         <View style={styles.detailBody}>
-          <Text style={styles.detailBodyText}>{selectedEmail.snippet}</Text>
-          <Text style={styles.detailBodyText}>
+          <Text style={[styles.detailBodyText, { color: colors.text }]}>{selectedEmail.snippet}</Text>
+          <Text style={[styles.detailBodyText, { color: colors.text }]}>
             {'\n\n'}Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
             {'\n\n'}Best regards,{'\n'}{selectedEmail.from.split('<')[0].trim()}
           </Text>
         </View>
       </ScrollView>
 
-      <View style={[styles.emailActionButtons, { paddingBottom: insets.bottom + 12 }]}>
+      <View style={[styles.emailActionButtons, { paddingBottom: insets.bottom + 12, backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
           testID="reply-button"
-          style={styles.emailActionButton}
+          style={[styles.emailActionButton, { backgroundColor: colors.primary }]}
           onPress={() => onReply(selectedEmail)}
         >
           <Mail size={18} color="#FFFFFF" />
@@ -129,7 +130,7 @@ export function EmailDetailView({
         {hasMultipleRecipients && (
           <TouchableOpacity
             testID="reply-all-button"
-            style={styles.emailActionButton}
+            style={[styles.emailActionButton, { backgroundColor: colors.primary }]}
             onPress={() => onReplyAll(selectedEmail)}
           >
             <Users size={18} color="#FFFFFF" />
@@ -138,7 +139,7 @@ export function EmailDetailView({
         )}
         <TouchableOpacity
           testID="forward-button"
-          style={styles.emailActionButton}
+          style={[styles.emailActionButton, { backgroundColor: colors.primary }]}
           onPress={() => onForward(selectedEmail)}
         >
           <Send size={18} color="#FFFFFF" />

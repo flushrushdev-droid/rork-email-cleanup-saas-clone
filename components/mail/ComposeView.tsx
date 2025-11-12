@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { X, Send, Paperclip, Save, Sparkles } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ComposeViewProps {
   insets: { top: number; bottom: number };
@@ -34,101 +34,103 @@ export function ComposeView({
   onSaveDraft,
   onOpenAIModal,
 }: ComposeViewProps) {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.container}>
-      <View style={[styles.composeHeader, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.composeHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           testID="cancel-compose"
           onPress={onClose}
         >
-          <X size={24} color={Colors.light.text} />
+          <X size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.composeTitle}>New Message</Text>
+        <Text style={[styles.composeTitle, { color: colors.text }]}>New Message</Text>
         <View style={styles.composeHeaderActions}>
           <TouchableOpacity
             testID="save-draft-button"
             onPress={onSaveDraft}
             style={styles.headerActionButton}
           >
-            <Save size={22} color={Colors.light.text} />
+            <Save size={22} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
             testID="send-email-button"
             onPress={onSend}
             style={styles.headerActionButton}
           >
-            <Send size={22} color={Colors.light.primary} />
+            <Send size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView style={styles.composeForm} keyboardShouldPersistTaps="handled">
         <View style={styles.composeField}>
-          <Text style={styles.composeLabel}>To</Text>
+          <Text style={[styles.composeLabel, { color: colors.textSecondary }]}>To</Text>
           <TextInput
-            style={styles.composeInput}
+            style={[styles.composeInput, { color: colors.text }]}
             placeholder="recipient@example.com"
             value={composeTo}
             onChangeText={onChangeComposeTo}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
-        <View style={styles.composeDivider} />
+        <View style={[styles.composeDivider, { backgroundColor: colors.border }]} />
 
         <View style={styles.composeField}>
-          <Text style={styles.composeLabel}>Cc</Text>
+          <Text style={[styles.composeLabel, { color: colors.textSecondary }]}>Cc</Text>
           <TextInput
-            style={styles.composeInput}
+            style={[styles.composeInput, { color: colors.text }]}
             placeholder="cc@example.com"
             value={composeCc}
             onChangeText={onChangeComposeCc}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
-        <View style={styles.composeDivider} />
+        <View style={[styles.composeDivider, { backgroundColor: colors.border }]} />
 
         <View style={styles.composeField}>
-          <Text style={styles.composeLabel}>Subject</Text>
+          <Text style={[styles.composeLabel, { color: colors.textSecondary }]}>Subject</Text>
           <TextInput
-            style={styles.composeInput}
+            style={[styles.composeInput, { color: colors.text }]}
             placeholder="Email subject"
             value={composeSubject}
             onChangeText={onChangeComposeSubject}
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
-        <View style={styles.composeDivider} />
+        <View style={[styles.composeDivider, { backgroundColor: colors.border }]} />
 
         <View style={[styles.composeField, styles.composeBodyField]}>
           <TextInput
-            style={[styles.composeInput, styles.composeBodyInput]}
+            style={[styles.composeInput, styles.composeBodyInput, { color: colors.text }]}
             placeholder="Compose your message..."
             value={composeBody}
             onChangeText={onChangeComposeBody}
             multiline
             textAlignVertical="top"
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
 
-        <TouchableOpacity style={styles.attachButton}>
-          <Paperclip size={20} color={Colors.light.primary} />
-          <Text style={styles.attachButtonText}>Attach file</Text>
+        <TouchableOpacity style={[styles.attachButton, { borderColor: colors.border }]}>
+          <Paperclip size={20} color={colors.primary} />
+          <Text style={[styles.attachButtonText, { color: colors.primary }]}>Attach file</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={styles.aiButton}
+          style={[styles.aiButton, { borderColor: colors.border }]}
           onPress={onOpenAIModal}
         >
-          <Sparkles size={20} color={Colors.light.primary} />
-          <Text style={styles.aiButtonText}>Write with AI</Text>
+          <Sparkles size={20} color={colors.primary} />
+          <Text style={[styles.aiButtonText, { color: colors.primary }]}>Write with AI</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

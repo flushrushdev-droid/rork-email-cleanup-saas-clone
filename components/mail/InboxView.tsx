@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Search, X, Calendar, FileEdit, Send, Trash2, Mail, Paperclip, Star, Plus, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users } from 'lucide-react-native';
 import { router } from 'expo-router';
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage, EmailCategory } from '@/constants/types';
 import { formatDate } from '@/utils/dateFormat';
 
@@ -71,31 +71,33 @@ export function InboxView({
   onCreateFolder,
   onToggleCalendar,
 }: InboxViewProps) {
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.headerTitle}>Mail</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Mail</Text>
         <TouchableOpacity
           testID="calendar-toggle"
           onPress={onToggleCalendar}
           style={styles.calendarButton}
         >
-          <Calendar size={24} color={Colors.light.primary} />
+          <Calendar size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchContainer}>
-        <Search size={18} color={Colors.light.textSecondary} />
+      <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+        <Search size={18} color={colors.textSecondary} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search mail"
           value={searchQuery}
           onChangeText={onSearchChange}
-          placeholderTextColor={Colors.light.textSecondary}
+          placeholderTextColor={colors.textSecondary}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => onSearchChange('')}>
-            <X size={18} color={Colors.light.textSecondary} />
+            <X size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -112,13 +114,15 @@ export function InboxView({
               testID={`filter-${filter}`}
               style={[
                 styles.filterButton,
-                activeFilter === filter && styles.filterButtonActive,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                activeFilter === filter && { backgroundColor: colors.primary, borderColor: colors.primary },
               ]}
               onPress={() => onFilterChange(filter)}
             >
               <Text
                 style={[
                   styles.filterButtonText,
+                  { color: colors.text },
                   activeFilter === filter && styles.filterButtonTextActive,
                 ]}
               >
@@ -131,7 +135,7 @@ export function InboxView({
 
       {smartFolders.length > 0 && (
         <View style={styles.smartFoldersSection}>
-          <Text style={styles.smartFoldersTitle}>Smart Folders</Text>
+          <Text style={[styles.smartFoldersTitle, { color: colors.text }]}>Smart Folders</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -158,7 +162,7 @@ export function InboxView({
                   <View style={[styles.smartFolderIcon, { backgroundColor: folder.color + '20' }]}>
                     <Icon size={20} color={folder.color} />
                   </View>
-                  <Text style={styles.smartFolderName} numberOfLines={1}>{folder.name}</Text>
+                  <Text style={[styles.smartFolderName, { color: colors.text }]} numberOfLines={1}>{folder.name}</Text>
                   <View style={[styles.smartFolderBadge, { backgroundColor: folder.color }]}>
                     <Text style={styles.smartFolderCount}>{folder.count}</Text>
                   </View>
@@ -170,10 +174,10 @@ export function InboxView({
               style={styles.smartFolderCard}
               onPress={onCreateFolder}
             >
-              <View style={[styles.smartFolderIcon, styles.createFolderIcon]}>
-                <Plus size={24} color={Colors.light.primary} />
+              <View style={[styles.smartFolderIcon, styles.createFolderIcon, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+                <Plus size={24} color={colors.primary} />
               </View>
-              <Text style={[styles.smartFolderName, styles.createFolderText]}>Create</Text>
+              <Text style={[styles.smartFolderName, styles.createFolderText, { color: colors.primary }]}>Create</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -187,33 +191,33 @@ export function InboxView({
         {activeFilter === 'drafts' ? (
           drafts.length === 0 ? (
             <View style={styles.emptyState}>
-              <FileEdit size={48} color={Colors.light.textSecondary} />
-              <Text style={styles.emptyText}>No drafts</Text>
-              <Text style={styles.emptySubtext}>Start composing to save drafts</Text>
+              <FileEdit size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No drafts</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start composing to save drafts</Text>
             </View>
           ) : (
             drafts.map((draft) => (
               <TouchableOpacity
                 key={draft.id}
                 testID={`draft-${draft.id}`}
-                style={styles.draftCard}
+                style={[styles.draftCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}
                 onPress={() => onLoadDraft(draft)}
                 activeOpacity={0.7}
               >
                 <View style={styles.draftCardContent}>
                   <View style={styles.draftCardHeader}>
-                    <FileEdit size={16} color={Colors.light.primary} />
-                    <Text style={styles.draftBadge}>Draft</Text>
-                    <Text style={styles.draftDate}>{formatDate(draft.date)}</Text>
+                    <FileEdit size={16} color={colors.primary} />
+                    <Text style={[styles.draftBadge, { color: colors.primary }]}>Draft</Text>
+                    <Text style={[styles.draftDate, { color: colors.textSecondary }]}>{formatDate(draft.date)}</Text>
                   </View>
-                  <Text style={styles.draftTo} numberOfLines={1}>
+                  <Text style={[styles.draftTo, { color: colors.text }]} numberOfLines={1}>
                     To: {draft.to || '(no recipient)'}
                   </Text>
-                  <Text style={styles.draftSubject} numberOfLines={1}>
+                  <Text style={[styles.draftSubject, { color: colors.text }]} numberOfLines={1}>
                     {draft.subject || '(no subject)'}
                   </Text>
                   {draft.body && (
-                    <Text style={styles.draftBody} numberOfLines={2}>
+                    <Text style={[styles.draftBody, { color: colors.textSecondary }]} numberOfLines={2}>
                       {draft.body}
                     </Text>
                   )}
@@ -226,47 +230,47 @@ export function InboxView({
                   }}
                   style={styles.deleteDraftButton}
                 >
-                  <Trash2 size={18} color={Colors.light.danger} />
+                  <Trash2 size={18} color={colors.danger} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))
           )
         ) : activeFilter === 'sent' ? (
           <View style={styles.emptyState}>
-            <Send size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No sent emails</Text>
-            <Text style={styles.emptySubtext}>Your sent messages will appear here</Text>
+            <Send size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No sent emails</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Your sent messages will appear here</Text>
           </View>
         ) : activeFilter === 'trash' ? (
           <View style={styles.emptyState}>
-            <Trash2 size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>Trash is empty</Text>
-            <Text style={styles.emptySubtext}>Deleted emails will appear here</Text>
+            <Trash2 size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Trash is empty</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Deleted emails will appear here</Text>
           </View>
         ) : filteredEmails.length === 0 ? (
           <View style={styles.emptyState}>
-            <Mail size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No emails found</Text>
+            <Mail size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
           </View>
         ) : (
           filteredEmails.map((email: EmailMessage) => (
             <TouchableOpacity
               key={email.id}
               testID={`email-${email.id}`}
-              style={[styles.emailCard, !email.isRead && styles.emailCardUnread]}
+              style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }, !email.isRead && { backgroundColor: colors.surface }]}
               onPress={() => onEmailPress(email)}
               activeOpacity={0.7}
             >
               <View style={styles.emailCardContent}>
                 <View style={styles.emailCardHeader}>
                   <Text
-                    style={[styles.emailFrom, !email.isRead && styles.emailFromUnread]}
+                    style={[styles.emailFrom, { color: colors.text }, !email.isRead && styles.emailFromUnread]}
                     numberOfLines={1}
                   >
                     {email.from.split('<')[0].trim() || email.from}
                   </Text>
                   <View style={styles.emailMeta}>
-                    <Text style={styles.emailDate}>{formatDate(email.date)}</Text>
+                    <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatDate(email.date)}</Text>
                     <TouchableOpacity
                       testID={`star-${email.id}`}
                       onPress={(e) => {
@@ -277,28 +281,28 @@ export function InboxView({
                     >
                       <Star
                         size={16}
-                        color={email.isStarred ? Colors.light.warning : Colors.light.textSecondary}
-                        fill={email.isStarred ? Colors.light.warning : 'none'}
+                        color={email.isStarred ? colors.warning : colors.textSecondary}
+                        fill={email.isStarred ? colors.warning : 'none'}
                       />
                     </TouchableOpacity>
                   </View>
                 </View>
                 <Text
-                  style={[styles.emailSubject, !email.isRead && styles.emailSubjectUnread]}
+                  style={[styles.emailSubject, { color: colors.text }, !email.isRead && styles.emailSubjectUnread]}
                   numberOfLines={1}
                 >
                   {email.subject}
                 </Text>
-                <Text style={styles.emailSnippet} numberOfLines={2}>
+                <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
                   {email.snippet}
                 </Text>
                 {email.hasAttachments && (
                   <View style={styles.attachmentBadge}>
-                    <Paperclip size={12} color={Colors.light.textSecondary} />
+                    <Paperclip size={12} color={colors.textSecondary} />
                   </View>
                 )}
               </View>
-              {!email.isRead && <View style={styles.unreadDot} />}
+              {!email.isRead && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
             </TouchableOpacity>
           ))
         )}

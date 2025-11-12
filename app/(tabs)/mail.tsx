@@ -9,6 +9,7 @@ import { mockRecentEmails } from '@/mocks/emailData';
 import Colors from '@/constants/colors';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
 import { useCalendar } from '@/hooks/useCalendar';
+import { useTheme } from '@/contexts/ThemeContext';
 import { CalendarSidebar } from '@/components/CalendarSidebar';
 import { categorizeEmail } from '@/utils/emailCategories';
 import { useDrafts } from '@/hooks/useDrafts';
@@ -26,6 +27,7 @@ type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
 
 export default function MailScreen() {
+  const { colors } = useTheme();
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
   const [currentView, setCurrentView] = useState<MailView>('inbox');
@@ -302,7 +304,7 @@ export default function MailScreen() {
     if (!selectedFolder) return null;
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.folderDetailHeader, { backgroundColor: selectedFolder.color, paddingTop: insets.top + 16 }]}>
           <TouchableOpacity 
             onPress={() => setCurrentView('folders')} 
@@ -312,8 +314,8 @@ export default function MailScreen() {
             <ChevronLeft size={28} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.folderDetailHeaderContent}>
-            <Text style={styles.folderDetailTitle}>{selectedFolder.name}</Text>
-            <Text style={styles.folderDetailSubtitle}>{filteredEmails.length} emails</Text>
+            <Text style={[styles.folderDetailTitle]}>{selectedFolder.name}</Text>
+            <Text style={[styles.folderDetailSubtitle]}>{filteredEmails.length} emails</Text>
           </View>
         </View>
 
@@ -324,31 +326,31 @@ export default function MailScreen() {
         >
           {filteredEmails.length === 0 ? (
             <View style={styles.emptyState}>
-              <Mail size={48} color={Colors.light.textSecondary} />
-              <Text style={styles.emptyText}>No emails found</Text>
+              <Mail size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
             </View>
           ) : (
             filteredEmails.map((email: EmailMessage) => {
-              const categoryColor = email.category ? Colors.light.category[email.category] : Colors.light.primary;
+              const categoryColor = email.category ? colors.category[email.category] : colors.primary;
               
               return (
                 <TouchableOpacity
                   key={email.id}
                   testID={`email-${email.id}`}
-                  style={[styles.emailCard, !email.isRead && styles.emailCardUnread, { borderLeftColor: categoryColor }]}
+                  style={[styles.emailCard, { backgroundColor: colors.surface }, !email.isRead && { backgroundColor: colors.surface }, { borderLeftColor: categoryColor }]}
                   onPress={() => handleEmailPress(email)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.emailCardContent}>
                     <View style={styles.emailCardHeader}>
                       <Text
-                        style={[styles.emailFrom, !email.isRead && styles.emailFromUnread]}
+                        style={[styles.emailFrom, { color: colors.text }, !email.isRead && styles.emailFromUnread]}
                         numberOfLines={1}
                       >
                         {email.from.split('<')[0].trim() || email.from}
                       </Text>
                       <View style={styles.emailMeta}>
-                        <Text style={styles.emailDate}>{formatDate(email.date)}</Text>
+                        <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatDate(email.date)}</Text>
                         <TouchableOpacity
                           testID={`star-${email.id}`}
                           onPress={(e) => {
@@ -359,19 +361,19 @@ export default function MailScreen() {
                         >
                           <Star
                             size={16}
-                            color={email.isStarred ? Colors.light.warning : Colors.light.textSecondary}
-                            fill={email.isStarred ? Colors.light.warning : 'none'}
+                            color={email.isStarred ? colors.warning : colors.textSecondary}
+                            fill={email.isStarred ? colors.warning : 'none'}
                           />
                         </TouchableOpacity>
                       </View>
                     </View>
                     <Text
-                      style={[styles.emailSubject, !email.isRead && styles.emailSubjectUnread]}
+                      style={[styles.emailSubject, { color: colors.text }, !email.isRead && styles.emailSubjectUnread]}
                       numberOfLines={1}
                     >
                       {email.subject}
                     </Text>
-                    <Text style={styles.emailSnippet} numberOfLines={2}>
+                    <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
                       {email.snippet}
                     </Text>
                     {email.category && (
@@ -428,7 +430,7 @@ export default function MailScreen() {
 
 
   return (
-    <View style={[styles.safeArea]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {currentView === 'inbox' && (
         <InboxView
           insets={insets}
@@ -494,7 +496,7 @@ export default function MailScreen() {
       {currentView !== 'compose' && currentView !== 'detail' && (
         <TouchableOpacity
           testID="compose-fab"
-          style={[styles.composeFab, { bottom: insets.bottom + 30 }]}
+          style={[styles.composeFab, { bottom: insets.bottom + 30, backgroundColor: colors.primary }]}
           onPress={handleCompose}
           activeOpacity={0.8}
         >
@@ -522,27 +524,27 @@ export default function MailScreen() {
         onRequestClose={() => !isCreating && setIsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Custom Folder</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Create Custom Folder</Text>
               <TouchableOpacity
                 onPress={() => !isCreating && setIsModalVisible(false)}
                 disabled={isCreating}
               >
-                <X size={24} color={Colors.light.text} />
+                <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalDescription}>
+            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
               Create a smart folder using natural language rules
             </Text>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Folder Name</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Folder Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                 placeholder="e.g., Important Clients"
-                placeholderTextColor={Colors.light.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={folderName}
                 onChangeText={setFolderName}
                 editable={!isCreating}
@@ -550,32 +552,32 @@ export default function MailScreen() {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Folder Rule</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Folder Rule</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                 placeholder="e.g., Emails from clients about project updates or invoices"
-                placeholderTextColor={Colors.light.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={folderRule}
                 onChangeText={setFolderRule}
                 multiline
                 numberOfLines={4}
                 editable={!isCreating}
               />
-              <Text style={styles.helperText}>
+              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
                 Describe the rule in plain English. Our AI will understand it!
               </Text>
             </View>
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setIsModalVisible(false)}
                 disabled={isCreating}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.createButtonModal]}
+                style={[styles.modalButton, styles.createButtonModal, { backgroundColor: colors.primary }]}
                 onPress={handleCreateFolder}
                 disabled={isCreating || !folderName.trim() || !folderRule.trim()}
               >
