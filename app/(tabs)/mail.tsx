@@ -2676,12 +2676,11 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     flex: 1,
-    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
     margin: 2,
     borderRadius: 8,
-    minWidth: 36,
   },
   todayCell: {
     backgroundColor: Colors.light.surface,
