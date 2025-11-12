@@ -1,12 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Mail, Shield, Zap, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check } from 'lucide-react-native';
+import { Mail, Zap, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 
 import Colors from '@/constants/colors';
-import { mockAccounts } from '@/mocks/emailData';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -94,14 +93,6 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Security & Privacy</Text>
           
-          <TouchableOpacity testID="menu-rules" style={styles.menuItem} onPress={() => router.push('/rules')}>
-            <View style={[styles.menuIcon, { backgroundColor: Colors.light.success + '20' }]}>
-              <Shield size={20} color={Colors.light.success} />
-            </View>
-            <Text style={styles.menuLabel}>Automation Rules</Text>
-            <ChevronRight size={20} color={Colors.light.textSecondary} />
-          </TouchableOpacity>
-
           <TouchableOpacity testID="menu-data" style={styles.menuItem} onPress={() => Alert.alert('Data Management', 'Coming soon')}>
             <View style={[styles.menuIcon, { backgroundColor: Colors.light.secondary + '20' }]}>
               <Database size={20} color={Colors.light.secondary} />
