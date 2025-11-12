@@ -377,6 +377,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
+    marginTop: 16,
     marginBottom: 16,
     gap: 12,
   },
