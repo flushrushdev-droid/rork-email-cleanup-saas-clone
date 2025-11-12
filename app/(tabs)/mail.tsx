@@ -90,12 +90,14 @@ export default function MailScreen() {
   const [isNewMeetingModalVisible, setIsNewMeetingModalVisible] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
+  const [startTime, setStartTime] = useState(new Date());
+  const [endTime, setEndTime] = useState(new Date(new Date().getTime() + 60 * 60 * 1000));
   const [meetingLocation, setMeetingLocation] = useState('');
   const [meetingDescription, setMeetingDescription] = useState('');
   const [meetingType, setMeetingType] = useState<'in-person' | 'video'>('video');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(new Date());
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [events, setEvents] = useState<Array<{
     id: string;
     title: string;
@@ -510,16 +512,22 @@ export default function MailScreen() {
   };
 
   const handleCreateMeeting = () => {
-    if (!meetingTitle.trim() || !meetingTime.trim()) {
-      Alert.alert('Missing Information', 'Please enter meeting title and time');
+    if (!meetingTitle.trim()) {
+      Alert.alert('Missing Information', 'Please enter meeting title');
       return;
     }
+
+    const formatTime = (date: Date) => {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    const timeString = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
     const newEvent = {
       id: Date.now().toString(),
       title: meetingTitle,
       date: selectedDate,
-      time: meetingTime,
+      time: timeString,
       location: meetingLocation,
       description: meetingDescription,
       type: meetingType,
@@ -533,6 +541,9 @@ export default function MailScreen() {
     setMeetingLocation('');
     setMeetingDescription('');
     setMeetingType('video');
+    const now = new Date();
+    setStartTime(now);
+    setEndTime(new Date(now.getTime() + 60 * 60 * 1000));
     setIsNewMeetingModalVisible(false);
   };
 
@@ -549,29 +560,33 @@ export default function MailScreen() {
     }
   };
 
-  const handleTimeSelect = (hour: number) => {
-    const startTime = new Date(selectedDate);
-    startTime.setHours(hour, 0, 0, 0);
-    
-    const endTime = new Date(startTime);
-    endTime.setHours(hour + 1, 0, 0, 0);
-    
-    const formatTime = (date: Date) => {
-      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-    
-    setMeetingTime(`${formatTime(startTime)} - ${formatTime(endTime)}`);
-    setSelectedTime(startTime);
-    setShowTimePicker(false);
+  const handleStartTimeChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowStartTimePicker(false);
+    }
+    if (date) {
+      setStartTime(date);
+      const formatTime = (d: Date) => {
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      };
+      setMeetingTime(`${formatTime(date)} - ${formatTime(endTime)}`);
+    }
   };
 
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 0; hour < 24; hour++) {
-      slots.push(hour);
+  const handleEndTimeChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowEndTimePicker(false);
     }
-    return slots;
+    if (date) {
+      setEndTime(date);
+      const formatTime = (d: Date) => {
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      };
+      setMeetingTime(`${formatTime(startTime)} - ${formatTime(date)}`);
+    }
   };
+
+
 
   const handleDeleteEvent = (eventId: string) => {
     Alert.alert(
@@ -1514,40 +1529,31 @@ export default function MailScreen() {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Time *</Text>
+                <Text style={styles.inputLabel}>Start Time</Text>
                 <TouchableOpacity
-                  style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-                  onPress={() => setShowTimePicker(!showTimePicker)}
+                  style={styles.dateDisplay}
+                  onPress={() => setShowStartTimePicker(true)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.timeText, !meetingTime && styles.timePlaceholder]}>
-                    {meetingTime || 'e.g., 2:00 PM - 3:00 PM'}
+                  <Clock size={16} color={Colors.light.primary} />
+                  <Text style={styles.dateDisplayText}>
+                    {startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </Text>
-                  <ChevronDown size={16} color={Colors.light.textSecondary} />
                 </TouchableOpacity>
-                {showTimePicker && (
-                  <ScrollView style={styles.timeDropdown} nestedScrollEnabled>
-                    {generateTimeSlots().map((hour) => {
-                      const date = new Date();
-                      date.setHours(hour, 0, 0, 0);
-                      const endDate = new Date(date);
-                      endDate.setHours(hour + 1, 0, 0, 0);
-                      
-                      const timeLabel = `${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-                      
-                      return (
-                        <TouchableOpacity
-                          key={hour}
-                          style={styles.timeSlot}
-                          onPress={() => handleTimeSelect(hour)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.timeSlotText}>{timeLabel}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                )}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>End Time</Text>
+                <TouchableOpacity
+                  style={styles.dateDisplay}
+                  onPress={() => setShowEndTimePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Clock size={16} color={Colors.light.primary} />
+                  <Text style={styles.dateDisplayText}>
+                    {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.inputContainer}>
@@ -1598,10 +1604,10 @@ export default function MailScreen() {
             <TouchableOpacity
               style={[
                 styles.createMeetingButton,
-                (!meetingTitle.trim() || !meetingTime.trim()) && styles.createMeetingButtonDisabled
+                !meetingTitle.trim() && styles.createMeetingButtonDisabled
               ]}
               onPress={handleCreateMeeting}
-              disabled={!meetingTitle.trim() || !meetingTime.trim()}
+              disabled={!meetingTitle.trim()}
               activeOpacity={0.8}
             >
               <Text style={styles.createMeetingButtonText}>Create Meeting</Text>
@@ -1677,6 +1683,156 @@ export default function MailScreen() {
                 mode="date"
                 display="default"
                 onChange={handleDateChange}
+                textColor={Colors.light.text}
+                style={styles.dateTimePicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {showStartTimePicker && Platform.OS === 'ios' && (
+        <Modal
+          visible={showStartTimePicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowStartTimePicker(false)}
+        >
+          <View style={styles.datePickerOverlay}>
+            <TouchableOpacity 
+              style={styles.datePickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowStartTimePicker(false)}
+            />
+            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select Start Time</Text>
+                <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
+                  <Text style={styles.datePickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={startTime}
+                mode="time"
+                display="spinner"
+                onChange={handleStartTimeChange}
+                textColor={Colors.light.text}
+                style={styles.dateTimePicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {showStartTimePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={startTime}
+          mode="time"
+          display="default"
+          onChange={handleStartTimeChange}
+        />
+      )}
+
+      {showStartTimePicker && Platform.OS === 'web' && (
+        <Modal
+          visible={showStartTimePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowStartTimePicker(false)}
+        >
+          <View style={styles.datePickerOverlay}>
+            <TouchableOpacity 
+              style={styles.datePickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowStartTimePicker(false)}
+            />
+            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select Start Time</Text>
+                <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
+                  <Text style={styles.datePickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={startTime}
+                mode="time"
+                display="default"
+                onChange={handleStartTimeChange}
+                textColor={Colors.light.text}
+                style={styles.dateTimePicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {showEndTimePicker && Platform.OS === 'ios' && (
+        <Modal
+          visible={showEndTimePicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowEndTimePicker(false)}
+        >
+          <View style={styles.datePickerOverlay}>
+            <TouchableOpacity 
+              style={styles.datePickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowEndTimePicker(false)}
+            />
+            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select End Time</Text>
+                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
+                  <Text style={styles.datePickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={endTime}
+                mode="time"
+                display="spinner"
+                onChange={handleEndTimeChange}
+                textColor={Colors.light.text}
+                style={styles.dateTimePicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {showEndTimePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={endTime}
+          mode="time"
+          display="default"
+          onChange={handleEndTimeChange}
+        />
+      )}
+
+      {showEndTimePicker && Platform.OS === 'web' && (
+        <Modal
+          visible={showEndTimePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowEndTimePicker(false)}
+        >
+          <View style={styles.datePickerOverlay}>
+            <TouchableOpacity 
+              style={styles.datePickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowEndTimePicker(false)}
+            />
+            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select End Time</Text>
+                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
+                  <Text style={styles.datePickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={endTime}
+                mode="time"
+                display="default"
+                onChange={handleEndTimeChange}
                 textColor={Colors.light.text}
                 style={styles.dateTimePicker}
               />
