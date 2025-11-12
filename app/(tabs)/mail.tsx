@@ -54,16 +54,6 @@ export default function MailScreen() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    if (params.emailId && allEmails.length > 0) {
-      const email = allEmails.find(e => e.id === params.emailId);
-      if (email) {
-        setSelectedEmail(email);
-        setCurrentView('detail');
-      }
-    }
-  }, [params.emailId, allEmails]);
-
-  useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (currentView === 'detail') {
         setCurrentView('inbox');
@@ -116,6 +106,16 @@ export default function MailScreen() {
 
     return emails;
   }, [isDemoMode, messages, starredEmails]);
+
+  useEffect(() => {
+    if (params.emailId && allEmails.length > 0) {
+      const email = allEmails.find(e => e.id === params.emailId);
+      if (email) {
+        setSelectedEmail(email);
+        setCurrentView('detail');
+      }
+    }
+  }, [params.emailId, allEmails]);
 
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;
