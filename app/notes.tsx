@@ -372,19 +372,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   headerButtonContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 16,
   },
   headerButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 8,
   },
   scrollContent: {
     padding: 16,
