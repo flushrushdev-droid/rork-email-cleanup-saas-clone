@@ -1334,24 +1334,6 @@ export default function MailScreen() {
           />
         </View>
 
-        <TouchableOpacity
-          testID="save-draft"
-          style={styles.composeSaveDraftButton}
-          onPress={handleSaveDraft}
-        >
-          <FileEdit size={20} color={Colors.light.text} />
-          <Text style={styles.composeSaveDraftButtonText}>Save Draft</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          testID="send-email"
-          style={styles.composeSendButton}
-          onPress={handleSend}
-        >
-          <Send size={20} color={Colors.light.primary} />
-          <Text style={styles.composeSendButtonText}>Send Email</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.attachButton}>
           <Paperclip size={20} color={Colors.light.primary} />
           <Text style={styles.attachButtonText}>Attach file</Text>
