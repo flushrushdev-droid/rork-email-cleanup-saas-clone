@@ -51,11 +51,10 @@ function categorizeEmail(email: EmailMessage | Email): EmailCategory | undefined
 }
 
 export default function MailScreen() {
-  const insets = useSafeAreaInsets();
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
   const [currentView, setCurrentView] = useState<MailView>('inbox');
-  const [currentFolder, setCurrentFolder] = useState<MailFolder>('inbox');
+  const [currentFolder] = useState<MailFolder>('inbox');
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [composeTo, setComposeTo] = useState('');
@@ -63,20 +62,20 @@ export default function MailScreen() {
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
-  const [selectedFolder, setSelectedFolder] = useState<{ id: string; name: string; color: string; category?: EmailCategory } | null>(null);
+  const [selectedFolder] = useState<{ id: string; name: string; color: string; category?: EmailCategory } | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts' | 'trash' | 'sent'>('all');
-  const [drafts, setDrafts] = useState<Array<{
+  const [drafts, setDrafts] = useState<{
     id: string;
     to: string;
     cc?: string;
     subject: string;
     body: string;
     date: Date;
-  }>>([]);
+  }[]>([]);
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
   const [aiFormat, setAiFormat] = useState('professional');
   const [aiTone, setAiTone] = useState('friendly');
@@ -87,6 +86,7 @@ export default function MailScreen() {
   const [aiPrompt, setAiPrompt] = useState('');
   
   const calendar = useCalendar();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -462,16 +462,7 @@ export default function MailScreen() {
     ].filter(folder => folder.count > 0);
   }, [messages, allEmails, isDemoMode]);
 
-  const toggleCalendar = () => {
-    const toValue = isCalendarVisible ? Dimensions.get('window').width : 0;
-    Animated.spring(calendarSlideAnim, {
-      toValue,
-      useNativeDriver: false,
-      tension: 65,
-      friction: 10,
-    }).start();
-    setIsCalendarVisible(!isCalendarVisible);
-  };
+
 
   const formatDate = (date: Date): string => {
     const now = new Date();
@@ -487,285 +478,19 @@ export default function MailScreen() {
     }
   };
 
-  const handleCreateMeeting = () => {
-    if (!meetingTitle.trim()) {
-      Alert.alert('Missing Information', 'Please enter meeting title');
-      return;
-    }
-
-    const formatTime = (date: Date) => {
-      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    };
-
-    const timeString = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-
-    const newEvent = {
-      id: Date.now().toString(),
-      title: meetingTitle,
-      date: selectedDate,
-      time: timeString,
-      location: meetingLocation,
-      description: meetingDescription,
-      type: meetingType,
-    };
-
-    setEvents(prev => [...prev, newEvent]);
-    Alert.alert('Success', 'Meeting created successfully!');
-    
-    setMeetingTitle('');
-    setMeetingTime('');
-    setMeetingLocation('');
-    setMeetingDescription('');
-    setMeetingType('video');
-    const now = new Date();
-    setStartTime(now);
-    setEndTime(new Date(now.getTime() + 60 * 60 * 1000));
-    setIsNewMeetingModalVisible(false);
-  };
-
-  const handleDateChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-      if (date) {
-        setSelectedDate(date);
-      }
-    } else {
-      if (date) {
-        setSelectedDate(date);
-      }
-    }
-  };
-
-  const handleStartTimeChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowStartTimePicker(false);
-    }
-    if (date) {
-      setStartTime(date);
-      const formatTime = (d: Date) => {
-        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      };
-      setMeetingTime(`${formatTime(date)} - ${formatTime(endTime)}`);
-    }
-  };
-
-  const handleEndTimeChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowEndTimePicker(false);
-    }
-    if (date) {
-      setEndTime(date);
-      const formatTime = (d: Date) => {
-        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      };
-      setMeetingTime(`${formatTime(startTime)} - ${formatTime(date)}`);
-    }
-  };
 
 
 
-  const handleDeleteEvent = (eventId: string) => {
-    Alert.alert(
-      'Delete Event',
-      'Are you sure you want to delete this event?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => setEvents(prev => prev.filter(e => e.id !== eventId)),
-        },
-      ]
-    );
-  };
 
-  const getEventsForSelectedDate = () => {
-    return events.filter(event => {
-      return event.date.getDate() === selectedDate.getDate() &&
-             event.date.getMonth() === selectedDate.getMonth() &&
-             event.date.getFullYear() === selectedDate.getFullYear();
-    });
-  };
 
-  const renderCalendar = () => {
-    const today = new Date();
-    const currentMonth = selectedDate.getMonth();
-    const currentYear = selectedDate.getFullYear();
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    const startingDayOfWeek = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
-    
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    const days = [];
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-    
-    const weeks = [];
-    for (let i = 0; i < days.length; i += 7) {
-      weeks.push(days.slice(i, i + 7));
-    }
-    
-    const isToday = (day: number | null) => {
-      if (!day) return false;
-      return day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
-    };
-    
-    const isSelected = (day: number | null) => {
-      if (!day) return false;
-      return day === selectedDate.getDate() && currentMonth === selectedDate.getMonth() && currentYear === selectedDate.getFullYear();
-    };
-    
-    const handleDayPress = (day: number | null) => {
-      if (day) {
-        setSelectedDate(new Date(currentYear, currentMonth, day));
-      }
-    };
-    
-    const goToPreviousMonth = () => {
-      setSelectedDate(new Date(currentYear, currentMonth - 1, 1));
-    };
-    
-    const goToNextMonth = () => {
-      setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
-    };
-    
-    return (
-      <Animated.View style={[styles.calendarSidebar, { right: calendarSlideAnim }]}>
-        <View style={[styles.calendarHeader, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.calendarTitle}>Calendar</Text>
-          <TouchableOpacity onPress={toggleCalendar}>
-            <X size={24} color={Colors.light.text} />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.calendarContent}>
-          <View style={styles.monthNavigation}>
-            <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
-              <ChevronLeft size={20} color={Colors.light.text} />
-            </TouchableOpacity>
-            <Text style={styles.monthText}>{monthNames[currentMonth]} {currentYear}</Text>
-            <TouchableOpacity onPress={goToNextMonth} style={styles.monthButton}>
-              <ChevronRight size={20} color={Colors.light.text} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.calendarGrid}>
-            <View style={styles.weekDaysRow}>
-              {dayNames.map((day) => (
-                <View key={day} style={styles.weekDayCell}>
-                  <Text style={styles.weekDayText}>{day}</Text>
-                </View>
-              ))}
-            </View>
-            
-            {weeks.map((week, weekIndex) => (
-              <View key={weekIndex} style={styles.weekRow}>
-                {week.map((day, dayIndex) => (
-                  <TouchableOpacity
-                    key={dayIndex}
-                    style={[
-                      styles.dayCell,
-                      isToday(day) && styles.todayCell,
-                      isSelected(day) && styles.selectedDayCell,
-                    ]}
-                    onPress={() => handleDayPress(day)}
-                    disabled={!day}
-                  >
-                    <Text
-                      style={[
-                        styles.dayText,
-                        !day && styles.emptyDayText,
-                        isToday(day) && styles.todayText,
-                        isSelected(day) && styles.selectedDayText,
-                      ]}
-                    >
-                      {day || ''}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-          </View>
-          
-          <View style={styles.selectedDateInfo}>
-            <Text style={styles.selectedDateLabel}>Selected Date</Text>
-            <Text style={styles.selectedDateValue}>
-              {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </Text>
-          </View>
-          
-          <View style={styles.calendarEvents}>
-            <View style={styles.eventsHeader}>
-              <Text style={styles.eventsTitle}>Events</Text>
-              <TouchableOpacity 
-                style={styles.newMeetingButton}
-                onPress={() => setIsNewMeetingModalVisible(true)}
-              >
-                <Plus size={18} color="#FFFFFF" />
-                <Text style={styles.newMeetingButtonText}>New</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              style={styles.eventsList}
-            >
-              {getEventsForSelectedDate().length === 0 ? (
-                <View style={styles.emptyEvents}>
-                  <Calendar size={32} color={Colors.light.textSecondary} />
-                  <Text style={styles.emptyEventsText}>No events for this day</Text>
-                  <TouchableOpacity 
-                    style={styles.addEventButton}
-                    onPress={() => setIsNewMeetingModalVisible(true)}
-                  >
-                    <Text style={styles.addEventButtonText}>Add Event</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                getEventsForSelectedDate().map(event => (
-                  <View key={event.id} style={styles.eventCard}>
-                    <View style={styles.eventCardHeader}>
-                      <View style={[styles.eventTypeIcon, { backgroundColor: event.type === 'video' ? '#5AC8FA20' : '#34C75920' }]}>
-                        {event.type === 'video' ? (
-                          <Video size={16} color="#5AC8FA" />
-                        ) : (
-                          <MapPin size={16} color="#34C759" />
-                        )}
-                      </View>
-                      <Text style={styles.eventTime}>{event.time}</Text>
-                      <TouchableOpacity
-                        onPress={() => handleDeleteEvent(event.id)}
-                        style={styles.deleteEventButton}
-                      >
-                        <Trash2 size={16} color={Colors.light.danger} />
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.eventTitle}>{event.title}</Text>
-                    {event.location && (
-                      <View style={styles.eventLocation}>
-                        <MapPin size={14} color={Colors.light.textSecondary} />
-                        <Text style={styles.eventLocationText}>{event.location}</Text>
-                      </View>
-                    )}
-                    {event.description && (
-                      <Text style={styles.eventDescription} numberOfLines={2}>{event.description}</Text>
-                    )}
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Animated.View>
-    );
-  };
+
+
+
+
+
+
+
+
 
   const renderFolders = () => (
     <View style={styles.container}>
@@ -942,7 +667,7 @@ export default function MailScreen() {
         <Text style={styles.headerTitle}>Mail</Text>
         <TouchableOpacity
           testID="calendar-toggle"
-          onPress={toggleCalendar}
+          onPress={calendar.toggleCalendar}
           style={styles.calendarButton}
         >
           <Calendar size={24} color={Colors.light.primary} />
@@ -1428,15 +1153,10 @@ export default function MailScreen() {
       {currentView === 'detail' && renderEmailDetail()}
       {currentView === 'compose' && renderCompose()}
 
-      {renderCalendar()}
-
-      {isCalendarVisible && (
-        <TouchableOpacity
-          style={styles.calendarOverlay}
-          activeOpacity={1}
-          onPress={toggleCalendar}
-        />
-      )}
+      <CalendarSidebar 
+        {...calendar}
+        insets={insets}
+      />
 
       {currentView !== 'compose' && currentView !== 'detail' && (
         <TouchableOpacity
@@ -1451,371 +1171,7 @@ export default function MailScreen() {
 
 
 
-      <Modal
-        visible={isNewMeetingModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsNewMeetingModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.aiModalBackdrop}
-            activeOpacity={1}
-            onPress={() => setIsNewMeetingModalVisible(false)}
-          />
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Meeting</Text>
-              <TouchableOpacity onPress={() => setIsNewMeetingModalVisible(false)}>
-                <X size={24} color={Colors.light.text} />
-              </TouchableOpacity>
-            </View>
 
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Title *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Meeting title"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={meetingTitle}
-                  onChangeText={setMeetingTitle}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Date</Text>
-                <TouchableOpacity 
-                  style={styles.dateDisplay}
-                  onPress={() => {
-                    console.log('Date picker pressed, current platform:', Platform.OS);
-                    setShowDatePicker(true);
-                  }}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Calendar size={16} color={Colors.light.primary} />
-                  <Text style={styles.dateDisplayText}>
-                    {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Start Time</Text>
-                <TouchableOpacity
-                  style={styles.dateDisplay}
-                  onPress={() => setShowStartTimePicker(true)}
-                  activeOpacity={0.7}
-                >
-                  <Clock size={16} color={Colors.light.primary} />
-                  <Text style={styles.dateDisplayText}>
-                    {startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>End Time</Text>
-                <TouchableOpacity
-                  style={styles.dateDisplay}
-                  onPress={() => setShowEndTimePicker(true)}
-                  activeOpacity={0.7}
-                >
-                  <Clock size={16} color={Colors.light.primary} />
-                  <Text style={styles.dateDisplayText}>
-                    {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Meeting Type</Text>
-                <View style={styles.meetingTypeContainer}>
-                  <TouchableOpacity
-                    style={[styles.meetingTypeButton, meetingType === 'video' && styles.meetingTypeButtonActive]}
-                    onPress={() => setMeetingType('video')}
-                  >
-                    <Video size={18} color={meetingType === 'video' ? '#FFFFFF' : Colors.light.text} />
-                    <Text style={[styles.meetingTypeText, meetingType === 'video' && styles.meetingTypeTextActive]}>Video Call</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.meetingTypeButton, meetingType === 'in-person' && styles.meetingTypeButtonActive]}
-                    onPress={() => setMeetingType('in-person')}
-                  >
-                    <MapPin size={18} color={meetingType === 'in-person' ? '#FFFFFF' : Colors.light.text} />
-                    <Text style={[styles.meetingTypeText, meetingType === 'in-person' && styles.meetingTypeTextActive]}>In Person</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Location</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={meetingType === 'video' ? 'Zoom, Meet, etc.' : 'Meeting room or address'}
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={meetingLocation}
-                  onChangeText={setMeetingLocation}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Meeting agenda or notes"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={meetingDescription}
-                  onChangeText={setMeetingDescription}
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[
-                styles.createMeetingButton,
-                !meetingTitle.trim() && styles.createMeetingButtonDisabled
-              ]}
-              onPress={handleCreateMeeting}
-              disabled={!meetingTitle.trim()}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.createMeetingButtonText}>Create Meeting</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {showDatePicker && Platform.OS === 'ios' && (
-        <Modal
-          visible={showDatePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowDatePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {showDatePicker && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-
-      {showDatePicker && Platform.OS === 'web' && (
-        <Modal
-          visible={showDatePicker}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowDatePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {showStartTimePicker && Platform.OS === 'ios' && (
-        <Modal
-          visible={showStartTimePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowStartTimePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowStartTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Start Time</Text>
-                <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display="spinner"
-                onChange={handleStartTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {showStartTimePicker && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={startTime}
-          mode="time"
-          display="default"
-          onChange={handleStartTimeChange}
-        />
-      )}
-
-      {showStartTimePicker && Platform.OS === 'web' && (
-        <Modal
-          visible={showStartTimePicker}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowStartTimePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowStartTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Start Time</Text>
-                <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display="default"
-                onChange={handleStartTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {showEndTimePicker && Platform.OS === 'ios' && (
-        <Modal
-          visible={showEndTimePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowEndTimePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowEndTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select End Time</Text>
-                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display="spinner"
-                onChange={handleEndTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {showEndTimePicker && Platform.OS === 'android' && (
-        <DateTimePicker
-          value={endTime}
-          mode="time"
-          display="default"
-          onChange={handleEndTimeChange}
-        />
-      )}
-
-      {showEndTimePicker && Platform.OS === 'web' && (
-        <Modal
-          visible={showEndTimePicker}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowEndTimePicker(false)}
-        >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowEndTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select End Time</Text>
-                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display="default"
-                onChange={handleEndTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
 
       <Modal
         visible={isAIModalVisible}
