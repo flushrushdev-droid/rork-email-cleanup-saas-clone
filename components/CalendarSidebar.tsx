@@ -669,8 +669,8 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
-                  })} will be removed.`
-                : 'This meeting will be removed permanently.'}
+                  })} will be removed`
+                : 'This meeting will be removed permanently'}
             </Text>
             <View style={styles.confirmActions}>
               <TouchableOpacity
