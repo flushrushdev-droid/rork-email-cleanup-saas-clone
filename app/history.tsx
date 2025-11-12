@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { 
@@ -11,7 +11,6 @@ import {
   TrendingDown,
   Calendar,
   Activity,
-  Trash,
 } from 'lucide-react-native';
 import { useHistory } from '@/contexts/HistoryContext';
 import Colors from '@/constants/colors';
@@ -57,7 +56,7 @@ const ACTION_LABELS: Record<HistoryActionType, string> = {
 };
 
 export default function HistoryScreen() {
-  const { entries, getStats, clearHistory } = useHistory();
+  const { entries, getStats } = useHistory();
   const [filter, setFilter] = useState<HistoryActionType | 'all'>('all');
   const insets = useSafeAreaInsets();
   
@@ -93,24 +92,6 @@ export default function HistoryScreen() {
     return date.toLocaleDateString();
   };
 
-  const handleClearHistory = () => {
-    Alert.alert(
-      'Clear History',
-      'Are you sure you want to clear all history? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: () => {
-            clearHistory();
-            Alert.alert('Success', 'History cleared successfully');
-          }
-        },
-      ]
-    );
-  };
-
   const renderHistoryItem = (entry: HistoryEntry) => {
     const Icon = ACTION_ICONS[entry.type];
     const color = ACTION_COLORS[entry.type];
@@ -141,16 +122,6 @@ export default function HistoryScreen() {
         options={{
           title: 'History',
           headerShown: true,
-          headerRight: () => (
-            <View style={styles.headerButtonContainer}>
-              <TouchableOpacity 
-                onPress={handleClearHistory} 
-                style={styles.headerButton}
-              >
-                <Trash size={20} color={Colors.light.danger} />
-              </TouchableOpacity>
-            </View>
-          ),
         }}
       />
 
@@ -393,10 +364,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textSecondary,
   },
-  headerButtonContainer: {
-    marginRight: 16,
-  },
-  headerButton: {
-    backgroundColor: 'transparent',
-  },
+
 });
