@@ -537,11 +537,15 @@ export default function MailScreen() {
   };
 
   const handleDateChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android' || Platform.OS === 'web') {
+    if (Platform.OS === 'android') {
       setShowDatePicker(false);
-    }
-    if (date) {
-      setSelectedDate(date);
+      if (date) {
+        setSelectedDate(date);
+      }
+    } else {
+      if (date) {
+        setSelectedDate(date);
+      }
     }
   };
 
@@ -1495,8 +1499,12 @@ export default function MailScreen() {
                 <Text style={styles.inputLabel}>Date</Text>
                 <TouchableOpacity 
                   style={styles.dateDisplay}
-                  onPress={() => setShowDatePicker(true)}
+                  onPress={() => {
+                    console.log('Date picker pressed, current platform:', Platform.OS);
+                    setShowDatePicker(true);
+                  }}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Calendar size={16} color={Colors.light.primary} />
                   <Text style={styles.dateDisplayText}>
@@ -1598,11 +1606,11 @@ export default function MailScreen() {
         </View>
       </Modal>
 
-      {showDatePicker && (
+      {showDatePicker && Platform.OS === 'ios' && (
         <Modal
           visible={showDatePicker}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setShowDatePicker(false)}
         >
           <View style={styles.datePickerOverlay}>
@@ -1621,7 +1629,49 @@ export default function MailScreen() {
               <DateTimePicker
                 value={selectedDate}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="spinner"
+                onChange={handleDateChange}
+                textColor={Colors.light.text}
+                style={styles.dateTimePicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {showDatePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+        />
+      )}
+
+      {showDatePicker && Platform.OS === 'web' && (
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={styles.datePickerOverlay}>
+            <TouchableOpacity 
+              style={styles.datePickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowDatePicker(false)}
+            />
+            <View style={[styles.datePickerContainer, { paddingBottom: 20 }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select Date</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.datePickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
                 onChange={handleDateChange}
                 textColor={Colors.light.text}
                 style={styles.dateTimePicker}
@@ -3019,6 +3069,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '90%',
     maxWidth: 400,
+    maxHeight: 400,
   },
   datePickerHeader: {
     flexDirection: 'row',
@@ -3039,7 +3090,7 @@ const styles = StyleSheet.create({
   dateTimePicker: {
     width: '100%',
     height: 200,
-    backgroundColor: Colors.light.background,
+    backgroundColor: 'transparent',
   },
   timeText: {
     flex: 1,
