@@ -1383,7 +1383,7 @@ export default function MailScreen() {
         />
       )}
 
-      {currentView !== 'compose' && (
+      {currentView !== 'compose' && currentView !== 'detail' && (
         <TouchableOpacity
           testID="compose-fab"
           style={[styles.composeFab, { bottom: insets.bottom + 30 }]}
