@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator
 import { Stack, router } from 'expo-router';
 import { Sparkles, CheckCircle2, XCircle, Archive, Trash2, FolderOpen } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type SuggestionType = 'archive' | 'delete' | 'move';
 
@@ -18,6 +18,7 @@ interface Suggestion {
 }
 
 export default function SuggestionsScreen() {
+  const { colors } = useTheme();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([
     {
       id: '1',
@@ -101,32 +102,30 @@ export default function SuggestionsScreen() {
   const getColor = (type: SuggestionType) => {
     switch (type) {
       case 'archive':
-        return Colors.light.primary;
+        return colors.primary;
       case 'delete':
-        return Colors.light.danger;
+        return colors.danger;
       case 'move':
-        return Colors.light.secondary;
+        return colors.secondary;
     }
   };
 
   return (
-    <>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen
         options={{
           title: 'Suggestions',
-          headerStyle: {
-            backgroundColor: Colors.light.surface,
-          },
-          headerTintColor: Colors.light.text,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
         }}
       />
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Sparkles size={28} color={Colors.light.primary} />
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+            <Sparkles size={28} color={colors.primary} />
           </View>
-          <Text style={styles.title}>Smart Suggestions</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>Smart Suggestions</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             AI-powered recommendations to keep your inbox clean and organized
           </Text>
         </View>
@@ -134,9 +133,9 @@ export default function SuggestionsScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {suggestions.length === 0 ? (
             <View style={styles.emptyState}>
-              <CheckCircle2 size={64} color={Colors.light.primary} />
-              <Text style={styles.emptyTitle}>All Caught Up!</Text>
-              <Text style={styles.emptyDescription}>
+              <CheckCircle2 size={64} color={colors.primary} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>All Caught Up!</Text>
+              <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
                 No suggestions at the moment. Check back later for new recommendations.
               </Text>
             </View>
@@ -147,36 +146,36 @@ export default function SuggestionsScreen() {
               const isProcessing = processingId === suggestion.id;
 
               return (
-                <View key={suggestion.id} style={styles.suggestionCard}>
+                <View key={suggestion.id} style={[styles.suggestionCard, { backgroundColor: colors.surface }]}>
                   <View style={styles.suggestionHeader}>
                     <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
                       <Icon size={24} color={color} />
                     </View>
                     <View style={styles.suggestionContent}>
-                      <Text style={styles.suggestionTitle}>{suggestion.title}</Text>
-                      <Text style={styles.suggestionDescription}>{suggestion.description}</Text>
+                      <Text style={[styles.suggestionTitle, { color: colors.text }]}>{suggestion.title}</Text>
+                      <Text style={[styles.suggestionDescription, { color: colors.textSecondary }]}>{suggestion.description}</Text>
                       <View style={styles.metaRow}>
                         <TouchableOpacity
-                          style={styles.badge}
+                          style={[styles.badge, { backgroundColor: colors.primary + '20' }]}
                           onPress={() => handleViewAffectedEmails(suggestion)}
                           activeOpacity={0.7}
                         >
-                          <Text style={styles.badgeText}>{suggestion.emailCount} emails</Text>
+                          <Text style={[styles.badgeText, { color: colors.primary }]}>{suggestion.emailCount} emails</Text>
                         </TouchableOpacity>
-                        <Text style={styles.reason}>{suggestion.reason}</Text>
+                        <Text style={[styles.reason, { color: colors.textSecondary }]}>{suggestion.reason}</Text>
                       </View>
                     </View>
                   </View>
 
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
-                      style={[styles.actionButton, styles.dismissButton]}
+                      style={[styles.actionButton, styles.dismissButton, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => handleDismiss(suggestion.id)}
                       disabled={isProcessing}
                       activeOpacity={0.7}
                     >
-                      <XCircle size={18} color={Colors.light.textSecondary} />
-                      <Text style={styles.dismissButtonText}>Dismiss</Text>
+                      <XCircle size={18} color={colors.textSecondary} />
+                      <Text style={[styles.dismissButtonText, { color: colors.textSecondary }]}>Dismiss</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -201,28 +200,23 @@ export default function SuggestionsScreen() {
           )}
           <View style={{ height: 100 }} />
         </ScrollView>
-      </View>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     padding: 20,
-    backgroundColor: Colors.light.surface,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   headerIcon: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.light.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -230,12 +224,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: Colors.light.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: '90%',
@@ -244,7 +236,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   suggestionCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -272,12 +263,10 @@ const styles = StyleSheet.create({
   suggestionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   suggestionDescription: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     marginBottom: 8,
     lineHeight: 20,
   },
@@ -288,7 +277,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   badge: {
-    backgroundColor: Colors.light.primary + '20',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -296,11 +284,9 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.primary,
   },
   reason: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
     fontStyle: 'italic' as const,
   },
   actionButtons: {
@@ -317,14 +303,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dismissButton: {
-    backgroundColor: Colors.light.background,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   dismissButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
   },
   applyButton: {
     flex: 1.2,
@@ -343,13 +326,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.light.text,
     marginTop: 24,
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
