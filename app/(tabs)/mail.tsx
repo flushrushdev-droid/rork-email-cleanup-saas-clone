@@ -57,6 +57,7 @@ export default function MailScreen() {
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [composeTo, setComposeTo] = useState('');
+  const [composeCc, setComposeCc] = useState('');
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
   const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
@@ -69,6 +70,7 @@ export default function MailScreen() {
   const [drafts, setDrafts] = useState<Array<{
     id: string;
     to: string;
+    cc?: string;
     subject: string;
     body: string;
     date: Date;
@@ -256,6 +258,7 @@ export default function MailScreen() {
 
   const handleCompose = () => {
     setComposeTo('');
+    setComposeCc('');
     setComposeSubject('');
     setComposeBody('');
     setCurrentView('compose');
@@ -270,6 +273,7 @@ export default function MailScreen() {
     const newDraft = {
       id: Date.now().toString(),
       to: composeTo,
+      cc: composeCc,
       subject: composeSubject,
       body: composeBody,
       date: new Date(),
@@ -283,6 +287,7 @@ export default function MailScreen() {
 
   const handleLoadDraft = (draft: typeof drafts[0]) => {
     setComposeTo(draft.to);
+    setComposeCc(draft.cc || '');
     setComposeSubject(draft.subject);
     setComposeBody(draft.body);
     setCurrentView('compose');
@@ -1137,6 +1142,7 @@ export default function MailScreen() {
   const handleReply = (email: EmailMessage) => {
     const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
     setComposeTo(senderEmail);
+    setComposeCc('');
     setComposeSubject(`Re: ${email.subject}`);
     setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
     setCurrentView('compose');
@@ -1146,6 +1152,7 @@ export default function MailScreen() {
     const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
     const allRecipients = [senderEmail, ...email.to].filter(e => e !== 'sarah.chen@company.com').join(', ');
     setComposeTo(allRecipients);
+    setComposeCc('');
     setComposeSubject(`Re: ${email.subject}`);
     setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
     setCurrentView('compose');
@@ -1153,6 +1160,7 @@ export default function MailScreen() {
 
   const handleForward = (email: EmailMessage) => {
     setComposeTo('');
+    setComposeCc('');
     setComposeSubject(`Fwd: ${email.subject}`);
     setComposeBody(`\n\n---\nForwarded message:\nFrom: ${email.from}\nDate: ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\nSubject: ${email.subject}\n\n${email.snippet}`);
     setCurrentView('compose');
@@ -1316,6 +1324,21 @@ export default function MailScreen() {
             placeholder="recipient@example.com"
             value={composeTo}
             onChangeText={setComposeTo}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholderTextColor={Colors.light.textSecondary}
+          />
+        </View>
+
+        <View style={styles.composeDivider} />
+
+        <View style={styles.composeField}>
+          <Text style={styles.composeLabel}>Cc</Text>
+          <TextInput
+            style={styles.composeInput}
+            placeholder="cc@example.com"
+            value={composeCc}
+            onChangeText={setComposeCc}
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor={Colors.light.textSecondary}
