@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { 
@@ -56,7 +56,7 @@ const ACTION_LABELS: Record<HistoryActionType, string> = {
 };
 
 export default function HistoryScreen() {
-  const { entries, getStats } = useHistory();
+  const { entries, getStats, clearHistory } = useHistory();
   const [filter, setFilter] = useState<HistoryActionType | 'all'>('all');
   const insets = useSafeAreaInsets();
   
@@ -116,6 +116,21 @@ export default function HistoryScreen() {
     );
   };
 
+  const handleClearHistory = () => {
+    Alert.alert(
+      'Clear History',
+      'Are you sure you want to clear all history? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear', 
+          style: 'destructive',
+          onPress: clearHistory 
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -123,7 +138,9 @@ export default function HistoryScreen() {
           title: 'History',
           headerShown: true,
           headerRight: () => (
-            <Trash2 size={22} color={Colors.light.danger} style={{ marginRight: -20 }} />
+            <TouchableOpacity onPress={handleClearHistory}>
+              <Trash2 size={22} color={Colors.light.danger} />
+            </TouchableOpacity>
           ),
         }}
       />
