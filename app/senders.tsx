@@ -117,7 +117,17 @@ export default function SendersScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: 'Top Senders', headerShown: true }} />
+      <Stack.Screen options={{ 
+        title: 'Top Senders', 
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+      }} />
       
       <View style={styles.searchContainer}>
         <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
