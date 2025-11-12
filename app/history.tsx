@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { 
@@ -56,7 +56,7 @@ const ACTION_LABELS: Record<HistoryActionType, string> = {
 };
 
 export default function HistoryScreen() {
-  const { entries, getStats, clearHistory } = useHistory();
+  const { entries, getStats } = useHistory();
   const [filter, setFilter] = useState<HistoryActionType | 'all'>('all');
   const insets = useSafeAreaInsets();
   
@@ -123,22 +123,9 @@ export default function HistoryScreen() {
           title: 'History',
           headerShown: true,
           headerRight: () => (
-            <TouchableOpacity
-              onPress={() => {
-                Alert.alert(
-                  'Clear History',
-                  'Are you sure you want to clear all history?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Clear', style: 'destructive', onPress: clearHistory },
-                  ]
-                );
-              }}
-              style={{ marginRight: 16 }}
-              activeOpacity={0.7}
-            >
+            <View style={{ marginRight: 16 }}>
               <Trash2 size={24} color={Colors.light.danger} />
-            </TouchableOpacity>
+            </View>
           ),
         }}
       />
