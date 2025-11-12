@@ -1458,11 +1458,11 @@ const styles = StyleSheet.create({
   wheelItemText: {
     fontSize: 20,
     fontWeight: '500',
-    color: '#999999',
+    color: Colors.light.textSecondary,
   },
   wheelItemTextActive: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
+    color: Colors.light.text,
   },
 });
