@@ -182,21 +182,19 @@ export default function NotesScreen() {
           headerStyle: { backgroundColor: Colors.light.surface },
           headerTintColor: Colors.light.text,
           headerShadowVisible: false,
-          headerRight: () => (
-            <View style={styles.headerButtonContainer}>
-              <TouchableOpacity
-                style={styles.headerButton}
-                onPress={openCreateModal}
-                testID="add-note-button"
-              >
-                <Plus size={20} color={Colors.light.primary} />
-              </TouchableOpacity>
-            </View>
-          ),
         }}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <TouchableOpacity 
+          style={styles.addNoteButton}
+          onPress={openCreateModal}
+          activeOpacity={0.7}
+          testID="add-note-button"
+        >
+          <Plus size={20} color={Colors.light.primary} />
+          <Text style={styles.addNoteText}>Create New Note</Text>
+        </TouchableOpacity>
         {notes.length === 0 ? (
           <View style={styles.emptyState}>
             <FileText size={64} color={Colors.light.textSecondary} />
@@ -371,12 +369,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
-  headerButtonContainer: {
-    marginRight: 16,
-  },
-  headerButton: {
-    backgroundColor: 'transparent',
-  },
+
   scrollContent: {
     padding: 16,
   },
@@ -555,5 +548,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.light.primary,
     fontWeight: '500',
+  },
+  addNoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.primary + '30',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  addNoteText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.primary,
   },
 });
