@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, X, Trash2, Calendar, FileText } from 'lucide-react-native';
+import { X, Trash2, Calendar, FileText } from 'lucide-react-native';
 
 import Colors from '@/constants/colors';
 
@@ -192,7 +192,6 @@ export default function NotesScreen() {
           activeOpacity={0.7}
           testID="add-note-button"
         >
-          <Plus size={20} color={Colors.light.primary} />
           <Text style={styles.addNoteText}>Create New Note</Text>
         </TouchableOpacity>
         {notes.length === 0 ? (
@@ -550,7 +549,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   addNoteButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.light.surface,
@@ -558,7 +556,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 20,
-    gap: 8,
     borderWidth: 1,
     borderColor: Colors.light.primary + '30',
     shadowColor: '#000',
