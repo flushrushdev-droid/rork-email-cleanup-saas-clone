@@ -926,6 +926,8 @@ export default function MailScreen() {
   const renderEmailDetail = () => {
     if (!selectedEmail) return null;
 
+    const hasMultipleRecipients = selectedEmail.to.length > 1;
+
     return (
       <View style={styles.container}>
         <View style={styles.detailHeader}>
@@ -1024,14 +1026,16 @@ export default function MailScreen() {
             <Mail size={18} color="#FFFFFF" />
             <Text style={styles.emailActionButtonText}>Reply</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            testID="reply-all-button"
-            style={styles.emailActionButton}
-            onPress={() => handleReplyAll(selectedEmail)}
-          >
-            <Users size={18} color="#FFFFFF" />
-            <Text style={styles.emailActionButtonText}>Reply All</Text>
-          </TouchableOpacity>
+          {hasMultipleRecipients && (
+            <TouchableOpacity
+              testID="reply-all-button"
+              style={styles.emailActionButton}
+              onPress={() => handleReplyAll(selectedEmail)}
+            >
+              <Users size={18} color="#FFFFFF" />
+              <Text style={styles.emailActionButtonText}>Reply All</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             testID="forward-button"
             style={styles.emailActionButton}
