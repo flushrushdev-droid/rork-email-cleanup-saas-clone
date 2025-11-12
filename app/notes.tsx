@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    height: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -476,6 +476,7 @@ const styles = StyleSheet.create({
   },
   modalBodyContent: {
     padding: 20,
+    paddingBottom: 100,
   },
   titleInput: {
     fontSize: 18,
@@ -493,7 +494,8 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.light.background,
     borderRadius: 12,
-    minHeight: 200,
+    minHeight: 150,
+    maxHeight: 250,
   },
   modalFooter: {
     flexDirection: 'row',
