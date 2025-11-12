@@ -5,9 +5,11 @@ import { Stack, useRouter } from 'expo-router';
 
 import Colors from '@/constants/colors';
 import { mockSenders } from '@/mocks/emailData';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function BlockedSendersScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
 
   const blockedSenders = mockSenders.filter(sender => sender.isBlocked);
@@ -38,30 +40,40 @@ export default function BlockedSendersScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Blocked Senders', headerShown: true }} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Stack.Screen 
+        options={{ 
+          title: 'Blocked Senders', 
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: colors.surface,
+          },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+        }} 
+      />
       
       <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Search size={20} color={Colors.light.textSecondary} />
+        <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
+          <Search size={20} color={colors.textSecondary} />
           <TextInput
             testID="blocked-senders-search"
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search blocked senders..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
         </View>
       </View>
 
       {filteredSenders.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <UserX size={64} color={Colors.light.textSecondary} />
+          <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
+            <UserX size={64} color={colors.textSecondary} />
           </View>
-          <Text style={styles.emptyTitle}>No Blocked Senders</Text>
-          <Text style={styles.emptyDescription}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Blocked Senders</Text>
+          <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
             {searchQuery 
               ? 'No blocked senders match your search'
               : 'You haven\'t blocked any senders yet'}
@@ -69,10 +81,10 @@ export default function BlockedSendersScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <Text style={styles.countText}>{filteredSenders.length} blocked sender{filteredSenders.length !== 1 ? 's' : ''}</Text>
+          <Text style={[styles.countText, { color: colors.textSecondary }]}>{filteredSenders.length} blocked sender{filteredSenders.length !== 1 ? 's' : ''}</Text>
           
           {filteredSenders.map((sender) => (
-            <View key={sender.id} style={styles.senderCard}>
+            <View key={sender.id} style={[styles.senderCard, { backgroundColor: colors.surface }]}>
               <TouchableOpacity
                 testID={`blocked-sender-card-${sender.id}`}
                 onPress={() => handleViewSenderEmails(sender.id)}
@@ -80,32 +92,32 @@ export default function BlockedSendersScreen() {
               >
                 <View style={styles.senderHeader}>
                   <View style={styles.senderInfo}>
-                    <View style={[styles.senderAvatar, { backgroundColor: Colors.light.danger }]}>
+                    <View style={[styles.senderAvatar, { backgroundColor: colors.danger }]}>
                       <Text style={styles.senderInitial}>
                         {sender.displayName?.[0] || sender.email[0].toUpperCase()}
                       </Text>
                     </View>
                     <View style={styles.senderDetails}>
-                      <Text style={styles.senderName} numberOfLines={1}>
+                      <Text style={[styles.senderName, { color: colors.text }]} numberOfLines={1}>
                         {sender.displayName || sender.email}
                       </Text>
-                      <Text style={styles.senderEmail} numberOfLines={1}>{sender.email}</Text>
+                      <Text style={[styles.senderEmail, { color: colors.textSecondary }]} numberOfLines={1}>{sender.email}</Text>
                     </View>
                   </View>
                 </View>
 
-                <View style={styles.statsRow}>
+                <View style={[styles.statsRow, { borderColor: colors.border }]}>
                   <View style={styles.statBox}>
-                    <Mail size={16} color={Colors.light.textSecondary} />
-                    <Text style={styles.statValue}>{sender.totalEmails}</Text>
-                    <Text style={styles.statLabel}>Blocked Emails</Text>
+                    <Mail size={16} color={colors.textSecondary} />
+                    <Text style={[styles.statValue, { color: colors.text }]}>{sender.totalEmails}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Blocked Emails</Text>
                   </View>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 testID={`unblock-${sender.id}`}
-                style={styles.unblockButton}
+                style={[styles.unblockButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleUnblock(sender.id, sender.email)}
               >
                 <Text style={styles.unblockButtonText}>Unblock Sender</Text>
