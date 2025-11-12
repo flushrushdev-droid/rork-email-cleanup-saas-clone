@@ -2662,7 +2662,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   weekDayCell: {
-    flex: 1,
+    width: '14.28%',
     alignItems: 'center',
     paddingVertical: 8,
   },
@@ -2680,7 +2680,6 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 2,
     borderRadius: 8,
   },
   todayCell: {
