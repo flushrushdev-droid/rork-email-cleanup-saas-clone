@@ -1,17 +1,17 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Mail, Zap, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check } from 'lucide-react-native';
+import { Mail, Zap, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
-
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
+  const { theme, colors, toggleTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [autoCleanup, setAutoCleanup] = React.useState(false);
 
@@ -21,44 +21,61 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Manage your preferences</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your preferences</Text>
       </View>
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Connected Account</Text>
           {user && (
-            <View style={styles.accountCard}>
-              <View style={styles.accountIcon}>
-                <Mail size={24} color={Colors.light.primary} />
+            <View style={[styles.accountCard, { backgroundColor: colors.surface }]}>
+              <View style={[styles.accountIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Mail size={24} color={colors.primary} />
               </View>
               <View style={styles.accountInfo}>
-                <Text style={styles.accountName}>{user.name || 'Google Account'}</Text>
-                <Text style={styles.accountEmail}>{user.email}</Text>
+                <Text style={[styles.accountName, { color: colors.text }]}>{user.name || 'Google Account'}</Text>
+                <Text style={[styles.accountEmail, { color: colors.textSecondary }]}>{user.email}</Text>
                 <View style={styles.statusRow}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.statusText}>Connected • Google</Text>
+                  <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+                  <Text style={[styles.statusText, { color: colors.success }]}>Connected • Google</Text>
                 </View>
               </View>
-              <Check size={20} color={Colors.light.success} />
+              <Check size={20} color={colors.success} />
             </View>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
           
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: Colors.light.info + '20' }]}> 
-                <Bell size={20} color={Colors.light.info} />
+              <View style={[styles.settingIcon, { backgroundColor: colors.text + '20' }]}>
+                <Moon size={20} color={colors.text} />
               </View>
               <View style={styles.settingContent}>
-                <Text style={styles.settingLabel}>Notifications</Text>
-                <Text style={styles.settingDescription}>Get alerts for important emails</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Switch between light and dark theme</Text>
+              </View>
+            </View>
+            <Switch
+              value={theme === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: colors.primary }}
+            />
+          </View>
+
+          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: colors.info + '20' }]}> 
+                <Bell size={20} color={colors.info} />
+              </View>
+              <View style={styles.settingContent}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Notifications</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Get alerts for important emails</Text>
               </View>
             </View>
             <Switch
@@ -67,18 +84,18 @@ export default function SettingsScreen() {
                 setNotificationsEnabled(v);
                 Alert.alert('Notifications', v ? 'Enabled' : 'Disabled');
               }}
-              trackColor={{ false: Colors.light.border, true: Colors.light.primary }}
+              trackColor={{ false: colors.border, true: colors.primary }}
             />
           </View>
 
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: Colors.light.warning + '20' }]}>
-                <Zap size={20} color={Colors.light.warning} />
+              <View style={[styles.settingIcon, { backgroundColor: colors.warning + '20' }]}>
+                <Zap size={20} color={colors.warning} />
               </View>
               <View style={styles.settingContent}>
-                <Text style={styles.settingLabel}>Auto Cleanup</Text>
-                <Text style={styles.settingDescription}>Automatically archive old emails</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Auto Cleanup</Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Automatically archive old emails</Text>
               </View>
             </View>
             <Switch
@@ -87,40 +104,40 @@ export default function SettingsScreen() {
                 setAutoCleanup(v);
                 Alert.alert('Auto Cleanup', v ? 'Enabled' : 'Disabled');
               }}
-              trackColor={{ false: Colors.light.border, true: Colors.light.primary }}
+              trackColor={{ false: colors.border, true: colors.primary }}
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security & Privacy</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Security & Privacy</Text>
           
-          <TouchableOpacity testID="menu-data" style={styles.menuItem} onPress={() => Alert.alert('Data Management', 'Coming soon')}>
-            <View style={[styles.menuIcon, { backgroundColor: Colors.light.secondary + '20' }]}>
-              <Database size={20} color={Colors.light.secondary} />
+          <TouchableOpacity testID="menu-data" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Data Management', 'Coming soon')}>
+            <View style={[styles.menuIcon, { backgroundColor: colors.secondary + '20' }]}>
+              <Database size={20} color={colors.secondary} />
             </View>
-            <Text style={styles.menuLabel}>Data Management</Text>
-            <ChevronRight size={20} color={Colors.light.textSecondary} />
+            <Text style={[styles.menuLabel, { color: colors.text }]}>Data Management</Text>
+            <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
           
-          <TouchableOpacity testID="menu-help" style={styles.menuItem} onPress={() => Alert.alert('Help', 'Visit our docs at help.example.com')}>
-            <View style={[styles.menuIcon, { backgroundColor: Colors.light.info + '20' }]}> 
-              <HelpCircle size={20} color={Colors.light.info} />
+          <TouchableOpacity testID="menu-help" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Help', 'Visit our docs at help.example.com')}>
+            <View style={[styles.menuIcon, { backgroundColor: colors.info + '20' }]}> 
+              <HelpCircle size={20} color={colors.info} />
             </View>
-            <Text style={styles.menuLabel}>Help & Documentation</Text>
-            <ChevronRight size={20} color={Colors.light.textSecondary} />
+            <Text style={[styles.menuLabel, { color: colors.text }]}>Help & Documentation</Text>
+            <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity testID="menu-terms" style={styles.menuItem} onPress={() => Alert.alert('Terms & Privacy', 'Read our policy on example.com/policy')}>
-            <View style={[styles.menuIcon, { backgroundColor: Colors.light.textSecondary + '20' }]}>
-              <FileText size={20} color={Colors.light.textSecondary} />
+          <TouchableOpacity testID="menu-terms" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Terms & Privacy', 'Read our policy on example.com/policy')}>
+            <View style={[styles.menuIcon, { backgroundColor: colors.textSecondary + '20' }]}>
+              <FileText size={20} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Terms & Privacy Policy</Text>
-            <ChevronRight size={20} color={Colors.light.textSecondary} />
+            <Text style={[styles.menuLabel, { color: colors.text }]}>Terms & Privacy Policy</Text>
+            <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -141,14 +158,14 @@ export default function SettingsScreen() {
           </View>
         </LinearGradient>
 
-        <TouchableOpacity testID="logout" style={styles.logoutButton} onPress={handleSignOut}>
-          <LogOut size={20} color={Colors.light.danger} />
-          <Text style={styles.logoutText}>Sign Out</Text>
+        <TouchableOpacity testID="logout" style={[styles.logoutButton, { backgroundColor: colors.surface, borderColor: colors.danger }]} onPress={handleSignOut}>
+          <LogOut size={20} color={colors.danger} />
+          <Text style={[styles.logoutText, { color: colors.danger }]}>Sign Out</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>InboxAI v1.0.0</Text>
-          <Text style={styles.footerText}>Made with ❤️ for productivity</Text>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>InboxAI v1.0.0</Text>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>Made with ❤️ for productivity</Text>
         </View>
 
       </ScrollView>
@@ -159,7 +176,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     paddingHorizontal: 16,
@@ -168,12 +184,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
   },
   scrollContent: {
     padding: 16,
@@ -184,13 +198,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 12,
   },
   accountCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -205,7 +217,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.light.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -215,12 +226,10 @@ const styles = StyleSheet.create({
   accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   accountEmail: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     marginBottom: 4,
   },
   statusRow: {
@@ -232,32 +241,26 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.light.success,
   },
   statusText: {
     fontSize: 12,
-    color: Colors.light.success,
     fontWeight: '500',
   },
   addButton: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: Colors.light.primary,
     borderStyle: 'dashed',
   },
   addButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.primary,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -286,17 +289,14 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   settingDescription: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -318,7 +318,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   upgradeCard: {
     borderRadius: 16,
@@ -360,17 +359,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.light.danger,
     marginBottom: 24,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.danger,
   },
   footer: {
     alignItems: 'center',
@@ -378,6 +374,5 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
 });

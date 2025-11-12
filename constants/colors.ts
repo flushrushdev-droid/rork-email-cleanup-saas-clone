@@ -1,4 +1,4 @@
-const colors = {
+const lightColors = {
   primary: '#007AFF',
   primaryDark: '#0051D5',
   secondary: '#5856D6',
@@ -50,11 +50,69 @@ const colors = {
   }
 };
 
+const darkColors = {
+  primary: '#0A84FF',
+  primaryDark: '#0969DA',
+  secondary: '#5E5CE6',
+  success: '#32D74B',
+  warning: '#FF9F0A',
+  danger: '#FF453A',
+  info: '#64D2FF',
+  
+  background: '#000000',
+  surface: '#1C1C1E',
+  surfaceSecondary: '#2C2C2E',
+  
+  text: '#FFFFFF',
+  textSecondary: '#98989D',
+  textTertiary: '#48484A',
+  
+  border: '#38383A',
+  divider: '#48484A',
+  
+  chart: {
+    blue: '#0A84FF',
+    purple: '#5E5CE6',
+    pink: '#FF375F',
+    orange: '#FF9F0A',
+    yellow: '#FFD60A',
+    green: '#32D74B',
+    teal: '#64D2FF',
+    indigo: '#5E5CE6',
+    red: '#FF453A',
+  },
+  
+  status: {
+    actionRequired: '#FF453A',
+    waiting: '#FF9F0A',
+    fyi: '#64D2FF',
+    lowValue: '#98989D',
+  },
+  
+  category: {
+    invoices: '#FF9F0A',
+    receipts: '#32D74B',
+    travel: '#64D2FF',
+    hr: '#5E5CE6',
+    legal: '#FF375F',
+    personal: '#0A84FF',
+    promotions: '#FFD60A',
+    social: '#FF6482',
+    system: '#98989D',
+  }
+};
+
 export default {
   light: {
-    ...colors,
-    tint: colors.primary,
-    tabIconDefault: colors.textSecondary,
-    tabIconSelected: colors.primary,
+    ...lightColors,
+    tint: lightColors.primary,
+    tabIconDefault: lightColors.textSecondary,
+    tabIconSelected: lightColors.primary,
+  },
+  dark: {
+    ...darkColors,
+    tint: darkColors.primary,
+    tabIconDefault: darkColors.textSecondary,
+    tabIconSelected: darkColors.primary,
   },
 };

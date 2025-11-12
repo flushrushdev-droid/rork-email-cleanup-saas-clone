@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GmailSyncProvider } from '@/contexts/GmailSyncContext';
 import { HistoryProvider } from '@/contexts/HistoryContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { trpc, trpcClient } from '@/lib/trpc';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -31,16 +32,18 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <AuthProvider>
-          <GmailSyncProvider>
-            <HistoryProvider>
-              <GestureHandlerRootView>
-                <StatusBar style="auto" />
-                <RootLayoutNav />
-              </GestureHandlerRootView>
-            </HistoryProvider>
-          </GmailSyncProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <GmailSyncProvider>
+              <HistoryProvider>
+                <GestureHandlerRootView>
+                  <StatusBar style="auto" />
+                  <RootLayoutNav />
+                </GestureHandlerRootView>
+              </HistoryProvider>
+            </GmailSyncProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </trpc.Provider>
     </QueryClientProvider>
   );
