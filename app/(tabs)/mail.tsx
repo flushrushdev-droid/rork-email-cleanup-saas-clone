@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler, Animated, Dimensions } from 'react-native';
-import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar, Sparkles, ChevronDown, Video, MapPin, Bell } from 'lucide-react-native';
+import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar, Sparkles, ChevronDown, Video, MapPin, Bell, Save } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1290,7 +1290,22 @@ export default function MailScreen() {
           <X size={24} color={Colors.light.text} />
         </TouchableOpacity>
         <Text style={styles.composeTitle}>New Message</Text>
-        <View style={styles.composeHeaderActions} />
+        <View style={styles.composeHeaderActions}>
+          <TouchableOpacity
+            testID="save-draft-button"
+            onPress={handleSaveDraft}
+            style={styles.headerActionButton}
+          >
+            <Save size={22} color={Colors.light.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="send-email-button"
+            onPress={handleSend}
+            style={styles.headerActionButton}
+          >
+            <Send size={22} color={Colors.light.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.composeForm} keyboardShouldPersistTaps="handled">
@@ -2514,6 +2529,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+  headerActionButton: {
+    padding: 4,
   },
   saveDraftButton: {
     padding: 4,
