@@ -3002,17 +3002,23 @@ const styles = StyleSheet.create({
   },
   datePickerOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   datePickerBackdrop: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   datePickerContainer: {
     backgroundColor: Colors.light.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
     padding: 20,
+    width: '90%',
+    maxWidth: 400,
   },
   datePickerHeader: {
     flexDirection: 'row',
