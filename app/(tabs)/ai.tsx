@@ -82,25 +82,25 @@ export default function AIAssistantScreen() {
       <View style={styles.contentContainer}>
         {messages.length === 0 ? (
           <ScrollView contentContainerStyle={styles.emptyContainer}>
-            <View style={styles.welcomeCard}>
-              <View style={styles.welcomeIcon}>
-                <Sparkles size={48} color={Colors.light.primary} />
+            <View style={[styles.welcomeCard, { backgroundColor: colors.surface }]}>
+              <View style={[styles.welcomeIcon, { backgroundColor: colors.primary + '15' }]}>
+                <Sparkles size={48} color={colors.primary} />
               </View>
-              <Text style={styles.welcomeTitle}>Welcome to your AI Assistant</Text>
-              <Text style={styles.welcomeText}>
+              <Text style={[styles.welcomeTitle, { color: colors.text }]}>Welcome to your AI Assistant</Text>
+              <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
                 I can help you manage your emails, create rules, prioritize messages, and save time.
               </Text>
             </View>
 
             <View style={styles.suggestionsContainer}>
-              <Text style={styles.suggestionsTitle}>Try asking:</Text>
+              <Text style={[styles.suggestionsTitle, { color: colors.text }]}>Try asking:</Text>
               {suggestions.map((suggestion, index) => (
                 <TouchableOpacity
                   key={index}
-                  style={styles.suggestionCard}
+                  style={[styles.suggestionCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}
                   onPress={() => setInput(suggestion)}
                 >
-                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                  <Text style={[styles.suggestionText, { color: colors.text }]}>{suggestion}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -119,13 +119,15 @@ export default function AIAssistantScreen() {
                         key={`${message.id}-${i}`}
                         style={[
                           styles.messageBubble,
-                          message.role === 'user' ? styles.userBubble : styles.assistantBubble,
+                          message.role === 'user' 
+                            ? { ...styles.userBubble, backgroundColor: colors.primary } 
+                            : { ...styles.assistantBubble, backgroundColor: colors.surface },
                         ]}
                       >
                         <Text
                           style={[
                             styles.messageText,
-                            message.role === 'user' ? styles.userText : styles.assistantText,
+                            message.role === 'user' ? styles.userText : { color: colors.text },
                           ]}
                         >
                           {part.text}
@@ -136,9 +138,9 @@ export default function AIAssistantScreen() {
                   
                   if (part.type === 'tool') {
                     return (
-                      <View key={`${message.id}-${i}`} style={styles.toolBubble}>
-                        <Sparkles size={16} color={Colors.light.secondary} />
-                        <Text style={styles.toolText}>
+                      <View key={`${message.id}-${i}`} style={[styles.toolBubble, { backgroundColor: colors.secondary + '15' }]}>
+                        <Sparkles size={16} color={colors.secondary} />
+                        <Text style={[styles.toolText, { color: colors.secondary }]}>
                           {part.state === 'input-streaming' || part.state === 'input-available'
                             ? `Calling ${part.toolName}...`
                             : part.state === 'output-available'
@@ -155,11 +157,11 @@ export default function AIAssistantScreen() {
             ))}
             
             {isTyping && (
-              <View style={[styles.messageBubble, styles.assistantBubble]}>
+              <View style={[styles.messageBubble, styles.assistantBubble, { backgroundColor: colors.surface }]}>
                 <View style={styles.typingIndicator}>
-                  <View style={[styles.typingDot, styles.typingDot1]} />
-                  <View style={[styles.typingDot, styles.typingDot2]} />
-                  <View style={[styles.typingDot, styles.typingDot3]} />
+                  <View style={[styles.typingDot, styles.typingDot1, { backgroundColor: colors.textSecondary }]} />
+                  <View style={[styles.typingDot, styles.typingDot2, { backgroundColor: colors.textSecondary }]} />
+                  <View style={[styles.typingDot, styles.typingDot3, { backgroundColor: colors.textSecondary }]} />
                 </View>
               </View>
             )}
@@ -169,20 +171,20 @@ export default function AIAssistantScreen() {
         )}
       </View>
 
-      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.inputBox}>
+      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 16, backgroundColor: colors.background, borderTopColor: colors.border }]}>
+        <View style={[styles.inputBox, { backgroundColor: colors.surface }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: colors.text }]}
             placeholder="Ask me anything about your emails..."
             value={input}
             onChangeText={setInput}
-            placeholderTextColor={Colors.light.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             multiline
             maxLength={500}
           />
           <TouchableOpacity 
             testID="ai-send"
-            style={[styles.sendButton, !input.trim() && styles.sendButtonDisabled]}
+            style={[styles.sendButton, { backgroundColor: colors.primary }, !input.trim() && styles.sendButtonDisabled]}
             onPress={handleSend}
             disabled={!input.trim() || isTyping}
           >
@@ -215,11 +217,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
   },
   contentContainer: {
     flex: 1,
@@ -229,7 +229,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   welcomeCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
@@ -244,7 +243,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.light.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -252,13 +250,11 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   welcomeText: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -268,15 +264,12 @@ const styles = StyleSheet.create({
   suggestionsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   suggestionCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.light.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -285,7 +278,6 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 15,
-    color: Colors.light.text,
     fontWeight: '500',
   },
   messagesContainer: {
@@ -299,11 +291,9 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: Colors.light.primary,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: Colors.light.surface,
   },
   messageText: {
     fontSize: 15,
@@ -312,22 +302,18 @@ const styles = StyleSheet.create({
   userText: {
     color: '#FFFFFF',
   },
-  assistantText: {
-    color: Colors.light.text,
-  },
+  assistantText: {},
   toolBubble: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.light.secondary + '15',
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
   },
   toolText: {
     fontSize: 14,
-    color: Colors.light.secondary,
     fontWeight: '600',
   },
   typingIndicator: {
@@ -338,7 +324,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.light.textSecondary,
   },
   typingDot1: {
     opacity: 0.4,
@@ -351,14 +336,11 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     padding: 16,
-    backgroundColor: Colors.light.background,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
   },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: Colors.light.surface,
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -372,7 +354,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: Colors.light.text,
     maxHeight: 100,
     paddingTop: 6,
   },
@@ -380,7 +361,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
