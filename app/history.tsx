@@ -137,19 +137,19 @@ export default function HistoryScreen() {
         options={{
           title: 'History',
           headerShown: true,
-          headerRight: () => (
-            <TouchableOpacity 
-              onPress={handleClearHistory}
-              activeOpacity={0.7}
-              style={{ backgroundColor: 'transparent' }}
-            >
-              <Trash2 size={22} color={Colors.light.danger} />
-            </TouchableOpacity>
-          ),
         }}
       />
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}>
+        <TouchableOpacity 
+          style={styles.clearHistoryButton}
+          onPress={handleClearHistory}
+          activeOpacity={0.7}
+        >
+          <Trash2 size={20} color={Colors.light.danger} />
+          <Text style={styles.clearHistoryText}>Clear History</Text>
+        </TouchableOpacity>
+
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Summary (60 Days)</Text>
           
@@ -388,5 +388,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textSecondary,
   },
-
+  clearHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.danger + '30',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  clearHistoryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.danger,
+  },
 });
