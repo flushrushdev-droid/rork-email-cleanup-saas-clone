@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
-import { Mail, Send, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, FileEdit, Calendar, Plus } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { Mail, Star, PenSquare, ChevronLeft, X } from 'lucide-react-native';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
@@ -19,20 +19,11 @@ import { AIModal } from '@/components/mail/AIModal';
 import { ComposeView } from '@/components/mail/ComposeView';
 import { EmailDetailView } from '@/components/mail/EmailDetailView';
 import { FoldersView } from '@/components/mail/FoldersView';
+import { InboxView } from '@/components/mail/InboxView';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
-const iconMap: Record<string, any> = {
-  'alert-circle': AlertCircle,
-  'receipt': Receipt,
-  'shopping-bag': ShoppingBag,
-  'plane': Plane,
-  'tag': Tag,
-  'users': Users,
-  'file-text': FileEdit,
-  'briefcase': FileEdit,
-  'scale': FileEdit,
-}
+
 
 export default function MailScreen() {
   const { isDemoMode } = useAuth();
@@ -403,240 +394,7 @@ export default function MailScreen() {
     );
   };
 
-  const renderInbox = () => (
-    <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={styles.headerTitle}>Mail</Text>
-        <TouchableOpacity
-          testID="calendar-toggle"
-          onPress={calendar.toggleCalendar}
-          style={styles.calendarButton}
-        >
-          <Calendar size={24} color={Colors.light.primary} />
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.searchContainer}>
-        <Search size={18} color={Colors.light.textSecondary} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search mail"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={Colors.light.textSecondary}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <X size={18} color={Colors.light.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.filterButtonsContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterButtonsScroll}
-        >
-          {(['all', 'unread', 'starred', 'drafts', 'sent', 'trash'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              testID={`filter-${filter}`}
-              style={[
-                styles.filterButton,
-                activeFilter === filter && styles.filterButtonActive,
-              ]}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  activeFilter === filter && styles.filterButtonTextActive,
-                ]}
-              >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {smartFolders.length > 0 && (
-        <View style={styles.smartFoldersSection}>
-          <Text style={styles.smartFoldersTitle}>Smart Folders</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.smartFoldersScroll}
-          >
-            {smartFolders.map((folder) => {
-              const Icon = iconMap[folder.icon] || FolderOpen;
-              return (
-                <TouchableOpacity
-                  key={folder.id}
-                  testID={`smart-folder-${folder.id}`}
-                  style={styles.smartFolderCard}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/folder-details',
-                      params: {
-                        folderName: folder.name,
-                        category: folder.category || '',
-                        folderColor: folder.color,
-                      },
-                    });
-                  }}
-                >
-                  <View style={[styles.smartFolderIcon, { backgroundColor: folder.color + '20' }]}>
-                    <Icon size={20} color={folder.color} />
-                  </View>
-                  <Text style={styles.smartFolderName} numberOfLines={1}>{folder.name}</Text>
-                  <View style={[styles.smartFolderBadge, { backgroundColor: folder.color }]}>
-                    <Text style={styles.smartFolderCount}>{folder.count}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            <TouchableOpacity
-              testID="create-folder-button"
-              style={styles.smartFolderCard}
-              onPress={() => setIsModalVisible(true)}
-            >
-              <View style={[styles.smartFolderIcon, styles.createFolderIcon]}>
-                <Plus size={24} color={Colors.light.primary} />
-              </View>
-              <Text style={[styles.smartFolderName, styles.createFolderText]}>Create</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      )}
-
-      <ScrollView 
-        style={styles.emailList} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
-      >
-        {activeFilter === 'drafts' ? (
-          drafts.length === 0 ? (
-            <View style={styles.emptyState}>
-              <FileEdit size={48} color={Colors.light.textSecondary} />
-              <Text style={styles.emptyText}>No drafts</Text>
-              <Text style={styles.emptySubtext}>Start composing to save drafts</Text>
-            </View>
-          ) : (
-            drafts.map((draft) => (
-              <TouchableOpacity
-                key={draft.id}
-                testID={`draft-${draft.id}`}
-                style={styles.draftCard}
-                onPress={() => handleLoadDraft(draft)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.draftCardContent}>
-                  <View style={styles.draftCardHeader}>
-                    <FileEdit size={16} color={Colors.light.primary} />
-                    <Text style={styles.draftBadge}>Draft</Text>
-                    <Text style={styles.draftDate}>{formatDate(draft.date)}</Text>
-                  </View>
-                  <Text style={styles.draftTo} numberOfLines={1}>
-                    To: {draft.to || '(no recipient)'}
-                  </Text>
-                  <Text style={styles.draftSubject} numberOfLines={1}>
-                    {draft.subject || '(no subject)'}
-                  </Text>
-                  {draft.body && (
-                    <Text style={styles.draftBody} numberOfLines={2}>
-                      {draft.body}
-                    </Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  testID={`delete-draft-${draft.id}`}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleDeleteDraft(draft.id);
-                  }}
-                  style={styles.deleteDraftButton}
-                >
-                  <Trash2 size={18} color={Colors.light.danger} />
-                </TouchableOpacity>
-              </TouchableOpacity>
-            ))
-          )
-        ) : activeFilter === 'sent' ? (
-          <View style={styles.emptyState}>
-            <Send size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No sent emails</Text>
-            <Text style={styles.emptySubtext}>Your sent messages will appear here</Text>
-          </View>
-        ) : activeFilter === 'trash' ? (
-          <View style={styles.emptyState}>
-            <Trash2 size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>Trash is empty</Text>
-            <Text style={styles.emptySubtext}>Deleted emails will appear here</Text>
-          </View>
-        ) : filteredEmails.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Mail size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No emails found</Text>
-          </View>
-        ) : (
-          filteredEmails.map((email: EmailMessage) => (
-            <TouchableOpacity
-              key={email.id}
-              testID={`email-${email.id}`}
-              style={[styles.emailCard, !email.isRead && styles.emailCardUnread]}
-              onPress={() => handleEmailPress(email)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.emailCardContent}>
-                <View style={styles.emailCardHeader}>
-                  <Text
-                    style={[styles.emailFrom, !email.isRead && styles.emailFromUnread]}
-                    numberOfLines={1}
-                  >
-                    {email.from.split('<')[0].trim() || email.from}
-                  </Text>
-                  <View style={styles.emailMeta}>
-                    <Text style={styles.emailDate}>{formatDate(email.date)}</Text>
-                    <TouchableOpacity
-                      testID={`star-${email.id}`}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleStar(email.id);
-                      }}
-                      style={styles.starButton}
-                    >
-                      <Star
-                        size={16}
-                        color={email.isStarred ? Colors.light.warning : Colors.light.textSecondary}
-                        fill={email.isStarred ? Colors.light.warning : 'none'}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <Text
-                  style={[styles.emailSubject, !email.isRead && styles.emailSubjectUnread]}
-                  numberOfLines={1}
-                >
-                  {email.subject}
-                </Text>
-                <Text style={styles.emailSnippet} numberOfLines={2}>
-                  {email.snippet}
-                </Text>
-                {email.hasAttachments && (
-                  <View style={styles.attachmentBadge}>
-                    <Paperclip size={12} color={Colors.light.textSecondary} />
-                  </View>
-                )}
-              </View>
-              {!email.isRead && <View style={styles.unreadDot} />}
-            </TouchableOpacity>
-          ))
-        )}
-      </ScrollView>
-    </View>
-  );
 
   const handleReply = (email: EmailMessage) => {
     const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
@@ -671,7 +429,24 @@ export default function MailScreen() {
 
   return (
     <View style={[styles.safeArea]}>
-      {currentView === 'inbox' && renderInbox()}
+      {currentView === 'inbox' && (
+        <InboxView
+          insets={insets}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          filteredEmails={filteredEmails}
+          drafts={drafts}
+          smartFolders={smartFolders}
+          onEmailPress={handleEmailPress}
+          onStarEmail={handleStar}
+          onLoadDraft={handleLoadDraft}
+          onDeleteDraft={handleDeleteDraft}
+          onCreateFolder={() => setIsModalVisible(true)}
+          onToggleCalendar={calendar.toggleCalendar}
+        />
+      )}
       {currentView === 'folders' && (
         <FoldersView
           insets={insets}
