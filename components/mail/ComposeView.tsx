@@ -140,7 +140,6 @@ export function ComposeView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   composeHeader: {
     flexDirection: 'row',
@@ -149,12 +148,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   composeTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   composeHeaderActions: {
     flexDirection: 'row',
@@ -178,12 +175,10 @@ const styles = StyleSheet.create({
   composeLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.light.textSecondary,
     marginBottom: 8,
   },
   composeInput: {
     fontSize: 16,
-    color: Colors.light.text,
     paddingVertical: 0,
   },
   composeBodyInput: {
@@ -192,7 +187,6 @@ const styles = StyleSheet.create({
   },
   composeDivider: {
     height: 1,
-    backgroundColor: Colors.light.border,
     marginHorizontal: 16,
   },
   attachButton: {
@@ -205,12 +199,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.light.border,
     borderStyle: 'dashed',
   },
   attachButtonText: {
     fontSize: 15,
-    color: Colors.light.primary,
     fontWeight: '500',
   },
   aiButton: {
@@ -223,12 +215,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.light.border,
     borderStyle: 'dashed',
   },
   aiButtonText: {
     fontSize: 15,
-    color: Colors.light.primary,
     fontWeight: '500',
   },
 });
