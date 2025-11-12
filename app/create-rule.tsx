@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Plus, X, ChevronDown } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   RuleCondition,
   RuleAction,
@@ -49,6 +49,7 @@ type DropdownState = {
 };
 
 export default function CreateRuleScreen() {
+  const { colors } = useTheme();
   const [ruleName, setRuleName] = useState<string>('');
   const [conditions, setConditions] = useState<RuleCondition[]>([
     { field: 'sender', operator: 'contains', value: '' },
@@ -155,18 +156,18 @@ export default function CreateRuleScreen() {
       <Stack.Screen
         options={{
           title: 'Create New Rule',
-          headerStyle: { backgroundColor: Colors.light.surface },
-          headerTintColor: Colors.light.text,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.section}>
-            <Text style={styles.label}>Rule Name</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Rule Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               placeholder="e.g., Archive old newsletters"
-              placeholderTextColor={Colors.light.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={ruleName}
               onChangeText={setRuleName}
             />
@@ -174,33 +175,33 @@ export default function CreateRuleScreen() {
 
           <View style={[styles.section, { zIndex: dropdown.visible && dropdown.type !== 'action' ? 1000 : 1 }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Conditions (When)</Text>
-              <Text style={styles.sectionSubtitle}>All conditions must be met</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Conditions (When)</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>All conditions must be met</Text>
             </View>
 
             {conditions.map((condition, index) => (
-              <View key={index} style={styles.conditionCard}>
+              <View key={index} style={[styles.conditionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={[styles.conditionRow, { zIndex: dropdown.visible && dropdown.index === index ? 1000 : 1 }]}>
                   <View style={[styles.pickerContainer, { zIndex: dropdown.visible && dropdown.type === 'field' && dropdown.index === index ? 1001 : 1 }]}>
-                    <Text style={styles.pickerLabel}>Field</Text>
+                    <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Field</Text>
                     <TouchableOpacity
-                      style={styles.picker}
+                      style={[styles.picker, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => openDropdown('field', index)}
                     >
-                      <Text style={styles.pickerValue}>
+                      <Text style={[styles.pickerValue, { color: colors.text }]}>
                         {CONDITION_FIELDS.find((f) => f.value === condition.field)?.label}
                       </Text>
-                      <ChevronDown size={16} color={Colors.light.textSecondary} />
+                      <ChevronDown size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                     {dropdown.visible && dropdown.type === 'field' && dropdown.index === index && (
-                      <View style={styles.dropdownMenu}>
+                      <View style={[styles.dropdownMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         {CONDITION_FIELDS.map((field) => (
                           <TouchableOpacity
                             key={field.value}
-                            style={styles.dropdownOption}
+                            style={[styles.dropdownOption, { borderBottomColor: colors.border }]}
                             onPress={() => selectDropdownOption(field.value)}
                           >
-                            <Text style={styles.dropdownOptionText}>{field.label}</Text>
+                            <Text style={[styles.dropdownOptionText, { color: colors.text }]}>{field.label}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -208,25 +209,25 @@ export default function CreateRuleScreen() {
                   </View>
 
                   <View style={[styles.pickerContainer, { zIndex: dropdown.visible && dropdown.type === 'operator' && dropdown.index === index ? 1001 : 1 }]}>
-                    <Text style={styles.pickerLabel}>Operator</Text>
+                    <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Operator</Text>
                     <TouchableOpacity
-                      style={styles.picker}
+                      style={[styles.picker, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => openDropdown('operator', index)}
                     >
-                      <Text style={styles.pickerValue}>
+                      <Text style={[styles.pickerValue, { color: colors.text }]}>
                         {OPERATORS.find((o) => o.value === condition.operator)?.label}
                       </Text>
-                      <ChevronDown size={16} color={Colors.light.textSecondary} />
+                      <ChevronDown size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                     {dropdown.visible && dropdown.type === 'operator' && dropdown.index === index && (
-                      <View style={styles.dropdownMenu}>
+                      <View style={[styles.dropdownMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         {OPERATORS.map((operator) => (
                           <TouchableOpacity
                             key={operator.value}
-                            style={styles.dropdownOption}
+                            style={[styles.dropdownOption, { borderBottomColor: colors.border }]}
                             onPress={() => selectDropdownOption(operator.value)}
                           >
-                            <Text style={styles.dropdownOptionText}>{operator.label}</Text>
+                            <Text style={[styles.dropdownOptionText, { color: colors.text }]}>{operator.label}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -235,9 +236,9 @@ export default function CreateRuleScreen() {
                 </View>
 
                 <View style={styles.valueRow}>
-                  <Text style={styles.pickerLabel}>Value</Text>
+                  <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Value</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                     placeholder={
                       condition.field === 'age'
                         ? 'Number of days'
@@ -245,7 +246,7 @@ export default function CreateRuleScreen() {
                         ? 'Keywords or phrase'
                         : 'Text to match'
                     }
-                    placeholderTextColor={Colors.light.textSecondary}
+                    placeholderTextColor={colors.textSecondary}
                     value={String(condition.value)}
                     onChangeText={(text) => {
                       const value = condition.field === 'age' ? Number(text) || 0 : text;
@@ -260,48 +261,48 @@ export default function CreateRuleScreen() {
                     style={styles.removeButton}
                     onPress={() => removeCondition(index)}
                   >
-                    <X size={16} color={Colors.light.danger} />
-                    <Text style={styles.removeButtonText}>Remove</Text>
+                    <X size={16} color={colors.danger} />
+                    <Text style={[styles.removeButtonText, { color: colors.danger }]}>Remove</Text>
                   </TouchableOpacity>
                 )}
               </View>
             ))}
 
-            <TouchableOpacity style={[styles.addButton, { zIndex: -1 }]} onPress={addCondition}>
-              <Plus size={18} color={Colors.light.primary} />
-              <Text style={styles.addButtonText}>Add Condition</Text>
+            <TouchableOpacity style={[styles.addButton, { zIndex: -1, backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={addCondition}>
+              <Plus size={18} color={colors.primary} />
+              <Text style={[styles.addButtonText, { color: colors.primary }]}>Add Condition</Text>
             </TouchableOpacity>
           </View>
 
           <View style={[styles.section, { zIndex: dropdown.visible && dropdown.type === 'action' ? 1000 : 1 }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Actions (Then)</Text>
-              <Text style={styles.sectionSubtitle}>What to do when conditions match</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Actions (Then)</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>What to do when conditions match</Text>
             </View>
 
             {actions.map((action, index) => (
-              <View key={index} style={styles.actionCard}>
+              <View key={index} style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={[styles.actionRow, { zIndex: dropdown.visible && dropdown.index === index ? 1000 : 1 }]}>
                   <View style={[styles.pickerContainer, { flex: 1, zIndex: dropdown.visible && dropdown.type === 'action' && dropdown.index === index ? 1001 : 1 }]}>
-                    <Text style={styles.pickerLabel}>Action</Text>
+                    <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Action</Text>
                     <TouchableOpacity
-                      style={styles.picker}
+                      style={[styles.picker, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => openDropdown('action', index)}
                     >
-                      <Text style={styles.pickerValue}>
+                      <Text style={[styles.pickerValue, { color: colors.text }]}>
                         {ACTION_TYPES.find((a) => a.value === action.type)?.label}
                       </Text>
-                      <ChevronDown size={16} color={Colors.light.textSecondary} />
+                      <ChevronDown size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                     {dropdown.visible && dropdown.type === 'action' && dropdown.index === index && (
-                      <View style={styles.dropdownMenu}>
+                      <View style={[styles.dropdownMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         {ACTION_TYPES.map((actionType) => (
                           <TouchableOpacity
                             key={actionType.value}
-                            style={styles.dropdownOption}
+                            style={[styles.dropdownOption, { borderBottomColor: colors.border }]}
                             onPress={() => selectDropdownOption(actionType.value)}
                           >
-                            <Text style={styles.dropdownOptionText}>{actionType.label}</Text>
+                            <Text style={[styles.dropdownOptionText, { color: colors.text }]}>{actionType.label}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -311,13 +312,13 @@ export default function CreateRuleScreen() {
 
                 {(action.type === 'label' || action.type === 'tag') && (
                   <View style={styles.valueRow}>
-                    <Text style={styles.pickerLabel}>
+                    <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>
                       {action.type === 'label' ? 'Label Name' : 'Tag Name'}
                     </Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
                       placeholder={action.type === 'label' ? 'e.g., Receipts' : 'e.g., finance'}
-                      placeholderTextColor={Colors.light.textSecondary}
+                      placeholderTextColor={colors.textSecondary}
                       value={action.value || ''}
                       onChangeText={(text) => updateAction(index, 'value', text)}
                     />
@@ -329,16 +330,16 @@ export default function CreateRuleScreen() {
                     style={styles.removeButton}
                     onPress={() => removeAction(index)}
                   >
-                    <X size={16} color={Colors.light.danger} />
-                    <Text style={styles.removeButtonText}>Remove</Text>
+                    <X size={16} color={colors.danger} />
+                    <Text style={[styles.removeButtonText, { color: colors.danger }]}>Remove</Text>
                   </TouchableOpacity>
                 )}
               </View>
             ))}
 
-            <TouchableOpacity style={[styles.addButton, { zIndex: -1 }]} onPress={addAction}>
-              <Plus size={18} color={Colors.light.primary} />
-              <Text style={styles.addButtonText}>Add Action</Text>
+            <TouchableOpacity style={[styles.addButton, { zIndex: -1, backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={addAction}>
+              <Plus size={18} color={colors.primary} />
+              <Text style={[styles.addButtonText, { color: colors.primary }]}>Add Action</Text>
             </TouchableOpacity>
           </View>
 
@@ -347,11 +348,11 @@ export default function CreateRuleScreen() {
 
 
 
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+        <View style={[styles.footer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => router.back()}>
+            <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Create Rule</Text>
           </TouchableOpacity>
         </View>
@@ -363,7 +364,6 @@ export default function CreateRuleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -378,35 +378,27 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
-    color: Colors.light.text,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   conditionCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   conditionRow: {
     flexDirection: 'row',
@@ -423,22 +415,18 @@ const styles = StyleSheet.create({
   pickerLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
     marginBottom: 6,
   },
   picker: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   pickerValue: {
     fontSize: 14,
-    color: Colors.light.text,
     fontWeight: '500',
   },
   removeButton: {
@@ -450,15 +438,12 @@ const styles = StyleSheet.create({
   removeButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.danger,
   },
   actionCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   actionRow: {
     marginBottom: 8,
@@ -468,43 +453,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: Colors.light.primary,
     borderStyle: 'dashed',
   },
   addButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.primary,
   },
   footer: {
     flexDirection: 'row',
     gap: 12,
     padding: 16,
-    backgroundColor: Colors.light.surface,
     borderTopWidth: 1,
-    borderColor: Colors.light.border,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: Colors.light.background,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   saveButton: {
     flex: 1,
-    backgroundColor: Colors.light.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -522,11 +498,9 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: Colors.light.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -539,11 +513,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   dropdownOptionText: {
     fontSize: 14,
-    color: Colors.light.text,
     fontWeight: '500',
   },
 });
