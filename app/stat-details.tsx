@@ -3,9 +3,9 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Mail, Archive, HardDrive, Sparkles, ArrowLeft, AlertCircle, Trash2, XCircle } from 'lucide-react-native';
-import Colors from '@/constants/colors';
 import { mockSenders, mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type StatType = 'unread' | 'noise' | 'files' | 'automated';
 
@@ -15,6 +15,7 @@ export default function StatDetailsScreen() {
   const type = params.type as StatType;
   const { messages, senders } = useGmailSync();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [deletedEmailIds, setDeletedEmailIds] = useState<Set<string>>(new Set());
 
   const handleDelete = (emailId: string, subject: string) => {
@@ -57,7 +58,7 @@ export default function StatDetailsScreen() {
         return {
           title: 'Unread Messages',
           icon: Mail,
-          color: Colors.light.primary,
+          color: colors.primary,
           count: (messages.length > 0 ? messages.filter(m => !m.isRead) : mockRecentEmails.filter(m => !m.isRead)).length,
           description: 'These are all your unread messages. Consider reading or archiving them to keep your inbox clean.',
         };
@@ -89,7 +90,7 @@ export default function StatDetailsScreen() {
         return {
           title: 'Details',
           icon: AlertCircle,
-          color: Colors.light.primary,
+          color: colors.primary,
           count: 0,
           description: '',
         };
@@ -108,23 +109,30 @@ export default function StatDetailsScreen() {
         
         return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Unread Messages ({unreadEmails.length})</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Unread Messages ({unreadEmails.length})</Text>
             {unreadEmails.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No unread messages! 🎉</Text>
+              <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No unread messages! 🎉</Text>
               </View>
             ) : (
               unreadEmails.map((email) => (
-                <View key={email.id} style={styles.emailCard}>
+                <TouchableOpacity 
+                  key={email.id} 
+                  style={[styles.emailCard, { backgroundColor: colors.surface }]}
+                  onPress={() => {
+                    router.push({ pathname: '/mail', params: { emailId: email.id } });
+                  }}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.emailHeader}>
-                    <View style={styles.emailIconContainer}>
-                      <Mail size={20} color={Colors.light.primary} />
+                    <View style={[styles.emailIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                      <Mail size={20} color={colors.primary} />
                     </View>
                     <View style={styles.emailContent}>
-                      <Text style={styles.emailSubject} numberOfLines={1}>{email.subject}</Text>
-                      <Text style={styles.emailFrom} numberOfLines={1}>{email.from}</Text>
-                      <Text style={styles.emailSnippet} numberOfLines={2}>{email.snippet}</Text>
-                      <Text style={styles.emailDate}>
+                      <Text style={[styles.emailSubject, { color: colors.text }]} numberOfLines={1}>{email.subject}</Text>
+                      <Text style={[styles.emailFrom, { color: colors.textSecondary }]} numberOfLines={1}>{email.from}</Text>
+                      <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>{email.snippet}</Text>
+                      <Text style={[styles.emailDate, { color: colors.textSecondary }]}>
                         {typeof email.date === 'string' 
                           ? new Date(email.date).toLocaleDateString()
                           : email.date.toLocaleDateString()
@@ -132,7 +140,7 @@ export default function StatDetailsScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>
@@ -145,37 +153,37 @@ export default function StatDetailsScreen() {
         
         return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>High Noise Senders ({noisySenders.length})</Text>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>High Noise Senders ({noisySenders.length})</Text>
+            <View style={[styles.infoBox, { backgroundColor: colors.primary + '20', borderLeftColor: colors.primary }]}>
+              <Text style={[styles.infoText, { color: colors.text }]}>
                 These senders have high email volume but low engagement. Consider unsubscribing or muting them.
               </Text>
             </View>
             {noisySenders.map((sender) => (
               <TouchableOpacity
                 key={sender.id}
-                style={styles.senderCard}
+                style={[styles.senderCard, { backgroundColor: colors.surface }]}
                 onPress={() => router.push({ pathname: '/senders', params: { q: sender.email } })}
                 activeOpacity={0.7}
               >
                 <View style={styles.senderInfo}>
-                  <View style={styles.senderAvatar}>
+                  <View style={[styles.senderAvatar, { backgroundColor: colors.primary }]}>
                     <Text style={styles.senderInitial}>
                       {sender.displayName?.[0] || sender.email[0].toUpperCase()}
                     </Text>
                   </View>
                   <View style={styles.senderDetails}>
-                    <Text style={styles.senderName} numberOfLines={1}>
+                    <Text style={[styles.senderName, { color: colors.text }]} numberOfLines={1}>
                       {sender.displayName || sender.email}
                     </Text>
-                    <Text style={styles.senderEmail} numberOfLines={1}>{sender.email}</Text>
-                    <Text style={styles.senderStats}>
+                    <Text style={[styles.senderEmail, { color: colors.textSecondary }]} numberOfLines={1}>{sender.email}</Text>
+                    <Text style={[styles.senderStats, { color: colors.textSecondary }]}>
                       {sender.totalEmails} emails • {sender.engagementRate}% engagement
                     </Text>
                   </View>
                 </View>
                 <View style={[styles.noiseBadge, { backgroundColor: sender.noiseScore >= 8 ? '#FFE5E5' : '#FFF4E5' }]}>
-                  <Text style={[styles.noiseScore, { color: sender.noiseScore >= 8 ? Colors.light.danger : Colors.light.warning }]}>
+                  <Text style={[styles.noiseScore, { color: sender.noiseScore >= 8 ? colors.danger : colors.warning }]}>
                     {sender.noiseScore.toFixed(1)}
                   </Text>
                 </View>
@@ -195,29 +203,29 @@ export default function StatDetailsScreen() {
         
         return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Large Attachments ({emailsWithFiles.length})</Text>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Large Attachments ({emailsWithFiles.length})</Text>
+            <View style={[styles.infoBox, { backgroundColor: colors.primary + '20', borderLeftColor: colors.primary }]}>
+              <Text style={[styles.infoText, { color: colors.text }]}>
                 Total storage used by large attachments. Download important files and delete old emails to free up space.
               </Text>
             </View>
             {emailsWithFiles.map((email) => (
-              <View key={email.id} style={styles.fileCard}>
-                <View style={styles.fileIconContainer}>
+              <View key={email.id} style={[styles.fileCard, { backgroundColor: colors.surface }]}>
+                <View style={[styles.fileIconContainer, { backgroundColor: '#5856D6' + '20' }]}>
                   <HardDrive size={20} color="#5856D6" />
                 </View>
                 <View style={styles.fileContent}>
-                  <Text style={styles.fileSubject} numberOfLines={1}>{email.subject}</Text>
-                  <Text style={styles.fileFrom} numberOfLines={1}>{email.from}</Text>
+                  <Text style={[styles.fileSubject, { color: colors.text }]} numberOfLines={1}>{email.subject}</Text>
+                  <Text style={[styles.fileFrom, { color: colors.textSecondary }]} numberOfLines={1}>{email.from}</Text>
                   <View style={styles.fileMetadata}>
-                    <Text style={styles.fileSize}>
+                    <Text style={[styles.fileSize, { color: '#5856D6' }]}>
                     {('size' in email 
                       ? (email.size / (1024 * 1024)).toFixed(2) 
                       : ('sizeBytes' in email ? (email.sizeBytes / (1024 * 1024)).toFixed(2) : '0')
                     )} MB
                   </Text>
-                    <Text style={styles.fileDot}>•</Text>
-                    <Text style={styles.fileCount}>
+                    <Text style={[styles.fileDot, { color: colors.textSecondary }]}>•</Text>
+                    <Text style={[styles.fileCount, { color: colors.textSecondary }]}>
                       {'attachmentCount' in email ? email.attachmentCount : '?'} files
                     </Text>
                   </View>
@@ -225,17 +233,17 @@ export default function StatDetailsScreen() {
                 <View style={styles.fileActions}>
                   <TouchableOpacity
                     onPress={() => handleDelete(email.id, email.subject)}
-                    style={styles.deleteButton}
+                    style={[styles.deleteButton, { backgroundColor: colors.danger + '20' }]}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Trash2 size={20} color={Colors.light.danger} />
+                    <Trash2 size={20} color={colors.danger} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handlePermanentDelete(email.id, email.subject)}
-                    style={styles.permanentDeleteButton}
+                    style={[styles.permanentDeleteButton, { backgroundColor: colors.danger + '30' }]}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <XCircle size={20} color={Colors.light.danger} />
+                    <XCircle size={20} color={colors.danger} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -246,43 +254,43 @@ export default function StatDetailsScreen() {
       case 'automated':
         return (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Automation Coverage</Text>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Automation Coverage</Text>
+            <View style={[styles.infoBox, { backgroundColor: colors.primary + '20', borderLeftColor: colors.primary }]}>
+              <Text style={[styles.infoText, { color: colors.text }]}>
                 56% of your emails are automatically organized by rules and filters. This helps keep your inbox clean and organized.
               </Text>
             </View>
             
-            <View style={styles.automationCard}>
-              <Text style={styles.automationTitle}>Active Automations</Text>
+            <View style={[styles.automationCard, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.automationTitle, { color: colors.text }]}>Active Automations</Text>
               <View style={styles.automationItem}>
-                <View style={styles.automationDot} />
+                <View style={[styles.automationDot, { backgroundColor: '#34C759' }]} />
                 <View style={styles.automationInfo}>
-                  <Text style={styles.automationName}>Auto-archive promotions</Text>
-                  <Text style={styles.automationDesc}>Moved 847 emails last month</Text>
+                  <Text style={[styles.automationName, { color: colors.text }]}>Auto-archive promotions</Text>
+                  <Text style={[styles.automationDesc, { color: colors.textSecondary }]}>Moved 847 emails last month</Text>
                 </View>
               </View>
               <View style={styles.automationItem}>
-                <View style={styles.automationDot} />
+                <View style={[styles.automationDot, { backgroundColor: '#34C759' }]} />
                 <View style={styles.automationInfo}>
-                  <Text style={styles.automationName}>Label receipts</Text>
-                  <Text style={styles.automationDesc}>Organized 203 emails</Text>
+                  <Text style={[styles.automationName, { color: colors.text }]}>Label receipts</Text>
+                  <Text style={[styles.automationDesc, { color: colors.textSecondary }]}>Organized 203 emails</Text>
                 </View>
               </View>
               <View style={styles.automationItem}>
-                <View style={styles.automationDot} />
+                <View style={[styles.automationDot, { backgroundColor: '#34C759' }]} />
                 <View style={styles.automationInfo}>
-                  <Text style={styles.automationName}>Mark newsletters as read</Text>
-                  <Text style={styles.automationDesc}>Processed 634 emails</Text>
+                  <Text style={[styles.automationName, { color: colors.text }]}>Mark newsletters as read</Text>
+                  <Text style={[styles.automationDesc, { color: colors.textSecondary }]}>Processed 634 emails</Text>
                 </View>
               </View>
             </View>
 
             <TouchableOpacity 
-              style={styles.createRuleButton}
+              style={[styles.createRuleButton, { backgroundColor: colors.primary }]}
               onPress={() => router.push('/rules')}
             >
-              <Text style={styles.createRuleText}>Create New Rule</Text>
+              <Text style={[styles.createRuleText, { color: '#FFFFFF' }]}>Create New Rule</Text>
             </TouchableOpacity>
           </View>
         );
@@ -293,14 +301,14 @@ export default function StatDetailsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{
           headerShown: true,
           title: statInfo.title,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft size={24} color={Colors.light.text} />
+              <ArrowLeft size={24} color={colors.text} />
             </TouchableOpacity>
           ),
         }}
@@ -327,7 +335,6 @@ export default function StatDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   backButton: {
     padding: 8,
@@ -374,34 +381,27 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 16,
   },
   infoBox: {
-    backgroundColor: '#E3F2FD',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.light.primary,
   },
   infoText: {
     fontSize: 14,
-    color: Colors.light.text,
     lineHeight: 20,
   },
   emptyState: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 40,
     alignItems: 'center',
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
   },
   emailCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -419,7 +419,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E3F2FD',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -429,26 +428,21 @@ const styles = StyleSheet.create({
   emailSubject: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   emailFrom: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     marginBottom: 6,
   },
   emailSnippet: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     lineHeight: 20,
     marginBottom: 4,
   },
   emailDate: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   senderCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -471,7 +465,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -486,17 +479,14 @@ const styles = StyleSheet.create({
   senderName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   senderEmail: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     marginBottom: 4,
   },
   senderStats: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   noiseBadge: {
     paddingHorizontal: 12,
@@ -508,7 +498,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   fileCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -525,7 +514,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EDE7F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -535,12 +523,10 @@ const styles = StyleSheet.create({
   fileSubject: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   fileFrom: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     marginBottom: 6,
   },
   fileMetadata: {
@@ -551,18 +537,14 @@ const styles = StyleSheet.create({
   fileSize: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#5856D6',
   },
   fileDot: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   fileCount: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   automationCard: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -575,7 +557,6 @@ const styles = StyleSheet.create({
   automationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 16,
   },
   automationItem: {
@@ -588,7 +569,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#34C759',
     marginTop: 6,
   },
   automationInfo: {
@@ -597,15 +577,12 @@ const styles = StyleSheet.create({
   automationName: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 2,
   },
   automationDesc: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   createRuleButton: {
-    backgroundColor: Colors.light.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -618,7 +595,6 @@ const styles = StyleSheet.create({
   createRuleText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   fileActions: {
     flexDirection: 'row',
@@ -629,7 +605,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFEBEE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -637,7 +612,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFCDD2',
     alignItems: 'center',
     justifyContent: 'center',
   },
