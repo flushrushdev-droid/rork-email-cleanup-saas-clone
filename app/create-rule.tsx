@@ -180,8 +180,8 @@ export default function CreateRuleScreen() {
 
             {conditions.map((condition, index) => (
               <View key={index} style={styles.conditionCard}>
-                <View style={styles.conditionRow}>
-                  <View style={styles.pickerContainer}>
+                <View style={[styles.conditionRow, { zIndex: dropdown.visible && dropdown.index === index ? 1000 : 1 }]}>
+                  <View style={[styles.pickerContainer, { zIndex: dropdown.visible && dropdown.type === 'field' && dropdown.index === index ? 1001 : 1 }]}>
                     <Text style={styles.pickerLabel}>Field</Text>
                     <TouchableOpacity
                       style={styles.picker}
@@ -207,7 +207,7 @@ export default function CreateRuleScreen() {
                     )}
                   </View>
 
-                  <View style={styles.pickerContainer}>
+                  <View style={[styles.pickerContainer, { zIndex: dropdown.visible && dropdown.type === 'operator' && dropdown.index === index ? 1001 : 1 }]}>
                     <Text style={styles.pickerLabel}>Operator</Text>
                     <TouchableOpacity
                       style={styles.picker}
@@ -281,8 +281,8 @@ export default function CreateRuleScreen() {
 
             {actions.map((action, index) => (
               <View key={index} style={styles.actionCard}>
-                <View style={styles.actionRow}>
-                  <View style={[styles.pickerContainer, { flex: 1 }]}>
+                <View style={[styles.actionRow, { zIndex: dropdown.visible && dropdown.index === index ? 1000 : 1 }]}>
+                  <View style={[styles.pickerContainer, { flex: 1, zIndex: dropdown.visible && dropdown.type === 'action' && dropdown.index === index ? 1001 : 1 }]}>
                     <Text style={styles.pickerLabel}>Action</Text>
                     <TouchableOpacity
                       style={styles.picker}
@@ -418,6 +418,7 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     flex: 1,
+    position: 'relative' as const,
   },
   pickerLabel: {
     fontSize: 13,
@@ -531,7 +532,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 5,
-    zIndex: 1000,
+    zIndex: 1002,
     maxHeight: 200,
   },
   dropdownOption: {
