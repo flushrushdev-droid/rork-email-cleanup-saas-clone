@@ -144,11 +144,13 @@ export default function HistoryScreen() {
         options={{
           title: 'History',
           headerShown: true,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
         }}
       />
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={{ height: insets.top }} />
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]} showsVerticalScrollIndicator={false}>
+
         <TouchableOpacity 
           style={[styles.clearHistoryButton, { 
             backgroundColor: colors.surface,
