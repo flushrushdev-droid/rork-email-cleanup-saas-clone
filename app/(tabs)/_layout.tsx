@@ -23,17 +23,17 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="mail"
-        options={{
-          title: 'Mail',
-          tabBarIcon: ({ color, size }) => <Mail size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="index"
         options={{
           title: 'Overview',
           tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="mail"
+        options={{
+          title: 'Mail',
+          tabBarIcon: ({ color, size }) => <Mail size={size} color={color} />,
         }}
       />
       <Tabs.Screen
