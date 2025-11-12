@@ -192,6 +192,14 @@ export function CalendarSidebar(props: CalendarRenderProps) {
       const newDate = new Date(selectedDate);
       newDate.setFullYear(year, month, day);
       setSelectedDate(newDate);
+      
+      const newStartTime = new Date(startTime);
+      newStartTime.setFullYear(year, month, day);
+      setStartTime(newStartTime);
+      
+      const newEndTime = new Date(endTime);
+      newEndTime.setFullYear(year, month, day);
+      setEndTime(newEndTime);
     }
     setShowDatePicker(false);
   };
@@ -1450,11 +1458,11 @@ const styles = StyleSheet.create({
   wheelItemText: {
     fontSize: 20,
     fontWeight: '500',
-    color: Colors.light.textSecondary,
+    color: '#999999',
   },
   wheelItemTextActive: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.light.text,
+    color: '#000000',
   },
 });
