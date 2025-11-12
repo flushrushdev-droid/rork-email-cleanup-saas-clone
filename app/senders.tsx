@@ -135,40 +135,42 @@ export default function SendersScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-        <TouchableOpacity
-          style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
-          onPress={() => setFilter('all')}
-        >
-          <Text style={[styles.filterChipText, filter === 'all' && styles.filterChipTextActive]}>
-            All ({mockSenders.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterChip, filter === 'marketing' && styles.filterChipActive]}
-          onPress={() => setFilter('marketing')}
-        >
-          <Text style={[styles.filterChipText, filter === 'marketing' && styles.filterChipTextActive]}>
-            Marketing ({mockSenders.filter(s => s.isMarketing).length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterChip, filter === 'high-noise' && styles.filterChipActive]}
-          onPress={() => setFilter('high-noise')}
-        >
-          <Text style={[styles.filterChipText, filter === 'high-noise' && styles.filterChipTextActive]}>
-            High Noise ({mockSenders.filter(s => s.noiseScore >= 7).length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterChip, filter === 'trusted' && styles.filterChipActive]}
-          onPress={() => setFilter('trusted')}
-        >
-          <Text style={[styles.filterChipText, filter === 'trusted' && styles.filterChipTextActive]}>
-            Trusted ({mockSenders.filter(s => s.isTrusted).length})
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <View style={styles.filtersContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
+            onPress={() => setFilter('all')}
+          >
+            <Text style={[styles.filterChipText, filter === 'all' && styles.filterChipTextActive]}>
+              All ({mockSenders.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'marketing' && styles.filterChipActive]}
+            onPress={() => setFilter('marketing')}
+          >
+            <Text style={[styles.filterChipText, filter === 'marketing' && styles.filterChipTextActive]}>
+              Marketing ({mockSenders.filter(s => s.isMarketing).length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'high-noise' && styles.filterChipActive]}
+            onPress={() => setFilter('high-noise')}
+          >
+            <Text style={[styles.filterChipText, filter === 'high-noise' && styles.filterChipTextActive]}>
+              High Noise ({mockSenders.filter(s => s.noiseScore >= 7).length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === 'trusted' && styles.filterChipActive]}
+            onPress={() => setFilter('trusted')}
+          >
+            <Text style={[styles.filterChipText, filter === 'trusted' && styles.filterChipTextActive]}>
+              Trusted ({mockSenders.filter(s => s.isTrusted).length})
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
 
       <View style={styles.sortContainer}>
         <Text style={styles.sortLabel}>Sort by:</Text>
@@ -350,9 +352,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  filtersContainer: {
+    backgroundColor: Colors.light.background,
+    paddingBottom: 12,
+    zIndex: 10,
+  },
   filtersScroll: {
     paddingHorizontal: 16,
-    marginBottom: 12,
     flexGrow: 0,
   },
   filterChip: {
@@ -377,9 +383,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    backgroundColor: Colors.light.background,
     gap: 12,
+    zIndex: 9,
   },
   sortLabel: {
     fontSize: 14,
