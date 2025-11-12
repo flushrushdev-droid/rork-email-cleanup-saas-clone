@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
@@ -43,7 +42,7 @@ const ACTION_TYPES: { value: RuleActionType; label: string }[] = [
   { value: 'delete', label: 'Delete' },
 ];
 
-type PickerModalState = {
+type DropdownState = {
   visible: boolean;
   type: 'field' | 'operator' | 'action' | null;
   index: number;
@@ -57,7 +56,7 @@ export default function CreateRuleScreen() {
   const [actions, setActions] = useState<RuleAction[]>([
     { type: 'archive' },
   ]);
-  const [pickerModal, setPickerModal] = useState<PickerModalState>({
+  const [dropdown, setDropdown] = useState<DropdownState>({
     visible: false,
     type: null,
     index: -1,
@@ -99,18 +98,22 @@ export default function CreateRuleScreen() {
     setActions(updated);
   };
 
-  const openPicker = (type: 'field' | 'operator' | 'action', index: number) => {
-    setPickerModal({ visible: true, type, index });
+  const openDropdown = (type: 'field' | 'operator' | 'action', index: number) => {
+    if (dropdown.visible && dropdown.type === type && dropdown.index === index) {
+      setDropdown({ visible: false, type: null, index: -1 });
+    } else {
+      setDropdown({ visible: true, type, index });
+    }
   };
 
-  const closePicker = () => {
-    setPickerModal({ visible: false, type: null, index: -1 });
+  const closeDropdown = () => {
+    setDropdown({ visible: false, type: null, index: -1 });
   };
 
-  const selectPickerOption = (
+  const selectDropdownOption = (
     value: RuleConditionField | RuleConditionOperator | RuleActionType
   ) => {
-    const { type, index } = pickerModal;
+    const { type, index } = dropdown;
 
     if (type === 'field') {
       updateCondition(index, 'field', value as RuleConditionField);
@@ -120,7 +123,7 @@ export default function CreateRuleScreen() {
       updateAction(index, 'type', value as RuleActionType);
     }
 
-    closePicker();
+    closeDropdown();
   };
 
   const handleSave = () => {
@@ -182,26 +185,52 @@ export default function CreateRuleScreen() {
                     <Text style={styles.pickerLabel}>Field</Text>
                     <TouchableOpacity
                       style={styles.picker}
-                      onPress={() => openPicker('field', index)}
+                      onPress={() => openDropdown('field', index)}
                     >
                       <Text style={styles.pickerValue}>
                         {CONDITION_FIELDS.find((f) => f.value === condition.field)?.label}
                       </Text>
                       <ChevronDown size={16} color={Colors.light.textSecondary} />
                     </TouchableOpacity>
+                    {dropdown.visible && dropdown.type === 'field' && dropdown.index === index && (
+                      <View style={styles.dropdownMenu}>
+                        {CONDITION_FIELDS.map((field) => (
+                          <TouchableOpacity
+                            key={field.value}
+                            style={styles.dropdownOption}
+                            onPress={() => selectDropdownOption(field.value)}
+                          >
+                            <Text style={styles.dropdownOptionText}>{field.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
 
                   <View style={styles.pickerContainer}>
                     <Text style={styles.pickerLabel}>Operator</Text>
                     <TouchableOpacity
                       style={styles.picker}
-                      onPress={() => openPicker('operator', index)}
+                      onPress={() => openDropdown('operator', index)}
                     >
                       <Text style={styles.pickerValue}>
                         {OPERATORS.find((o) => o.value === condition.operator)?.label}
                       </Text>
                       <ChevronDown size={16} color={Colors.light.textSecondary} />
                     </TouchableOpacity>
+                    {dropdown.visible && dropdown.type === 'operator' && dropdown.index === index && (
+                      <View style={styles.dropdownMenu}>
+                        {OPERATORS.map((operator) => (
+                          <TouchableOpacity
+                            key={operator.value}
+                            style={styles.dropdownOption}
+                            onPress={() => selectDropdownOption(operator.value)}
+                          >
+                            <Text style={styles.dropdownOptionText}>{operator.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 </View>
 
@@ -257,13 +286,26 @@ export default function CreateRuleScreen() {
                     <Text style={styles.pickerLabel}>Action</Text>
                     <TouchableOpacity
                       style={styles.picker}
-                      onPress={() => openPicker('action', index)}
+                      onPress={() => openDropdown('action', index)}
                     >
                       <Text style={styles.pickerValue}>
                         {ACTION_TYPES.find((a) => a.value === action.type)?.label}
                       </Text>
                       <ChevronDown size={16} color={Colors.light.textSecondary} />
                     </TouchableOpacity>
+                    {dropdown.visible && dropdown.type === 'action' && dropdown.index === index && (
+                      <View style={styles.dropdownMenu}>
+                        {ACTION_TYPES.map((actionType) => (
+                          <TouchableOpacity
+                            key={actionType.value}
+                            style={styles.dropdownOption}
+                            onPress={() => selectDropdownOption(actionType.value)}
+                          >
+                            <Text style={styles.dropdownOptionText}>{actionType.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 </View>
 
@@ -303,62 +345,7 @@ export default function CreateRuleScreen() {
           <View style={styles.bottomSpace} />
         </ScrollView>
 
-        <Modal
-          visible={pickerModal.visible}
-          transparent
-          animationType="fade"
-          onRequestClose={closePicker}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={closePicker}
-          >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {pickerModal.type === 'field'
-                    ? 'Select Field'
-                    : pickerModal.type === 'operator'
-                    ? 'Select Operator'
-                    : 'Select Action'}
-                </Text>
-              </View>
-              <ScrollView style={styles.modalOptions}>
-                {pickerModal.type === 'field' &&
-                  CONDITION_FIELDS.map((field) => (
-                    <TouchableOpacity
-                      key={field.value}
-                      style={styles.modalOption}
-                      onPress={() => selectPickerOption(field.value)}
-                    >
-                      <Text style={styles.modalOptionText}>{field.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                {pickerModal.type === 'operator' &&
-                  OPERATORS.map((operator) => (
-                    <TouchableOpacity
-                      key={operator.value}
-                      style={styles.modalOption}
-                      onPress={() => selectPickerOption(operator.value)}
-                    >
-                      <Text style={styles.modalOptionText}>{operator.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                {pickerModal.type === 'action' &&
-                  ACTION_TYPES.map((action) => (
-                    <TouchableOpacity
-                      key={action.value}
-                      style={styles.modalOption}
-                      onPress={() => selectPickerOption(action.value)}
-                    >
-                      <Text style={styles.modalOptionText}>{action.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-              </ScrollView>
-            </View>
-          </TouchableOpacity>
-        </Modal>
+
 
         <View style={styles.footer}>
           <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -529,41 +516,32 @@ const styles = StyleSheet.create({
   bottomSpace: {
     height: 100,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
-    width: '85%',
-    maxHeight: '60%',
-    overflow: 'hidden',
+    borderRadius: 12,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+    maxHeight: 200,
   },
-  modalHeader: {
-    padding: 20,
+  dropdownOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.light.text,
-    textAlign: 'center',
-  },
-  modalOptions: {
-    maxHeight: 300,
-  },
-  modalOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  modalOptionText: {
-    fontSize: 16,
+  dropdownOptionText: {
+    fontSize: 14,
     color: Colors.light.text,
     fontWeight: '500',
   },
