@@ -314,7 +314,6 @@ export function InboxView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     flexDirection: 'row',
@@ -326,7 +325,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   calendarButton: {
     padding: 4,
@@ -335,7 +333,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     marginHorizontal: 16,
     marginBottom: 16,
     paddingHorizontal: 12,
@@ -346,7 +343,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: Colors.light.text,
     paddingVertical: 0,
   },
   filterButtonsContainer: {
@@ -360,18 +356,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: Colors.light.surface,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   filterButtonActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
   },
   filterButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.light.text,
   },
   filterButtonTextActive: {
     color: '#FFFFFF',
@@ -384,7 +375,6 @@ const styles = StyleSheet.create({
   smartFoldersTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 12,
     paddingHorizontal: 16,
   },
@@ -407,7 +397,6 @@ const styles = StyleSheet.create({
   smartFolderName: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.light.text,
     textAlign: 'center',
   },
   smartFolderBadge: {
@@ -423,13 +412,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   createFolderIcon: {
-    backgroundColor: Colors.light.surface,
     borderWidth: 2,
-    borderColor: Colors.light.primary,
     borderStyle: 'dashed',
   },
   createFolderText: {
-    color: Colors.light.primary,
   },
   emailList: {
     flex: 1,
@@ -441,16 +427,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     marginTop: 4,
   },
   emailCard: {
-    backgroundColor: Colors.light.surface,
     marginHorizontal: 16,
     marginBottom: 8,
     borderRadius: 12,
@@ -478,7 +461,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.light.text,
   },
   emailFromUnread: {
     fontWeight: '700',
@@ -490,7 +472,6 @@ const styles = StyleSheet.create({
   },
   emailDate: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
   },
   starButton: {
     padding: 2,
@@ -498,7 +479,6 @@ const styles = StyleSheet.create({
   emailSubject: {
     fontSize: 14,
     fontWeight: '400',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   emailSubjectUnread: {
@@ -506,7 +486,6 @@ const styles = StyleSheet.create({
   },
   emailSnippet: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     lineHeight: 18,
   },
   attachmentBadge: {
@@ -516,18 +495,15 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.light.primary,
     marginLeft: 8,
   },
   draftCard: {
-    backgroundColor: Colors.light.surface,
     marginHorizontal: 16,
     marginBottom: 8,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     borderLeftWidth: 3,
-    borderLeftColor: Colors.light.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -546,30 +522,25 @@ const styles = StyleSheet.create({
   draftBadge: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.light.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   draftDate: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
     marginLeft: 'auto',
   },
   draftTo: {
     fontSize: 14,
-    color: Colors.light.text,
     marginBottom: 4,
     fontWeight: '500',
   },
   draftSubject: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   draftBody: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     lineHeight: 18,
   },
   deleteDraftButton: {
