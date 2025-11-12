@@ -317,7 +317,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                         onPress={() => handleDeleteEvent(event.id)}
                         style={styles.deleteEventButton}
                       >
-                        <Trash2 size={16} color={Colors.light.danger} />
+                        <Trash2 size={20} color={Colors.light.danger} />
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.eventTitle}>{event.title}</Text>
@@ -939,7 +939,9 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
   },
   deleteEventButton: {
-    padding: 4,
+    padding: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   eventTitle: {
     fontSize: 16,
