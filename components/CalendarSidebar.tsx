@@ -138,11 +138,25 @@ export function CalendarSidebar(props: CalendarRenderProps) {
   const [tempMonth, setTempMonth] = React.useState<string>('1');
   const [tempDay, setTempDay] = React.useState<string>('1');
 
+  const monthRef = React.useRef<ScrollView>(null);
+  const dayRef = React.useRef<ScrollView>(null);
+  const yearRef = React.useRef<ScrollView>(null);
+
   React.useEffect(() => {
     if (showDatePicker) {
       setTempYear(selectedDate.getFullYear().toString());
       setTempMonth((selectedDate.getMonth() + 1).toString());
       setTempDay(selectedDate.getDate().toString());
+      
+      setTimeout(() => {
+        const currentMonth = parseInt((selectedDate.getMonth() + 1).toString(), 10);
+        const currentDay = selectedDate.getDate();
+        const currentYear = selectedDate.getFullYear();
+        
+        monthRef.current?.scrollTo({ y: (currentMonth - 1) * 44, animated: false });
+        dayRef.current?.scrollTo({ y: (currentDay - 1) * 44, animated: false });
+        yearRef.current?.scrollTo({ y: (currentYear - 2000) * 44, animated: false });
+      }, 100);
     }
   }, [showDatePicker, selectedDate]);
 
@@ -212,59 +226,126 @@ export function CalendarSidebar(props: CalendarRenderProps) {
   const renderDatePicker = () => {
     if (!showDatePicker) return null;
 
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+    const years = Array.from({ length: 50 }, (_, i) => 2000 + i);
+
     return (
       <Modal
         visible={showDatePicker}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowDatePicker(false)}
       >
-        <View style={styles.iosPickerOverlay}>
+        <View style={styles.pickerCenterOverlay}>
           <Pressable
             testID="ios-date-picker-backdrop"
-            style={styles.iosPickerBackdrop}
+            style={styles.pickerBackdrop}
             onPress={() => setShowDatePicker(false)}
           />
-          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={styles.pickerCenterContainer}>
             <View style={styles.datePickerHeader}>
               <Text style={styles.datePickerTitle}>Select Date</Text>
               <TouchableOpacity onPress={handleDateConfirm} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Text style={styles.datePickerDone}>Done</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.dateInputsRow}>
-              <View style={styles.dateInputGroup}>
-                <Text style={styles.dateInputLabel}>Month</Text>
-                <TextInput
-                  style={styles.dateInput}
-                  value={tempMonth}
-                  onChangeText={setTempMonth}
-                  keyboardType="number-pad"
-                  placeholder="MM"
-                  maxLength={2}
-                />
+            <View style={styles.wheelPickersContainer}>
+              <View style={styles.wheelPickerColumn}>
+                <Text style={styles.wheelPickerLabel}>Month</Text>
+                <View style={styles.wheelPickerWrapper}>
+                  <View style={styles.wheelPickerHighlight} />
+                  <ScrollView
+                    ref={monthRef}
+                    showsVerticalScrollIndicator={false}
+                    snapToInterval={44}
+                    decelerationRate="fast"
+                    onMomentumScrollEnd={(e) => {
+                      const index = Math.round(e.nativeEvent.contentOffset.y / 44);
+                      setTempMonth((index + 1).toString());
+                    }}
+                    contentContainerStyle={styles.wheelScrollContent}
+                  >
+                    {months.map((month) => (
+                      <TouchableOpacity
+                        key={month}
+                        style={styles.wheelItem}
+                        onPress={() => {
+                          setTempMonth(month.toString());
+                          monthRef.current?.scrollTo({ y: (month - 1) * 44, animated: true });
+                        }}
+                      >
+                        <Text style={[styles.wheelItemText, tempMonth === month.toString() && styles.wheelItemTextActive]}>
+                          {month}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
               </View>
-              <View style={styles.dateInputGroup}>
-                <Text style={styles.dateInputLabel}>Day</Text>
-                <TextInput
-                  style={styles.dateInput}
-                  value={tempDay}
-                  onChangeText={setTempDay}
-                  keyboardType="number-pad"
-                  placeholder="DD"
-                  maxLength={2}
-                />
+              <View style={styles.wheelPickerColumn}>
+                <Text style={styles.wheelPickerLabel}>Day</Text>
+                <View style={styles.wheelPickerWrapper}>
+                  <View style={styles.wheelPickerHighlight} />
+                  <ScrollView
+                    ref={dayRef}
+                    showsVerticalScrollIndicator={false}
+                    snapToInterval={44}
+                    decelerationRate="fast"
+                    onMomentumScrollEnd={(e) => {
+                      const index = Math.round(e.nativeEvent.contentOffset.y / 44);
+                      setTempDay((index + 1).toString());
+                    }}
+                    contentContainerStyle={styles.wheelScrollContent}
+                  >
+                    {days.map((day) => (
+                      <TouchableOpacity
+                        key={day}
+                        style={styles.wheelItem}
+                        onPress={() => {
+                          setTempDay(day.toString());
+                          dayRef.current?.scrollTo({ y: (day - 1) * 44, animated: true });
+                        }}
+                      >
+                        <Text style={[styles.wheelItemText, tempDay === day.toString() && styles.wheelItemTextActive]}>
+                          {day}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
               </View>
-              <View style={[styles.dateInputGroup, { flex: 1.5 }]}>
-                <Text style={styles.dateInputLabel}>Year</Text>
-                <TextInput
-                  style={styles.dateInput}
-                  value={tempYear}
-                  onChangeText={setTempYear}
-                  keyboardType="number-pad"
-                  placeholder="YYYY"
-                  maxLength={4}
-                />
+              <View style={[styles.wheelPickerColumn, { flex: 1.3 }]}>
+                <Text style={styles.wheelPickerLabel}>Year</Text>
+                <View style={styles.wheelPickerWrapper}>
+                  <View style={styles.wheelPickerHighlight} />
+                  <ScrollView
+                    ref={yearRef}
+                    showsVerticalScrollIndicator={false}
+                    snapToInterval={44}
+                    decelerationRate="fast"
+                    onMomentumScrollEnd={(e) => {
+                      const index = Math.round(e.nativeEvent.contentOffset.y / 44);
+                      setTempYear((2000 + index).toString());
+                    }}
+                    contentContainerStyle={styles.wheelScrollContent}
+                  >
+                    {years.map((year) => (
+                      <TouchableOpacity
+                        key={year}
+                        style={styles.wheelItem}
+                        onPress={() => {
+                          setTempYear(year.toString());
+                          yearRef.current?.scrollTo({ y: (year - 2000) * 44, animated: true });
+                        }}
+                      >
+                        <Text style={[styles.wheelItemText, tempYear === year.toString() && styles.wheelItemTextActive]}>
+                          {year}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
               </View>
             </View>
           </View>
@@ -1302,5 +1383,78 @@ const styles = StyleSheet.create({
   },
   ampmTextActive: {
     color: '#FFFFFF',
+  },
+  pickerCenterOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 24,
+  },
+  pickerBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  pickerCenterContainer: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: Colors.light.background,
+    borderRadius: 24,
+    padding: 20,
+  },
+  wheelPickersContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  wheelPickerColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  wheelPickerLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.textSecondary,
+    marginBottom: 12,
+  },
+  wheelPickerWrapper: {
+    height: 176,
+    width: '100%',
+    position: 'relative',
+  },
+  wheelPickerHighlight: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    height: 44,
+    marginTop: -22,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  wheelScrollContent: {
+    paddingVertical: 66,
+  },
+  wheelItem: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wheelItemText: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: Colors.light.textSecondary,
+  },
+  wheelItemTextActive: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.light.text,
   },
 });
