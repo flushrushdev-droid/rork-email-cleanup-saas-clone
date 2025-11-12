@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Animated, StyleSheet, Modal, Platform, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Animated, StyleSheet, Modal, Platform, TextInput, Pressable } from 'react-native';
 import { SafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, X, ChevronLeft, ChevronRight, Plus, Video, MapPin, Trash2, Clock } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -122,6 +122,48 @@ export function CalendarSidebar(props: CalendarRenderProps) {
   
   const goToNextMonth = () => {
     setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
+  };
+
+  const renderIOSPicker = (
+    visible: boolean,
+    title: string,
+    mode: 'date' | 'time',
+    value: Date,
+    onChange: (event: any, date?: Date) => void,
+    onClose: () => void,
+  ) => {
+    if (!visible) {
+      return null;
+    }
+
+    return (
+      <View style={styles.iosPickerPortal} pointerEvents="box-none">
+        <Pressable
+          testID={`ios-${mode}-picker-backdrop`}
+          style={styles.iosPickerBackdrop}
+          onPress={onClose}
+        />
+        <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}
+        >
+          <View style={styles.datePickerHeader}>
+            <Text style={styles.datePickerTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.datePickerDone}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker
+            value={value}
+            mode={mode}
+            display="spinner"
+            onChange={(event, date) => {
+              console.log('CalendarSidebar picker change', { mode, date });
+              onChange(event, date ?? value);
+            }}
+            themeVariant="light"
+          />
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -403,37 +445,16 @@ export function CalendarSidebar(props: CalendarRenderProps) {
         </View>
       </Modal>
 
-      {showDatePicker && Platform.OS === 'ios' && (
-        <Modal
-          visible={showDatePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowDatePicker(false)}
-        >
-          <TouchableOpacity 
-            style={styles.datePickerOverlay}
-            activeOpacity={1}
-            onPress={() => setShowDatePicker(false)}
-          >
-            <View style={styles.datePickerBackdrop} />
-          </TouchableOpacity>
-          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.datePickerHeader}>
-              <Text style={styles.datePickerTitle}>Select Date</Text>
-              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text style={styles.datePickerDone}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="spinner"
-              onChange={handleDateChange}
-              themeVariant="light"
-            />
-          </View>
-        </Modal>
-      )}
+      {Platform.OS === 'ios'
+        ? renderIOSPicker(
+            showDatePicker,
+            'Select Date',
+            'date',
+            selectedDate,
+            handleDateChange,
+            () => setShowDatePicker(false),
+          )
+        : null}
 
       {showDatePicker && Platform.OS === 'android' && (
         <DateTimePicker
@@ -477,37 +498,16 @@ export function CalendarSidebar(props: CalendarRenderProps) {
         </Modal>
       )}
 
-      {showStartTimePicker && Platform.OS === 'ios' && (
-        <Modal
-          visible={showStartTimePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowStartTimePicker(false)}
-        >
-          <TouchableOpacity 
-            style={styles.datePickerOverlay}
-            activeOpacity={1}
-            onPress={() => setShowStartTimePicker(false)}
-          >
-            <View style={styles.datePickerBackdrop} />
-          </TouchableOpacity>
-          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.datePickerHeader}>
-              <Text style={styles.datePickerTitle}>Select Start Time</Text>
-              <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
-                <Text style={styles.datePickerDone}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              display="spinner"
-              onChange={handleStartTimeChange}
-              themeVariant="light"
-            />
-          </View>
-        </Modal>
-      )}
+      {Platform.OS === 'ios'
+        ? renderIOSPicker(
+            showStartTimePicker,
+            'Select Start Time',
+            'time',
+            startTime,
+            handleStartTimeChange,
+            () => setShowStartTimePicker(false),
+          )
+        : null}
 
       {showStartTimePicker && Platform.OS === 'android' && (
         <DateTimePicker
@@ -551,37 +551,16 @@ export function CalendarSidebar(props: CalendarRenderProps) {
         </Modal>
       )}
 
-      {showEndTimePicker && Platform.OS === 'ios' && (
-        <Modal
-          visible={showEndTimePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowEndTimePicker(false)}
-        >
-          <TouchableOpacity 
-            style={styles.datePickerOverlay}
-            activeOpacity={1}
-            onPress={() => setShowEndTimePicker(false)}
-          >
-            <View style={styles.datePickerBackdrop} />
-          </TouchableOpacity>
-          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
-            <View style={styles.datePickerHeader}>
-              <Text style={styles.datePickerTitle}>Select End Time</Text>
-              <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
-                <Text style={styles.datePickerDone}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <DateTimePicker
-              value={endTime}
-              mode="time"
-              display="spinner"
-              onChange={handleEndTimeChange}
-              themeVariant="light"
-            />
-          </View>
-        </Modal>
-      )}
+      {Platform.OS === 'ios'
+        ? renderIOSPicker(
+            showEndTimePicker,
+            'Select End Time',
+            'time',
+            endTime,
+            handleEndTimeChange,
+            () => setShowEndTimePicker(false),
+          )
+        : null}
 
       {showEndTimePicker && Platform.OS === 'android' && (
         <DateTimePicker
@@ -979,6 +958,23 @@ const styles = StyleSheet.create({
   },
   aiModalBackdrop: {
     flex: 1,
+  },
+  iosPickerPortal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
+    zIndex: 1500,
+  },
+  iosPickerBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   datePickerOverlay: {
     flex: 1,
