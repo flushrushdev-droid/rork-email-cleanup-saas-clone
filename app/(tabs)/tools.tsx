@@ -2,11 +2,13 @@ import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 
 export default function ToolsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const tools = [
     {
@@ -69,12 +71,12 @@ export default function ToolsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.title}>Tools</Text>
         <Text style={styles.subtitle}>Manage your inbox efficiently</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
         {tools.map((tool) => {
           const Icon = tool.icon;
           return (
@@ -96,7 +98,6 @@ export default function ToolsScreen() {
             </TouchableOpacity>
           );
         })}
-        <View style={{ height: 80 }} />
       </ScrollView>
     </View>
   );
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
     paddingBottom: 8,
   },
   title: {

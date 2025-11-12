@@ -3,12 +3,14 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert } f
 import { Mail, Zap, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 
 import Colors from '@/constants/colors';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [autoCleanup, setAutoCleanup] = React.useState(false);
@@ -20,12 +22,12 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={styles.title}>Settings</Text>
         <Text style={styles.subtitle}>Manage your preferences</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Connected Account</Text>
           {user && (
@@ -149,7 +151,6 @@ export default function SettingsScreen() {
           <Text style={styles.footerText}>Made with ❤️ for productivity</Text>
         </View>
 
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
     paddingBottom: 8,
   },
   title: {

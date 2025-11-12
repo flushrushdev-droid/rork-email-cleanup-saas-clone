@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Sparkles, Send, Loader } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRorkAgent, createRorkTool } from '@rork-ai/toolkit-sdk';
 import { z } from 'zod';
 
 import Colors from '@/constants/colors';
 
 export default function AIAssistantScreen() {
+  const insets = useSafeAreaInsets();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -68,7 +70,7 @@ export default function AIAssistantScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.titleContainer}>
           <Sparkles size={28} color={Colors.light.primary} />
           <Text style={styles.title}>AI Assistant</Text>
@@ -166,7 +168,7 @@ export default function AIAssistantScreen() {
         )}
       </View>
 
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.inputBox}>
           <TextInput
             style={styles.input}
@@ -201,7 +203,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
     paddingBottom: 12,
   },
   titleContainer: {

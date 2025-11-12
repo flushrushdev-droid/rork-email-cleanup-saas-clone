@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator
 import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, CheckCircle2, Trash2, FolderOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 
@@ -11,6 +12,7 @@ import { mockInboxHealth, mockRecentEmails } from '@/mocks/emailData';
 
 export default function OverviewScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { isAuthenticated, user, isLoading, isDemoMode } = useAuth();
   const { syncMailbox, isSyncing, messages, syncProgress, profile } = useGmailSync();
   
@@ -52,7 +54,7 @@ export default function OverviewScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -252,7 +254,7 @@ export default function OverviewScreen() {
             ))}
         </View>
 
-        <View style={{ height: 40 }} />
+
       </ScrollView>
     </View>
   );
@@ -264,7 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
   },
   header: {
     marginBottom: 20,
