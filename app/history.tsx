@@ -397,5 +397,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerButton: {
+    backgroundColor: 'transparent',
   },
 });

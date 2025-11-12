@@ -375,6 +375,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerButton: {
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: 16,

@@ -2596,6 +2596,7 @@ const styles = StyleSheet.create({
   },
   calendarButton: {
     padding: 4,
+    backgroundColor: 'transparent',
   },
   calendarOverlay: {
     position: 'absolute',
