@@ -4,7 +4,7 @@ import { SafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, X, ChevronLeft, ChevronRight, Plus, Video, MapPin, Trash2, Clock } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Colors from '@/constants/colors';
-import type { CalendarEvent } from '@/hooks/useCalendar';
+import type { CalendarEvent, CalendarFeedback } from '@/hooks/useCalendar';
 
 interface CalendarRenderProps {
   isCalendarVisible: boolean;
@@ -31,14 +31,19 @@ interface CalendarRenderProps {
   setShowStartTimePicker: (show: boolean) => void;
   showEndTimePicker: boolean;
   setShowEndTimePicker: (show: boolean) => void;
-  events: CalendarEvent[];
+  pendingDeleteEventId: string | null;
+  pendingDeleteEvent?: CalendarEvent;
   toggleCalendar: () => void;
   handleCreateMeeting: () => void;
   handleDateChange: (event: any, date?: Date) => void;
   handleStartTimeChange: (event: any, date?: Date) => void;
   handleEndTimeChange: (event: any, date?: Date) => void;
   handleDeleteEvent: (eventId: string) => void;
+  cancelDeleteEvent: () => void;
+  confirmDeleteEvent: () => void;
   getEventsForSelectedDate: () => CalendarEvent[];
+  feedback: CalendarFeedback | null;
+  clearFeedback: () => void;
   insets: SafeAreaInsets;
 }
 
@@ -66,13 +71,19 @@ export function CalendarSidebar(props: CalendarRenderProps) {
     setShowStartTimePicker,
     showEndTimePicker,
     setShowEndTimePicker,
+    pendingDeleteEventId,
+    pendingDeleteEvent,
     toggleCalendar,
     handleCreateMeeting,
     handleDateChange,
     handleStartTimeChange,
     handleEndTimeChange,
     handleDeleteEvent,
+    cancelDeleteEvent,
+    confirmDeleteEvent,
     getEventsForSelectedDate,
+    feedback,
+    clearFeedback,
     insets,
   } = props;
 
@@ -177,6 +188,37 @@ export function CalendarSidebar(props: CalendarRenderProps) {
         </View>
         
         <View style={styles.calendarContent}>
+          {feedback && (
+            <View
+              style={[
+                styles.feedbackBanner,
+                feedback.type === 'success' ? styles.feedbackBannerSuccess : styles.feedbackBannerError,
+              ]}
+            >
+              <View
+                style={[
+                  styles.feedbackIndicator,
+                  feedback.type === 'success' ? styles.feedbackIndicatorSuccess : styles.feedbackIndicatorError,
+                ]}
+              />
+              <Text
+                style={[
+                  styles.feedbackText,
+                  feedback.type === 'success' ? styles.feedbackTextSuccess : styles.feedbackTextError,
+                ]}
+              >
+                {feedback.message}
+              </Text>
+              <TouchableOpacity
+                onPress={clearFeedback}
+                style={styles.feedbackDismiss}
+                testID="dismiss-calendar-feedback"
+                accessibilityRole="button"
+              >
+                <X size={16} color={feedback.type === 'success' ? Colors.light.success : Colors.light.danger} />
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={styles.monthNavigation}>
             <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
               <ChevronLeft size={20} color={Colors.light.text} />
@@ -603,6 +645,52 @@ export function CalendarSidebar(props: CalendarRenderProps) {
           </View>
         </Modal>
       )}
+
+      <Modal
+        visible={Boolean(pendingDeleteEventId)}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDeleteEvent}
+      >
+        <View style={styles.confirmOverlay}>
+          <TouchableOpacity
+            style={styles.confirmBackdrop}
+            activeOpacity={1}
+            onPress={cancelDeleteEvent}
+          />
+          <View style={[styles.confirmContent, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.confirmIcon}>
+              <Trash2 size={24} color={Colors.light.danger} />
+            </View>
+            <Text style={styles.confirmTitle}>Delete meeting?</Text>
+            <Text style={styles.confirmDescription}>
+              {pendingDeleteEvent
+                ? `"${pendingDeleteEvent.title}" scheduled for ${pendingDeleteEvent.time} on ${pendingDeleteEvent.date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })} will be removed.`
+                : 'This meeting will be removed permanently.'}
+            </Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={styles.confirmCancelButton}
+                onPress={cancelDeleteEvent}
+                testID="cancel-delete-meeting"
+              >
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmDeleteButton}
+                onPress={confirmDeleteEvent}
+                testID="confirm-delete-meeting"
+              >
+                <Text style={styles.confirmDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -651,6 +739,49 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  feedbackBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+    marginBottom: 16,
+    gap: 12,
+  },
+  feedbackBannerSuccess: {
+    backgroundColor: '#E9F6EE',
+  },
+  feedbackBannerError: {
+    backgroundColor: '#FDECEF',
+  },
+  feedbackIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  feedbackIndicatorSuccess: {
+    backgroundColor: Colors.light.success,
+  },
+  feedbackIndicatorError: {
+    backgroundColor: Colors.light.danger,
+  },
+  feedbackText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  feedbackTextSuccess: {
+    color: Colors.light.success,
+  },
+  feedbackTextError: {
+    color: Colors.light.danger,
+  },
+  feedbackDismiss: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   monthNavigation: {
     flexDirection: 'row',
@@ -886,6 +1017,84 @@ const styles = StyleSheet.create({
   meetingTypeTextActive: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  confirmBackdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  confirmContent: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+  },
+  confirmIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFE9EA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  confirmTitle: {
+    marginTop: 20,
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.light.text,
+    textAlign: 'center',
+  },
+  confirmDescription: {
+    marginTop: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.light.textSecondary,
+    textAlign: 'center',
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 28,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.surface,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: Colors.light.danger,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmDeleteText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,

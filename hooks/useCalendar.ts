@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Animated, Dimensions, BackHandler, Platform, Alert } from 'react-native';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Animated, Dimensions, BackHandler, Platform } from 'react-native';
 
 export interface CalendarEvent {
   id: string;
@@ -10,6 +10,11 @@ export interface CalendarEvent {
   description: string;
   type: 'in-person' | 'video';
 }
+
+export type CalendarFeedback = {
+  type: 'success' | 'error';
+  message: string;
+};
 
 export function useCalendar() {
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
@@ -26,6 +31,29 @@ export function useCalendar() {
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [pendingDeleteEventId, setPendingDeleteEventId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<CalendarFeedback | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearFeedback = useCallback(() => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+    setFeedback(null);
+  }, []);
+
+  const showFeedback = useCallback(
+    (type: CalendarFeedback['type'], message: string) => {
+      clearFeedback();
+      setFeedback({ type, message });
+      feedbackTimeoutRef.current = setTimeout(() => {
+        setFeedback(null);
+        feedbackTimeoutRef.current = null;
+      }, 3200);
+    },
+    [clearFeedback],
+  );
 
   const toggleCalendar = useCallback(() => {
     const toValue = isCalendarVisible ? Dimensions.get('window').width : 0;
@@ -50,9 +78,20 @@ export function useCalendar() {
     return () => backHandler.remove();
   }, [isCalendarVisible, toggleCalendar]);
 
+  useEffect(() => {
+    return () => {
+      clearFeedback();
+    };
+  }, [clearFeedback]);
+
   const handleCreateMeeting = () => {
     if (!meetingTitle.trim()) {
-      Alert.alert('Missing Information', 'Please enter meeting title');
+      showFeedback('error', 'Please enter a meeting title.');
+      return;
+    }
+
+    if (endTime <= startTime) {
+      showFeedback('error', 'End time must be after start time.');
       return;
     }
 
@@ -73,15 +112,17 @@ export function useCalendar() {
     };
 
     setEvents(prev => [...prev, newEvent]);
-    Alert.alert('Success', 'Meeting created successfully!');
-    
+    showFeedback('success', 'Meeting created successfully.');
+
     setMeetingTitle('');
     setMeetingLocation('');
     setMeetingDescription('');
     setMeetingType('video');
-    const now = new Date();
-    setStartTime(now);
-    setEndTime(new Date(now.getTime() + 60 * 60 * 1000));
+    const resetStart = new Date(selectedDate);
+    resetStart.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+    const resetEnd = new Date(resetStart.getTime() + 60 * 60 * 1000);
+    setStartTime(resetStart);
+    setEndTime(resetEnd);
     setIsNewMeetingModalVisible(false);
   };
 
@@ -91,19 +132,26 @@ export function useCalendar() {
       if (date) {
         setSelectedDate(date);
       }
-    } else {
-      if (date) {
-        setSelectedDate(date);
-      }
+    } else if (date) {
+      setSelectedDate(date);
     }
   };
+
+  const applySelectedDateToTime = useCallback(
+    (time: Date, referenceDate: Date) => {
+      const adjusted = new Date(referenceDate);
+      adjusted.setHours(time.getHours(), time.getMinutes(), 0, 0);
+      return adjusted;
+    },
+    [],
+  );
 
   const handleStartTimeChange = (event: any, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowStartTimePicker(false);
     }
     if (date) {
-      setStartTime(date);
+      setStartTime(applySelectedDateToTime(date, selectedDate));
     }
   };
 
@@ -112,30 +160,41 @@ export function useCalendar() {
       setShowEndTimePicker(false);
     }
     if (date) {
-      setEndTime(date);
+      setEndTime(applySelectedDateToTime(date, selectedDate));
     }
   };
 
   const handleDeleteEvent = (eventId: string) => {
-    Alert.alert(
-      'Delete Event',
-      'Are you sure you want to delete this event?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => setEvents(prev => prev.filter(e => e.id !== eventId)),
-        },
-      ]
-    );
+    setPendingDeleteEventId(eventId);
   };
+
+  const cancelDeleteEvent = useCallback(() => {
+    setPendingDeleteEventId(null);
+  }, []);
+
+  const confirmDeleteEvent = useCallback(() => {
+    if (!pendingDeleteEventId) {
+      return;
+    }
+    setEvents(prev => prev.filter(e => e.id !== pendingDeleteEventId));
+    setPendingDeleteEventId(null);
+    showFeedback('success', 'Meeting deleted.');
+  }, [pendingDeleteEventId, showFeedback]);
+
+  const pendingDeleteEvent = useMemo(() => {
+    if (!pendingDeleteEventId) {
+      return undefined;
+    }
+    return events.find(event => event.id === pendingDeleteEventId);
+  }, [events, pendingDeleteEventId]);
 
   const getEventsForSelectedDate = () => {
     return events.filter(event => {
-      return event.date.getDate() === selectedDate.getDate() &&
-             event.date.getMonth() === selectedDate.getMonth() &&
-             event.date.getFullYear() === selectedDate.getFullYear();
+      return (
+        event.date.getDate() === selectedDate.getDate() &&
+        event.date.getMonth() === selectedDate.getMonth() &&
+        event.date.getFullYear() === selectedDate.getFullYear()
+      );
     });
   };
 
@@ -166,12 +225,18 @@ export function useCalendar() {
     setShowEndTimePicker,
     events,
     setEvents,
+    pendingDeleteEventId,
+    pendingDeleteEvent,
     toggleCalendar,
     handleCreateMeeting,
     handleDateChange,
     handleStartTimeChange,
     handleEndTimeChange,
     handleDeleteEvent,
+    cancelDeleteEvent,
+    confirmDeleteEvent,
     getEventsForSelectedDate,
+    feedback,
+    clearFeedback,
   };
 }
