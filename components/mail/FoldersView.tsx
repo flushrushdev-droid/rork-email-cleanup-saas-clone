@@ -120,7 +120,6 @@ export function FoldersView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   header: {
     flexDirection: 'row',
@@ -132,11 +131,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     marginTop: 2,
   },
   emailList: {
@@ -162,19 +159,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: Colors.light.primary,
     borderStyle: 'dashed',
   },
   createFolderButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.primary,
   },
   emptyState: {
     alignItems: 'center',
@@ -183,12 +177,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     marginTop: 4,
   },
   foldersGrid: {
@@ -199,7 +191,6 @@ const styles = StyleSheet.create({
   folderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 16,
     gap: 12,
@@ -222,11 +213,9 @@ const styles = StyleSheet.create({
   folderName: {
     fontSize: 17,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 4,
   },
   folderCount: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
   },
 });
