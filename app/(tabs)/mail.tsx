@@ -2673,11 +2673,11 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
-    minHeight: 44,
+    justifyContent: 'flex-start',
   },
   dayCell: {
-    flex: 1,
-    aspectRatio: 1,
+    width: '14.28%',
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     margin: 2,
