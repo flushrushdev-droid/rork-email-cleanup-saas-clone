@@ -537,7 +537,7 @@ export default function MailScreen() {
   };
 
   const handleDateChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       setShowDatePicker(false);
     }
     if (date) {
@@ -3038,6 +3038,8 @@ const styles = StyleSheet.create({
   },
   dateTimePicker: {
     width: '100%',
+    height: 200,
+    backgroundColor: Colors.light.background,
   },
   timeText: {
     flex: 1,
