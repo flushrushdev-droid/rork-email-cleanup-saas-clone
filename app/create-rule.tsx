@@ -161,7 +161,7 @@ export default function CreateRuleScreen() {
         }}
       />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
             <Text style={[styles.label, { color: colors.text }]}>Rule Name</Text>
             <TextInput
