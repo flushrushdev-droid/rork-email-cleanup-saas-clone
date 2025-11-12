@@ -410,28 +410,27 @@ export function CalendarSidebar(props: CalendarRenderProps) {
           animationType="slide"
           onRequestClose={() => setShowDatePicker(false)}
         >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowDatePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Date</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDateChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
+          <TouchableOpacity 
+            style={styles.datePickerOverlay}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          >
+            <View style={styles.datePickerBackdrop} />
+          </TouchableOpacity>
+          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>Select Date</Text>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.datePickerDone}>Done</Text>
+              </TouchableOpacity>
             </View>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="spinner"
+              onChange={handleDateChange}
+              themeVariant="light"
+            />
           </View>
         </Modal>
       )}
@@ -485,28 +484,27 @@ export function CalendarSidebar(props: CalendarRenderProps) {
           animationType="slide"
           onRequestClose={() => setShowStartTimePicker(false)}
         >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowStartTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select Start Time</Text>
-                <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display="spinner"
-                onChange={handleStartTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
+          <TouchableOpacity 
+            style={styles.datePickerOverlay}
+            activeOpacity={1}
+            onPress={() => setShowStartTimePicker(false)}
+          >
+            <View style={styles.datePickerBackdrop} />
+          </TouchableOpacity>
+          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>Select Start Time</Text>
+              <TouchableOpacity onPress={() => setShowStartTimePicker(false)}>
+                <Text style={styles.datePickerDone}>Done</Text>
+              </TouchableOpacity>
             </View>
+            <DateTimePicker
+              value={startTime}
+              mode="time"
+              display="spinner"
+              onChange={handleStartTimeChange}
+              themeVariant="light"
+            />
           </View>
         </Modal>
       )}
@@ -560,28 +558,27 @@ export function CalendarSidebar(props: CalendarRenderProps) {
           animationType="slide"
           onRequestClose={() => setShowEndTimePicker(false)}
         >
-          <View style={styles.datePickerOverlay}>
-            <TouchableOpacity 
-              style={styles.datePickerBackdrop}
-              activeOpacity={1}
-              onPress={() => setShowEndTimePicker(false)}
-            />
-            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
-              <View style={styles.datePickerHeader}>
-                <Text style={styles.datePickerTitle}>Select End Time</Text>
-                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
-                  <Text style={styles.datePickerDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display="spinner"
-                onChange={handleEndTimeChange}
-                textColor={Colors.light.text}
-                style={styles.dateTimePicker}
-              />
+          <TouchableOpacity 
+            style={styles.datePickerOverlay}
+            activeOpacity={1}
+            onPress={() => setShowEndTimePicker(false)}
+          >
+            <View style={styles.datePickerBackdrop} />
+          </TouchableOpacity>
+          <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.datePickerHeader}>
+              <Text style={styles.datePickerTitle}>Select End Time</Text>
+              <TouchableOpacity onPress={() => setShowEndTimePicker(false)}>
+                <Text style={styles.datePickerDone}>Done</Text>
+              </TouchableOpacity>
             </View>
+            <DateTimePicker
+              value={endTime}
+              mode="time"
+              display="spinner"
+              onChange={handleEndTimeChange}
+              themeVariant="light"
+            />
           </View>
         </Modal>
       )}
@@ -1003,6 +1000,16 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 400,
     maxHeight: 400,
+  },
+  datePickerContainerIOS: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.light.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
   },
   datePickerHeader: {
     flexDirection: 'row',
