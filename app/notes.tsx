@@ -183,13 +183,15 @@ export default function NotesScreen() {
           headerTintColor: Colors.light.text,
           headerShadowVisible: false,
           headerRight: () => (
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={openCreateModal}
-              testID="add-note-button"
-            >
-              <Plus size={24} color={Colors.light.primary} />
-            </TouchableOpacity>
+            <View style={styles.headerButtonContainer}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={openCreateModal}
+                testID="add-note-button"
+              >
+                <Plus size={20} color={Colors.light.primary} />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
@@ -369,9 +371,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
+  headerButtonContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
   headerButton: {
-    marginRight: 8,
-    padding: 8,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },

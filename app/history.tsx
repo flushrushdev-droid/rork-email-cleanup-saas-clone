@@ -142,12 +142,14 @@ export default function HistoryScreen() {
           title: 'History',
           headerShown: true,
           headerRight: () => (
-            <TouchableOpacity 
-              onPress={handleClearHistory} 
-              style={{ marginRight: 8, padding: 8, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Trash size={20} color={Colors.light.danger} />
-            </TouchableOpacity>
+            <View style={styles.headerButtonContainer}>
+              <TouchableOpacity 
+                onPress={handleClearHistory} 
+                style={styles.headerButton}
+              >
+                <Trash size={20} color={Colors.light.danger} />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
@@ -390,5 +392,20 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     color: Colors.light.textSecondary,
+  },
+  headerButtonContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  headerButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
