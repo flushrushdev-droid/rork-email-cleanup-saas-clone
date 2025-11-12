@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, CheckCircle2, Trash2, FolderOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -186,6 +186,47 @@ export default function OverviewScreen() {
             </View>
           </View>
         </View>
+
+        <TouchableOpacity 
+          testID="suggestions-card"
+          style={styles.suggestionsCard}
+          onPress={() => router.push('/suggestions')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.suggestionsHeader}>
+            <View style={styles.suggestionsHeaderLeft}>
+              <View style={styles.suggestionsIconContainer}>
+                <Sparkles size={24} color="#FFA500" />
+              </View>
+              <View>
+                <Text style={styles.suggestionsTitle}>Suggestions</Text>
+                <Text style={styles.suggestionsSubtitle}>3 smart recommendations</Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={Colors.light.textSecondary} />
+          </View>
+          
+          <View style={styles.suggestionsList}>
+            <View style={styles.suggestionItem}>
+              <View style={[styles.suggestionIconSmall, { backgroundColor: Colors.light.primary + '20' }]}>
+                <Archive size={14} color={Colors.light.primary} />
+              </View>
+              <Text style={styles.suggestionText} numberOfLines={1}>Archive 45 promotional emails</Text>
+            </View>
+            <View style={styles.suggestionItem}>
+              <View style={[styles.suggestionIconSmall, { backgroundColor: Colors.light.danger + '20' }]}>
+                <Trash2 size={14} color={Colors.light.danger} />
+              </View>
+              <Text style={styles.suggestionText} numberOfLines={1}>Delete 23 old newsletters</Text>
+            </View>
+            <View style={styles.suggestionItem}>
+              <View style={[styles.suggestionIconSmall, { backgroundColor: Colors.light.secondary + '20' }]}>
+                <FolderOpen size={14} color={Colors.light.secondary} />
+              </View>
+              <Text style={styles.suggestionText} numberOfLines={1}>Move 67 social notifications</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -524,5 +565,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textSecondary,
     lineHeight: 20,
+  },
+  suggestionsCard: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  suggestionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  suggestionsHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  suggestionsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#FFA50020',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  suggestionsSubtitle: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  suggestionsList: {
+    gap: 10,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  suggestionIconSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.light.text,
   },
 });
