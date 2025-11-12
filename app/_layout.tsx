@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GmailSyncProvider } from '@/contexts/GmailSyncContext';
 import { HistoryProvider } from '@/contexts/HistoryContext';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { trpc, trpcClient } from '@/lib/trpc';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -16,8 +16,21 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { colors } = useTheme();
+  
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack 
+      screenOptions={{ 
+        headerBackTitle: "Back",
+        headerStyle: {
+          backgroundColor: colors.surface,
+        },
+        headerTintColor: colors.primary,
+        headerTitleStyle: {
+          color: colors.text,
+        },
+      }}
+    >
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
