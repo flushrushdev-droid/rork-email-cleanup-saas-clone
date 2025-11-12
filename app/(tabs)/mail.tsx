@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler, Animated, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, BackHandler, Animated, Dimensions, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Mail, Inbox, Send, Archive, Trash2, Star, Search, PenSquare, ChevronLeft, Paperclip, X, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, ChevronRight, FileText, Briefcase, Scale, Plus, Clock, AlertOctagon, FileEdit, MailOpen, Filter, Calendar, Sparkles, ChevronDown, Video, MapPin, Bell, Save } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -92,6 +93,9 @@ export default function MailScreen() {
   const [meetingLocation, setMeetingLocation] = useState('');
   const [meetingDescription, setMeetingDescription] = useState('');
   const [meetingType, setMeetingType] = useState<'in-person' | 'video'>('video');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedTime, setSelectedTime] = useState(new Date());
   const [events, setEvents] = useState<Array<{
     id: string;
     title: string;
@@ -530,6 +534,39 @@ export default function MailScreen() {
     setMeetingDescription('');
     setMeetingType('video');
     setIsNewMeetingModalVisible(false);
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
+  const handleTimeSelect = (hour: number) => {
+    const startTime = new Date(selectedDate);
+    startTime.setHours(hour, 0, 0, 0);
+    
+    const endTime = new Date(startTime);
+    endTime.setHours(hour + 1, 0, 0, 0);
+    
+    const formatTime = (date: Date) => {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+    
+    setMeetingTime(`${formatTime(startTime)} - ${formatTime(endTime)}`);
+    setSelectedTime(startTime);
+    setShowTimePicker(false);
+  };
+
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 0; hour < 24; hour++) {
+      slots.push(hour);
+    }
+    return slots;
   };
 
   const handleDeleteEvent = (eventId: string) => {
@@ -1456,23 +1493,53 @@ export default function MailScreen() {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Date</Text>
-                <View style={styles.dateDisplay}>
+                <TouchableOpacity 
+                  style={styles.dateDisplay}
+                  onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.7}
+                >
                   <Calendar size={16} color={Colors.light.primary} />
                   <Text style={styles.dateDisplayText}>
                     {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Time *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 2:00 PM - 3:00 PM"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={meetingTime}
-                  onChangeText={setMeetingTime}
-                />
+                <TouchableOpacity
+                  style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                  onPress={() => setShowTimePicker(!showTimePicker)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.timeText, !meetingTime && styles.timePlaceholder]}>
+                    {meetingTime || 'e.g., 2:00 PM - 3:00 PM'}
+                  </Text>
+                  <ChevronDown size={16} color={Colors.light.textSecondary} />
+                </TouchableOpacity>
+                {showTimePicker && (
+                  <ScrollView style={styles.timeDropdown} nestedScrollEnabled>
+                    {generateTimeSlots().map((hour) => {
+                      const date = new Date();
+                      date.setHours(hour, 0, 0, 0);
+                      const endDate = new Date(date);
+                      endDate.setHours(hour + 1, 0, 0, 0);
+                      
+                      const timeLabel = `${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+                      
+                      return (
+                        <TouchableOpacity
+                          key={hour}
+                          style={styles.timeSlot}
+                          onPress={() => handleTimeSelect(hour)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.timeSlotText}>{timeLabel}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                )}
               </View>
 
               <View style={styles.inputContainer}>
@@ -1530,6 +1597,39 @@ export default function MailScreen() {
           </View>
         </View>
       </Modal>
+
+      {showDatePicker && (
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <View style={styles.datePickerOverlay}>
+            <TouchableOpacity 
+              style={styles.datePickerBackdrop}
+              activeOpacity={1}
+              onPress={() => setShowDatePicker(false)}
+            />
+            <View style={[styles.datePickerContainer, { paddingBottom: insets.bottom + 20 }]}>
+              <View style={styles.datePickerHeader}>
+                <Text style={styles.datePickerTitle}>Select Date</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.datePickerDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+                textColor={Colors.light.text}
+                style={styles.dateTimePicker}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
 
       <Modal
         visible={isAIModalVisible}
@@ -2899,5 +2999,69 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  datePickerOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  datePickerBackdrop: {
+    flex: 1,
+  },
+  datePickerContainer: {
+    backgroundColor: Colors.light.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  datePickerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  datePickerDone: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.primary,
+  },
+  dateTimePicker: {
+    width: '100%',
+  },
+  timeText: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.light.text,
+  },
+  timePlaceholder: {
+    color: Colors.light.textSecondary,
+  },
+  timeDropdown: {
+    maxHeight: 200,
+    backgroundColor: Colors.light.background,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  timeSlot: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  timeSlotText: {
+    fontSize: 15,
+    color: Colors.light.text,
   },
 });
