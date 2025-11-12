@@ -7,6 +7,7 @@ import { Search, BellOff, CheckCircle, XCircle, Clock, Mail, AlertCircle } from 
 import Colors from '@/constants/colors';
 import { mockSenders } from '@/mocks/emailData';
 import { useHistory } from '@/contexts/HistoryContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type UnsubscribeStatus = 'pending' | 'success' | 'failed';
 
@@ -20,6 +21,7 @@ interface UnsubscribeItem {
 }
 
 export default function UnsubscribeManagerScreen() {
+  const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState<'available' | 'history'>('available');
   const { addHistoryEntry } = useHistory();
@@ -69,22 +71,22 @@ export default function UnsubscribeManagerScreen() {
   const getStatusIcon = (status: UnsubscribeStatus) => {
     switch (status) {
       case 'success':
-        return <CheckCircle size={20} color={Colors.light.success} />;
+        return <CheckCircle size={20} color={colors.success} />;
       case 'failed':
-        return <XCircle size={20} color={Colors.light.danger} />;
+        return <XCircle size={20} color={colors.danger} />;
       case 'pending':
-        return <Clock size={20} color={Colors.light.warning} />;
+        return <Clock size={20} color={colors.warning} />;
     }
   };
 
   const getStatusColor = (status: UnsubscribeStatus) => {
     switch (status) {
       case 'success':
-        return Colors.light.success;
+        return colors.success;
       case 'failed':
-        return Colors.light.danger;
+        return colors.danger;
       case 'pending':
-        return Colors.light.warning;
+        return colors.warning;
     }
   };
 
@@ -94,44 +96,44 @@ export default function UnsubscribeManagerScreen() {
         options={{
           title: 'Unsubscribe Manager',
           headerStyle: {
-            backgroundColor: Colors.light.surface,
+            backgroundColor: colors.surface,
           },
-          headerTintColor: Colors.light.text,
+          headerTintColor: colors.text,
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Unsubscribe Manager</Text>
-          <Text style={styles.subtitle}>Take control of your inbox</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Unsubscribe Manager</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Take control of your inbox</Text>
         </View>
 
         <View style={styles.searchContainer}>
-          <View style={styles.searchBox}>
-            <Search size={20} color={Colors.light.textSecondary} />
+          <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
+            <Search size={20} color={colors.textSecondary} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Search senders..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor={Colors.light.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
         </View>
 
         <View style={styles.tabs}>
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'available' && styles.tabActive]}
+            style={[styles.tab, { backgroundColor: colors.surface }, selectedTab === 'available' && { backgroundColor: colors.primary }]}
             onPress={() => setSelectedTab('available')}
           >
-            <Text style={[styles.tabText, selectedTab === 'available' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, { color: selectedTab === 'available' ? '#FFFFFF' : colors.text }]}>
               Available ({availableSenders.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'history' && styles.tabActive]}
+            style={[styles.tab, { backgroundColor: colors.surface }, selectedTab === 'history' && { backgroundColor: colors.primary }]}
             onPress={() => setSelectedTab('history')}
           >
-            <Text style={[styles.tabText, selectedTab === 'history' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, { color: selectedTab === 'history' ? '#FFFFFF' : colors.text }]}>
               History ({unsubscribeHistory.length})
             </Text>
           </TouchableOpacity>
@@ -140,54 +142,54 @@ export default function UnsubscribeManagerScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {selectedTab === 'available' ? (
             <>
-              <View style={styles.infoCard}>
-                <AlertCircle size={20} color={Colors.light.info} />
-                <Text style={styles.infoText}>
+              <View style={[styles.infoCard, { backgroundColor: colors.info + '15' }]}>
+                <AlertCircle size={20} color={colors.info} />
+                <Text style={[styles.infoText, { color: colors.info }]}>
                   One-click unsubscribe with automatic fallback to polite email templates
                 </Text>
               </View>
 
               {availableSenders.map((sender) => (
-                <View key={sender.id} style={styles.senderCard}>
+                <View key={sender.id} style={[styles.senderCard, { backgroundColor: colors.surface }]}>
                   <View style={styles.senderHeader}>
                     <View style={styles.senderInfo}>
-                      <View style={styles.senderAvatar}>
-                        <Mail size={20} color={Colors.light.primary} />
+                      <View style={[styles.senderAvatar, { backgroundColor: colors.primary + '20' }]}>
+                        <Mail size={20} color={colors.primary} />
                       </View>
                       <View style={styles.senderDetails}>
-                        <Text style={styles.senderName} numberOfLines={1}>
+                        <Text style={[styles.senderName, { color: colors.text }]} numberOfLines={1}>
                           {sender.displayName || sender.email}
                         </Text>
-                        <Text style={styles.senderEmail} numberOfLines={1}>
+                        <Text style={[styles.senderEmail, { color: colors.textSecondary }]} numberOfLines={1}>
                           {sender.email}
                         </Text>
                       </View>
                     </View>
                   </View>
 
-                  <View style={styles.senderStats}>
+                  <View style={[styles.senderStats, { borderColor: colors.border }]}>
                     <View style={styles.statItem}>
-                      <Text style={styles.statValue}>{sender.totalEmails}</Text>
-                      <Text style={styles.statLabel}>Emails</Text>
+                      <Text style={[styles.statValue, { color: colors.text }]}>{sender.totalEmails}</Text>
+                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Emails</Text>
                     </View>
                     <View style={styles.statItem}>
-                      <Text style={styles.statValue}>{sender.frequency}/mo</Text>
-                      <Text style={styles.statLabel}>Frequency</Text>
+                      <Text style={[styles.statValue, { color: colors.text }]}>{sender.frequency}/mo</Text>
+                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Frequency</Text>
                     </View>
                     <View style={styles.statItem}>
-                      <Text style={styles.statValue}>{sender.noiseScore.toFixed(1)}</Text>
-                      <Text style={styles.statLabel}>Noise</Text>
+                      <Text style={[styles.statValue, { color: colors.text }]}>{sender.noiseScore.toFixed(1)}</Text>
+                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Noise</Text>
                     </View>
                   </View>
 
-                  <View style={styles.methodBadge}>
-                    <Text style={styles.methodText}>
+                  <View style={[styles.methodBadge, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.methodText, { color: colors.textSecondary }]}>
                       Method: {sender.hasUnsubscribe ? 'List-Unsubscribe' : 'Auto-Reply'}
                     </Text>
                   </View>
 
                   <TouchableOpacity
-                    style={styles.unsubscribeButton}
+                    style={[styles.unsubscribeButton, { backgroundColor: colors.danger }]}
                     onPress={() => handleUnsubscribe(sender.id)}
                   >
                     <BellOff size={18} color="#FFFFFF" />
@@ -199,11 +201,11 @@ export default function UnsubscribeManagerScreen() {
           ) : (
             <>
               {unsubscribeHistory.map((item) => (
-                <View key={item.id} style={styles.historyCard}>
+                <View key={item.id} style={[styles.historyCard, { backgroundColor: colors.surface }]}>
                   <View style={styles.historyHeader}>
                     <View style={styles.historyInfo}>
-                      <Text style={styles.historySender}>{item.sender}</Text>
-                      <Text style={styles.historyEmail}>{item.email}</Text>
+                      <Text style={[styles.historySender, { color: colors.text }]}>{item.sender}</Text>
+                      <Text style={[styles.historyEmail, { color: colors.textSecondary }]}>{item.email}</Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
                       {getStatusIcon(item.status)}
@@ -212,9 +214,9 @@ export default function UnsubscribeManagerScreen() {
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.historyMeta}>
-                    <Text style={styles.historyMethod}>Method: {item.method}</Text>
-                    <Text style={styles.historyDate}>
+                  <View style={[styles.historyMeta, { borderColor: colors.border }]}>
+                    <Text style={[styles.historyMethod, { color: colors.textSecondary }]}>Method: {item.method}</Text>
+                    <Text style={[styles.historyDate, { color: colors.textSecondary }]}>
                       {new Date(item.date).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric',
