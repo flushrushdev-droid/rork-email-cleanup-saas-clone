@@ -59,6 +59,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="folders"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
