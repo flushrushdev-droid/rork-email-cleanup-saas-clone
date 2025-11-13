@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
-import { Search, SlidersHorizontal, TrendingUp, Mail, HardDrive, Archive, BellOff, Tag, Trash2, Trash, X } from 'lucide-react-native';
+import { Search, TrendingUp, Mail, HardDrive, Archive, BellOff, Tag, Trash2, Trash, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { mockSenders, calculateSavings, formatBytes, getNoiseColor } from '@/mocks/emailData';
 
-type FilterType = 'all' | 'marketing' | 'high-noise' | 'trusted';
+type FilterType = 'all' | 'marketing' | 'high-noise' | 'trusted' | 'unread' | 'large-files';
 type SortType = 'noise' | 'volume' | 'size' | 'engagement';
 
 export default function SendersScreen() {
@@ -33,6 +33,8 @@ export default function SendersScreen() {
       if (filter === 'marketing') return sender.isMarketing;
       if (filter === 'high-noise') return sender.noiseScore >= 7;
       if (filter === 'trusted') return sender.isTrusted;
+      if (filter === 'unread') return sender.engagementRate < 50;
+      if (filter === 'large-files') return sender.totalSize > 500000000;
       return true;
     })
     .filter((sender) => 
@@ -139,7 +141,7 @@ export default function SendersScreen() {
         },
       }} />
       
-      <View style={styles.searchContainer}>
+      <View style={styles.searchContainerFull}>
         <View style={[styles.searchBox, { backgroundColor: colors.surface }]}>
           <Search size={20} color={colors.textSecondary} />
           <TextInput
@@ -151,17 +153,10 @@ export default function SendersScreen() {
             placeholderTextColor={colors.textSecondary}
           />
         </View>
-        <TouchableOpacity 
-          style={[styles.filterButton, { backgroundColor: colors.surface }]} 
-          onPress={() => Alert.alert('Filters', 'Advanced filters coming soon')}
-          activeOpacity={0.7}
-        >
-          <SlidersHorizontal size={20} color={colors.primary} />
-        </TouchableOpacity>
       </View>
 
       <View style={[styles.filtersContainer, { backgroundColor: colors.background }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+        <View style={styles.filtersWrap}>
           <TouchableOpacity
             style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'all' && { backgroundColor: colors.primary }]}
             onPress={() => setFilter('all')}
@@ -194,7 +189,23 @@ export default function SendersScreen() {
               Trusted ({mockSenders.filter(s => s.isTrusted).length})
             </Text>
           </TouchableOpacity>
-        </ScrollView>
+          <TouchableOpacity
+            style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'unread' && { backgroundColor: colors.primary }]}
+            onPress={() => setFilter('unread')}
+          >
+            <Text style={[styles.filterChipText, { color: colors.text }, filter === 'unread' && styles.filterChipTextActive]}>
+              Unread ({mockSenders.filter(s => s.engagementRate < 50).length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, { backgroundColor: colors.surface }, filter === 'large-files' && { backgroundColor: colors.primary }]}
+            onPress={() => setFilter('large-files')}
+          >
+            <Text style={[styles.filterChipText, { color: colors.text }, filter === 'large-files' && styles.filterChipTextActive]}>
+              Large Files ({mockSenders.filter(s => s.totalSize > 500000000).length})
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={[styles.sortContainer, { backgroundColor: colors.background }]}>
@@ -416,15 +427,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchContainer: {
-    flexDirection: 'row',
+  searchContainerFull: {
     paddingHorizontal: 16,
-    gap: 12,
     marginBottom: 16,
     marginTop: 8,
   },
   searchBox: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
@@ -436,27 +444,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
   },
-  filterButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 100,
-  },
   filtersContainer: {
     paddingBottom: 12,
+    paddingHorizontal: 16,
     zIndex: 10,
   },
-  filtersScroll: {
-    paddingHorizontal: 16,
-    flexGrow: 0,
+  filtersWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   filterChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    marginRight: 8,
   },
   filterChipText: {
     fontSize: 14,
