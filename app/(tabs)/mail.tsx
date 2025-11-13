@@ -9,9 +9,7 @@ import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { mockRecentEmails } from '@/mocks/emailData';
 import Colors from '@/constants/colors';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
-import { useCalendar } from '@/hooks/useCalendar';
 import { useTheme } from '@/contexts/ThemeContext';
-import { CalendarSidebar } from '@/components/CalendarSidebar';
 import { categorizeEmail } from '@/utils/emailCategories';
 import { useDrafts } from '@/hooks/useDrafts';
 import { useSmartFolders } from '@/hooks/useSmartFolders';
@@ -49,8 +47,9 @@ export default function MailScreen() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts' | 'trash' | 'sent'>('all');
   const { drafts, saveDraft, loadDraft, deleteDraft } = useDrafts();
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   
-  const calendar = useCalendar();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -437,6 +436,80 @@ export default function MailScreen() {
     setCurrentView('compose');
   };
 
+  const handleToggleSelection = (emailId: string) => {
+    setSelectedEmails(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(emailId)) {
+        newSet.delete(emailId);
+        if (newSet.size === 0) {
+          setSelectionMode(false);
+        }
+      } else {
+        newSet.add(emailId);
+        setSelectionMode(true);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedEmails(new Set(filteredEmails.map(e => e.id)));
+  };
+
+  const handleCancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedEmails(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    if (isDemoMode) {
+      Alert.alert('Demo Mode', 'Bulk delete is disabled in demo mode');
+      return;
+    }
+    Alert.alert(
+      'Delete Emails',
+      `Delete ${selectedEmails.size} emails?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Success', `${selectedEmails.size} emails deleted`);
+            handleCancelSelection();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleBulkArchive = () => {
+    if (isDemoMode) {
+      Alert.alert('Demo Mode', 'Bulk archive is disabled in demo mode');
+      return;
+    }
+    Alert.alert('Success', `${selectedEmails.size} emails archived`);
+    handleCancelSelection();
+  };
+
+  const handleBulkMarkRead = () => {
+    if (isDemoMode) {
+      Alert.alert('Demo Mode', 'Bulk mark read is disabled in demo mode');
+      return;
+    }
+    Alert.alert('Success', `${selectedEmails.size} emails marked as read`);
+    handleCancelSelection();
+  };
+
+  const handleBulkMove = () => {
+    Alert.alert('Move Emails', `Move ${selectedEmails.size} emails to...`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Promotions', onPress: () => handleCancelSelection() },
+      { text: 'Social', onPress: () => handleCancelSelection() },
+      { text: 'Spam', onPress: () => handleCancelSelection() },
+    ]);
+  };
+
 
 
 
@@ -458,7 +531,16 @@ export default function MailScreen() {
           onLoadDraft={handleLoadDraft}
           onDeleteDraft={handleDeleteDraft}
           onCreateFolder={() => setIsModalVisible(true)}
-          onToggleCalendar={calendar.toggleCalendar}
+          selectionMode={selectionMode}
+          selectedEmails={selectedEmails}
+          onToggleSelection={handleToggleSelection}
+          onSelectAll={handleSelectAll}
+          onCancelSelection={handleCancelSelection}
+          onBulkDelete={handleBulkDelete}
+          onBulkArchive={handleBulkArchive}
+          onBulkMarkRead={handleBulkMarkRead}
+          onBulkMove={handleBulkMove}
+          onCompose={handleCompose}
         />
       )}
       {currentView === 'folders' && (
@@ -500,21 +582,6 @@ export default function MailScreen() {
         />
       )}
 
-      <CalendarSidebar 
-        {...calendar}
-        insets={insets}
-      />
-
-      {currentView !== 'compose' && currentView !== 'detail' && (
-        <TouchableOpacity
-          testID="compose-fab"
-          style={[styles.composeFab, { bottom: insets.bottom + 30, backgroundColor: colors.primary }]}
-          onPress={handleCompose}
-          activeOpacity={0.8}
-        >
-          <PenSquare size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
 
 
 
@@ -632,21 +699,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.textSecondary,
     marginTop: 2,
-  },
-  composeFab: {
-    position: 'absolute',
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.light.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
   },
 
   searchContainer: {
