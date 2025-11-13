@@ -141,7 +141,11 @@ export default function SendersScreen() {
             placeholderTextColor={colors.textSecondary}
           />
         </View>
-        <TouchableOpacity style={[styles.filterButton, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Filters', 'Advanced filters coming soon')}>
+        <TouchableOpacity 
+          style={[styles.filterButton, { backgroundColor: colors.surface }]} 
+          onPress={() => Alert.alert('Filters', 'Advanced filters coming soon')}
+          activeOpacity={0.7}
+        >
           <SlidersHorizontal size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -353,6 +357,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 100,
   },
   filtersContainer: {
     paddingBottom: 12,
