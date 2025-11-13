@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Animated, StyleSheet, Modal, Platform, TextInput, Pressable } from 'react-native';
-import { SafeAreaInsets } from 'react-native-safe-area-context';
+import { EdgeInsets } from 'react-native-safe-area-context';
 import { Calendar, X, ChevronLeft, ChevronRight, Plus, Video, MapPin, Trash2, Clock } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
 import type { CalendarEvent, CalendarFeedback } from '@/hooks/useCalendar';
 
 interface CalendarRenderProps {
@@ -41,7 +40,8 @@ interface CalendarRenderProps {
   getEventsForSelectedDate: () => CalendarEvent[];
   feedback: CalendarFeedback | null;
   clearFeedback: () => void;
-  insets: SafeAreaInsets;
+  insets: EdgeInsets;
+  colors: any;
 }
 
 export function CalendarSidebar(props: CalendarRenderProps) {
@@ -81,6 +81,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
     feedback,
     clearFeedback,
     insets,
+    colors,
   } = props;
 
   const today = new Date();
@@ -230,6 +231,8 @@ export function CalendarSidebar(props: CalendarRenderProps) {
       }
     }
   };
+
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   const renderDatePicker = () => {
     if (!showDatePicker) return null;
@@ -436,7 +439,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
         <View style={[styles.calendarHeader, { paddingTop: insets.top + 16 }]}>
           <Text style={styles.calendarTitle}>Calendar</Text>
           <TouchableOpacity onPress={toggleCalendar}>
-            <X size={24} color={Colors.light.text} />
+            <X size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
         
@@ -468,17 +471,17 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                 testID="dismiss-calendar-feedback"
                 accessibilityRole="button"
               >
-                <X size={16} color={feedback.type === 'success' ? Colors.light.success : Colors.light.danger} />
+                <X size={16} color={feedback.type === 'success' ? colors.success : colors.danger} />
               </TouchableOpacity>
             </View>
           )}
           <View style={styles.monthNavigation}>
             <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
-              <ChevronLeft size={20} color={Colors.light.text} />
+              <ChevronLeft size={20} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.monthText}>{monthNames[currentMonth]} {currentYear}</Text>
             <TouchableOpacity onPress={goToNextMonth} style={styles.monthButton}>
-              <ChevronRight size={20} color={Colors.light.text} />
+              <ChevronRight size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
           
@@ -545,7 +548,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
             >
               {getEventsForSelectedDate().length === 0 ? (
                 <View style={styles.emptyEvents}>
-                  <Calendar size={32} color={Colors.light.textSecondary} />
+                  <Calendar size={32} color={colors.textSecondary} />
                   <Text style={styles.emptyEventsText}>No events for this day</Text>
                   <TouchableOpacity 
                     style={styles.addEventButton}
@@ -570,13 +573,13 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                         onPress={() => handleDeleteEvent(event.id)}
                         style={styles.deleteEventButton}
                       >
-                        <Trash2 size={20} color={Colors.light.danger} />
+                        <Trash2 size={20} color={colors.danger} />
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.eventTitle}>{event.title}</Text>
                     {event.location && (
                       <View style={styles.eventLocation}>
-                        <MapPin size={14} color={Colors.light.textSecondary} />
+                        <MapPin size={14} color={colors.textSecondary} />
                         <Text style={styles.eventLocationText}>{event.location}</Text>
                       </View>
                     )}
@@ -615,7 +618,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>New Meeting</Text>
               <TouchableOpacity onPress={() => setIsNewMeetingModalVisible(false)}>
-                <X size={24} color={Colors.light.text} />
+                <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -628,7 +631,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                 <TextInput
                   style={styles.input}
                   placeholder="Meeting title"
-                  placeholderTextColor={Colors.light.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   value={meetingTitle}
                   onChangeText={setMeetingTitle}
                 />
@@ -645,7 +648,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                   activeOpacity={0.7}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Calendar size={16} color={Colors.light.primary} />
+                  <Calendar size={16} color={colors.primary} />
                   <Text style={styles.dateDisplayText}>
                     {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                   </Text>
@@ -659,7 +662,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                   onPress={() => setShowStartTimePicker(true)}
                   activeOpacity={0.7}
                 >
-                  <Clock size={16} color={Colors.light.primary} />
+                  <Clock size={16} color={colors.primary} />
                   <Text style={styles.dateDisplayText}>
                     {startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </Text>
@@ -673,7 +676,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                   onPress={() => setShowEndTimePicker(true)}
                   activeOpacity={0.7}
                 >
-                  <Clock size={16} color={Colors.light.primary} />
+                  <Clock size={16} color={colors.primary} />
                   <Text style={styles.dateDisplayText}>
                     {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </Text>
@@ -687,14 +690,14 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                     style={[styles.meetingTypeButton, meetingType === 'video' && styles.meetingTypeButtonActive]}
                     onPress={() => setMeetingType('video')}
                   >
-                    <Video size={18} color={meetingType === 'video' ? '#FFFFFF' : Colors.light.text} />
+                    <Video size={18} color={meetingType === 'video' ? '#FFFFFF' : colors.text} />
                     <Text style={[styles.meetingTypeText, meetingType === 'video' && styles.meetingTypeTextActive]}>Video Call</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.meetingTypeButton, meetingType === 'in-person' && styles.meetingTypeButtonActive]}
                     onPress={() => setMeetingType('in-person')}
                   >
-                    <MapPin size={18} color={meetingType === 'in-person' ? '#FFFFFF' : Colors.light.text} />
+                    <MapPin size={18} color={meetingType === 'in-person' ? '#FFFFFF' : colors.text} />
                     <Text style={[styles.meetingTypeText, meetingType === 'in-person' && styles.meetingTypeTextActive]}>In Person</Text>
                   </TouchableOpacity>
                 </View>
@@ -705,7 +708,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                 <TextInput
                   style={styles.input}
                   placeholder={meetingType === 'video' ? 'Zoom, Meet, etc.' : 'Meeting room or address'}
-                  placeholderTextColor={Colors.light.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   value={meetingLocation}
                   onChangeText={setMeetingLocation}
                 />
@@ -716,7 +719,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Meeting agenda or notes"
-                  placeholderTextColor={Colors.light.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   value={meetingDescription}
                   onChangeText={setMeetingDescription}
                   multiline
@@ -758,7 +761,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
           />
           <View style={[styles.confirmContent, { paddingBottom: insets.bottom + 24 }]}>
             <View style={styles.confirmIcon}>
-              <Trash2 size={24} color={Colors.light.danger} />
+              <Trash2 size={24} color={colors.danger} />
             </View>
             <Text style={styles.confirmTitle}>Delete meeting?</Text>
             <Text style={styles.confirmDescription}>{pendingDeleteEvent ? `"${pendingDeleteEvent.title}" scheduled for ${pendingDeleteEvent.time} on ${pendingDeleteEvent.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} will be removed` : 'This meeting will be removed permanently'}</Text>
@@ -785,7 +788,7 @@ export function CalendarSidebar(props: CalendarRenderProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   calendarButton: {
     padding: 4,
     backgroundColor: 'transparent',
@@ -803,7 +806,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: '85%',
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 0 },
     shadowOpacity: 0.2,
@@ -818,12 +821,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    borderBottomColor: colors.border,
   },
   calendarTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: Colors.light.text,
+    color: colors.text,
   },
   calendarContent: {
     flex: 1,
@@ -851,22 +854,22 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   feedbackIndicatorSuccess: {
-    backgroundColor: Colors.light.success,
+    backgroundColor: colors.success,
   },
   feedbackIndicatorError: {
-    backgroundColor: Colors.light.danger,
+    backgroundColor: colors.danger,
   },
   feedbackText: {
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
   feedbackTextSuccess: {
-    color: Colors.light.success,
+    color: colors.success,
   },
   feedbackTextError: {
-    color: Colors.light.danger,
+    color: colors.danger,
   },
   feedbackDismiss: {
     padding: 6,
@@ -882,12 +885,12 @@ const styles = StyleSheet.create({
   monthButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
   },
   monthText: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
   calendarGrid: {
     marginBottom: 24,
@@ -904,7 +907,7 @@ const styles = StyleSheet.create({
   weekDayText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
   },
   weekRow: {
     flexDirection: 'row',
@@ -918,24 +921,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   todayCell: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: Colors.light.primary,
+    borderColor: colors.primary,
   },
   selectedDayCell: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
   },
   dayText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.light.text,
+    color: colors.text,
     textAlign: 'center',
   },
   emptyDayText: {
     opacity: 0,
   },
   todayText: {
-    color: Colors.light.primary,
+    color: colors.primary,
     fontWeight: '700',
   },
   selectedDayText: {
@@ -944,20 +947,20 @@ const styles = StyleSheet.create({
   },
   selectedDateInfo: {
     padding: 16,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 24,
   },
   selectedDateLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   selectedDateValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
   calendarEvents: {
     flex: 1,
@@ -965,7 +968,7 @@ const styles = StyleSheet.create({
   eventsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: 16,
   },
   emptyEvents: {
@@ -975,7 +978,7 @@ const styles = StyleSheet.create({
   },
   emptyEventsText: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginTop: 12,
   },
   eventsHeader: {
@@ -991,7 +994,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
   },
   newMeetingButtonText: {
     fontSize: 14,
@@ -1002,12 +1005,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventCard: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.light.primary,
+    borderLeftColor: colors.primary,
   },
   eventCardHeader: {
     flexDirection: 'row',
@@ -1026,7 +1029,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
   },
   deleteEventButton: {
     padding: 8,
@@ -1037,7 +1040,7 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: 6,
   },
   eventLocation: {
@@ -1048,11 +1051,11 @@ const styles = StyleSheet.create({
   },
   eventLocationText: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
   },
   eventDescription: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   addEventButton: {
@@ -1060,7 +1063,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
   },
   addEventButtonText: {
     fontSize: 14,
@@ -1071,16 +1074,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
   },
   dateDisplayText: {
     fontSize: 16,
     fontWeight: '500',
-    color: Colors.light.text,
+    color: colors.text,
   },
   meetingTypeContainer: {
     flexDirection: 'row',
@@ -1094,18 +1097,18 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
   },
   meetingTypeButtonActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   meetingTypeText: {
     fontSize: 15,
     fontWeight: '500',
-    color: Colors.light.text,
+    color: colors.text,
   },
   meetingTypeTextActive: {
     color: '#FFFFFF',
@@ -1128,7 +1131,7 @@ const styles = StyleSheet.create({
   confirmContent: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     paddingHorizontal: 24,
     paddingTop: 28,
@@ -1146,14 +1149,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
+    color: colors.text,
     textAlign: 'center',
   },
   confirmDescription: {
     marginTop: 12,
     fontSize: 15,
     lineHeight: 22,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   confirmActions: {
@@ -1165,8 +1168,8 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    backgroundColor: Colors.light.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1174,12 +1177,12 @@ const styles = StyleSheet.create({
   confirmCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
   confirmDeleteButton: {
     flex: 1,
     borderRadius: 12,
-    backgroundColor: Colors.light.danger,
+    backgroundColor: colors.danger,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1195,7 +1198,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1210,7 +1213,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.light.text,
+    color: colors.text,
   },
   inputContainer: {
     marginBottom: 20,
@@ -1218,29 +1221,29 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: Colors.light.text,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
   },
   textArea: {
     height: 120,
     textAlignVertical: 'top',
   },
   createMeetingButton: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
     paddingVertical: 18,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.light.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1288,7 +1291,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   datePickerContainer: {
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     borderRadius: 24,
     padding: 20,
     width: '90%',
@@ -1300,7 +1303,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -1314,12 +1317,12 @@ const styles = StyleSheet.create({
   datePickerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
   datePickerDone: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.primary,
+    color: colors.primary,
   },
   dateTimePicker: {
     width: '100%',
@@ -1346,24 +1349,24 @@ const styles = StyleSheet.create({
   dateInputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   dateInput: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
     textAlign: 'center',
   },
   timeSeparator: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: 8,
   },
   ampmContainer: {
@@ -1374,20 +1377,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
     minWidth: 60,
     alignItems: 'center',
   },
   ampmButtonActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   ampmText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
   ampmTextActive: {
     color: '#FFFFFF',
@@ -1409,7 +1412,7 @@ const styles = StyleSheet.create({
   pickerCenterContainer: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     borderRadius: 24,
     padding: 20,
   },
@@ -1425,7 +1428,7 @@ const styles = StyleSheet.create({
   wheelPickerLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 12,
   },
   wheelPickerWrapper: {
@@ -1443,7 +1446,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.light.primary,
+    borderColor: colors.primary,
     zIndex: 0,
     pointerEvents: 'none',
   },
@@ -1459,11 +1462,11 @@ const styles = StyleSheet.create({
   wheelItemText: {
     fontSize: 16,
     fontWeight: '500',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
   },
   wheelItemTextActive: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
   },
 });

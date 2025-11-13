@@ -1,17 +1,28 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield } from 'lucide-react-native';
+import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { useCalendar } from '@/hooks/useCalendar';
+import { CalendarSidebar } from '@/components/CalendarSidebar';
 
 export default function ToolsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const calendar = useCalendar();
 
   const tools = [
+    {
+      id: 'calendar',
+      title: 'Calendar',
+      description: 'Schedule and manage your meetings',
+      icon: Calendar,
+      color: '#5856D6',
+      action: 'calendar' as const,
+    },
     {
       id: 'automation-rules',
       title: 'Automation Rules',
@@ -85,7 +96,13 @@ export default function ToolsScreen() {
               key={tool.id}
               testID={`tool-${tool.id}`}
               style={[styles.toolCard, { backgroundColor: colors.surface }]}
-              onPress={() => router.push(tool.route)}
+              onPress={() => {
+                if ('action' in tool && tool.action === 'calendar') {
+                  calendar.toggleCalendar();
+                } else if ('route' in tool) {
+                  router.push(tool.route);
+                }
+              }}
               activeOpacity={0.7}
             >
               <View style={[styles.iconContainer, { backgroundColor: tool.color + '20' }]}>
@@ -100,6 +117,12 @@ export default function ToolsScreen() {
           );
         })}
       </ScrollView>
+
+      <CalendarSidebar 
+        {...calendar}
+        insets={insets}
+        colors={colors}
+      />
     </View>
   );
 }
