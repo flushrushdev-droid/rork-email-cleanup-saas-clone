@@ -439,6 +439,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 10,
+    maxWidth: '86%',
   },
   searchInput: {
     flex: 1,
