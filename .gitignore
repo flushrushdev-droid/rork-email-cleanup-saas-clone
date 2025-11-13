@@ -35,3 +35,14 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 .vercel
+
+# Local development folders (never push)
+/dev/
+/local-dev/
+/experimental/
+/sandbox/
+
+# Local development files
+*.local.*
+LOCAL_DEV.md
+TODO.local.md
