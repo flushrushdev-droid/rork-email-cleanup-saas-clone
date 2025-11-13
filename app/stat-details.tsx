@@ -210,7 +210,14 @@ export default function StatDetailsScreen() {
               </Text>
             </View>
             {emailsWithFiles.map((email) => (
-              <View key={email.id} style={[styles.fileCard, { backgroundColor: colors.surface }]}>
+              <TouchableOpacity 
+                key={email.id} 
+                style={[styles.fileCard, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  router.push({ pathname: '/mail', params: { emailId: email.id } });
+                }}
+                activeOpacity={0.7}
+              >
                 <View style={[styles.fileIconContainer, { backgroundColor: '#5856D6' + '20' }]}>
                   <HardDrive size={20} color="#5856D6" />
                 </View>
@@ -232,21 +239,27 @@ export default function StatDetailsScreen() {
                 </View>
                 <View style={styles.fileActions}>
                   <TouchableOpacity
-                    onPress={() => handleDelete(email.id, email.subject)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDelete(email.id, email.subject);
+                    }}
                     style={[styles.deleteButton, { backgroundColor: colors.danger + '20' }]}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <Trash2 size={20} color={colors.danger} />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => handlePermanentDelete(email.id, email.subject)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handlePermanentDelete(email.id, email.subject);
+                    }}
                     style={[styles.permanentDeleteButton, { backgroundColor: colors.danger + '30' }]}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <XCircle size={20} color={colors.danger} />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         );
