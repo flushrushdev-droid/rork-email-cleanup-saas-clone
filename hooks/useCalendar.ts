@@ -6,9 +6,12 @@ export interface CalendarEvent {
   title: string;
   date: Date;
   time: string;
+  startTime: Date;
+  endTime: Date;
   location: string;
   description: string;
   type: 'in-person' | 'video';
+  color?: string;
 }
 
 export type CalendarFeedback = {
@@ -106,9 +109,12 @@ export function useCalendar() {
       title: meetingTitle,
       date: selectedDate,
       time: timeString,
+      startTime: startTime,
+      endTime: endTime,
       location: meetingLocation,
       description: meetingDescription,
       type: meetingType,
+      color: '#007AFF',
     };
 
     setEvents(prev => [...prev, newEvent]);

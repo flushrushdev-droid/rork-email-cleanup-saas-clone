@@ -240,7 +240,7 @@ export default function OverviewScreen() {
           </View>
           {(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))
             .map((email) => (
-              <TouchableOpacity key={email.id} style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.danger }]} onPress={() => router.push({ pathname: '/(tabs)/mail', params: { emailId: email.id, timestamp: Date.now().toString() } })}>
+              <TouchableOpacity key={email.id} style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.danger }]} onPress={() => router.push({ pathname: '/email-detail', params: { emailId: email.id } })}>
                 <View style={styles.emailHeader}>
                   <View style={styles.emailIconContainer}>
                     <AlertCircle size={20} color={colors.danger} />

@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Archive, Trash2, Star, ChevronLeft, Paperclip, Mail, Users, Send } from 'lucide-react-native';
+import { Archive, Trash2, Star, ChevronLeft, ChevronRight, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '@/contexts/ThemeContext';
 import Colors from '@/constants/colors';
 import type { EmailMessage } from '@/constants/types';
@@ -15,6 +16,12 @@ interface EmailDetailViewProps {
   onReply: (email: EmailMessage) => void;
   onReplyAll: (email: EmailMessage) => void;
   onForward: (email: EmailMessage) => void;
+  onNext?: () => void;
+  onPrev?: () => void;
+  hasNext?: boolean;
+  hasPrev?: boolean;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 export function EmailDetailView({
@@ -26,21 +33,66 @@ export function EmailDetailView({
   onReply,
   onReplyAll,
   onForward,
+  onNext,
+  onPrev,
+  hasNext = false,
+  hasPrev = false,
+  currentIndex,
+  totalCount,
 }: EmailDetailViewProps) {
   const { colors } = useTheme();
   const hasMultipleRecipients = selectedEmail.to.length > 1;
 
+  // Swipe gesture for navigation
+  const swipeGesture = Gesture.Pan()
+    .onEnd((event) => {
+      const swipeThreshold = 50;
+      if (event.translationX > swipeThreshold && hasPrev && onPrev) {
+        // Swipe right = go to previous email
+        onPrev();
+      } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
+        // Swipe left = go to next email
+        onNext();
+      }
+    });
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.detailHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          testID="back-to-inbox"
-          style={styles.backButton}
-          onPress={onBack}
-        >
-          <ChevronLeft size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.detailActions}>
+    <GestureDetector gesture={swipeGesture}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.detailHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              testID="back-to-inbox"
+              style={styles.backButton}
+              onPress={onBack}
+            >
+              <ChevronLeft size={24} color={colors.text} />
+            </TouchableOpacity>
+            {currentIndex !== undefined && totalCount !== undefined && (
+              <Text style={[styles.emailCounter, { color: colors.textSecondary }]}>
+                {currentIndex + 1} of {totalCount}
+              </Text>
+            )}
+          </View>
+          <View style={styles.detailActions}>
+            {hasPrev && onPrev && (
+              <TouchableOpacity
+                testID="prev-email"
+                style={[styles.navButton, { backgroundColor: colors.surface }]}
+                onPress={onPrev}
+              >
+                <ChevronLeft size={20} color={colors.text} />
+              </TouchableOpacity>
+            )}
+            {hasNext && onNext && (
+              <TouchableOpacity
+                testID="next-email"
+                style={[styles.navButton, { backgroundColor: colors.surface }]}
+                onPress={onNext}
+              >
+                <ChevronRight size={20} color={colors.text} />
+              </TouchableOpacity>
+            )}
           <TouchableOpacity
             testID="star-email"
             style={styles.actionButton}
@@ -147,7 +199,8 @@ export function EmailDetailView({
           <Text style={styles.emailActionButtonText}>Forward</Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -168,9 +221,25 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  emailCounter: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   detailActions: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
+  },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButton: {
     padding: 4,

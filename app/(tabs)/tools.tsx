@@ -1,18 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { History, MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield, Calendar } from 'lucide-react-native';
+import { MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { useCalendar } from '@/hooks/useCalendar';
-import { CalendarSidebar } from '@/components/CalendarSidebar';
 
 export default function ToolsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const calendar = useCalendar();
 
   const tools = [
     {
@@ -21,7 +18,23 @@ export default function ToolsScreen() {
       description: 'Schedule and manage your meetings',
       icon: Calendar,
       color: '#5856D6',
-      action: 'calendar' as const,
+      route: '/calendar' as const,
+    },
+    {
+      id: 'notes',
+      title: 'Notes',
+      description: 'Quick notes and reminders for emails',
+      icon: FileText,
+      color: '#34C759',
+      route: '/notes' as const,
+    },
+    {
+      id: 'suggestions',
+      title: 'Suggestions',
+      description: 'Smart recommendations for your inbox',
+      icon: Sparkles,
+      color: '#FFA500',
+      route: '/suggestions' as const,
     },
     {
       id: 'automation-rules',
@@ -32,12 +45,12 @@ export default function ToolsScreen() {
       route: '/rules' as const,
     },
     {
-      id: 'history',
-      title: 'History',
-      description: 'View app activity from the past 60 days',
-      icon: History,
-      color: '#8E8E93',
-      route: '/history' as const,
+      id: 'unsubscribe',
+      title: 'Unsubscribe Manager',
+      description: 'Manage newsletter subscriptions',
+      icon: MailX,
+      color: '#FF3B30',
+      route: '/unsubscribe' as const,
     },
     {
       id: 'top-senders',
@@ -54,30 +67,6 @@ export default function ToolsScreen() {
       icon: UserX,
       color: '#FF3B30',
       route: '/blocked-senders' as const,
-    },
-    {
-      id: 'notes',
-      title: 'Notes',
-      description: 'Quick notes and reminders for emails',
-      icon: FileText,
-      color: '#34C759',
-      route: '/notes' as const,
-    },
-    {
-      id: 'unsubscribe',
-      title: 'Unsubscribe Manager',
-      description: 'Manage newsletter subscriptions',
-      icon: MailX,
-      color: '#FF3B30',
-      route: '/unsubscribe' as const,
-    },
-    {
-      id: 'suggestions',
-      title: 'Suggestions',
-      description: 'Smart recommendations for your inbox',
-      icon: Sparkles,
-      color: '#FFA500',
-      route: '/suggestions' as const,
     },
   ];
 
@@ -97,9 +86,7 @@ export default function ToolsScreen() {
               testID={`tool-${tool.id}`}
               style={[styles.toolCard, { backgroundColor: colors.surface }]}
               onPress={() => {
-                if ('action' in tool && tool.action === 'calendar') {
-                  calendar.toggleCalendar();
-                } else if ('route' in tool) {
+                if ('route' in tool) {
                   router.push(tool.route);
                 }
               }}
@@ -117,12 +104,6 @@ export default function ToolsScreen() {
           );
         })}
       </ScrollView>
-
-      <CalendarSidebar 
-        {...calendar}
-        insets={insets}
-        colors={colors}
-      />
     </View>
   );
 }

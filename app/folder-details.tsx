@@ -76,7 +76,7 @@ export default function FolderDetailsScreen() {
 
   const handleEmailPress = (email: EmailMessage) => {
     router.push({
-      pathname: '/(tabs)/mail',
+      pathname: '/email-detail',
       params: { emailId: email.id },
     });
   };

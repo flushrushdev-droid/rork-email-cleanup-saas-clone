@@ -133,6 +133,12 @@ export interface SenderProfile {
   category?: EmailCategory;
 }
 
+export interface Attachment {
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface EmailMessage {
   id: string;
   threadId: string;
@@ -146,6 +152,7 @@ export interface EmailMessage {
   tags?: string[];
   hasAttachments: boolean;
   attachmentCount: number;
+  attachments?: Attachment[];
   isRead: boolean;
   isStarred: boolean;
   priority?: 'action' | 'later' | 'fyi' | 'low';

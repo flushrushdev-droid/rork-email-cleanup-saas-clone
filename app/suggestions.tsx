@@ -147,25 +147,27 @@ export default function SuggestionsScreen() {
 
               return (
                 <View key={suggestion.id} style={[styles.suggestionCard, { backgroundColor: colors.surface }]}>
-                  <View style={styles.suggestionHeader}>
-                    <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-                      <Icon size={24} color={color} />
-                    </View>
-                    <View style={styles.suggestionContent}>
-                      <Text style={[styles.suggestionTitle, { color: colors.text }]}>{suggestion.title}</Text>
-                      <Text style={[styles.suggestionDescription, { color: colors.textSecondary }]}>{suggestion.description}</Text>
-                      <View style={styles.metaRow}>
-                        <TouchableOpacity
-                          style={[styles.badge, { backgroundColor: colors.primary + '20' }]}
-                          onPress={() => handleViewAffectedEmails(suggestion)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={[styles.badgeText, { color: colors.primary }]}>{suggestion.emailCount} emails</Text>
-                        </TouchableOpacity>
-                        <Text style={[styles.reason, { color: colors.textSecondary }]}>{suggestion.reason}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleViewAffectedEmails(suggestion)}
+                    activeOpacity={0.7}
+                    style={styles.cardTouchable}
+                  >
+                    <View style={styles.suggestionHeader}>
+                      <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+                        <Icon size={24} color={color} />
+                      </View>
+                      <View style={styles.suggestionContent}>
+                        <Text style={[styles.suggestionTitle, { color: colors.text }]}>{suggestion.title}</Text>
+                        <Text style={[styles.suggestionDescription, { color: colors.textSecondary }]}>{suggestion.description}</Text>
+                        <View style={styles.metaRow}>
+                          <View style={[styles.badge, { backgroundColor: colors.primary + '20' }]}>
+                            <Text style={[styles.badgeText, { color: colors.primary }]}>{suggestion.emailCount} emails</Text>
+                          </View>
+                          <Text style={[styles.reason, { color: colors.textSecondary }]}>{suggestion.reason}</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
 
                   <View style={styles.actionButtons}>
                     <TouchableOpacity
@@ -245,10 +247,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
+  cardTouchable: {
+    marginBottom: 12,
+  },
   suggestionHeader: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
   },
   iconContainer: {
     width: 48,

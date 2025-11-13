@@ -153,6 +153,9 @@ export default function MailScreen() {
         case 'drafts':
           filtered = [];
           break;
+        case 'drafts-ai':
+          filtered = [];
+          break;
         case 'spam':
           filtered = [];
           break;
@@ -185,6 +188,9 @@ export default function MailScreen() {
           filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
           break;
         case 'drafts':
+          filtered = [];
+          break;
+        case 'drafts-ai':
           filtered = [];
           break;
         case 'trash':
@@ -510,6 +516,34 @@ export default function MailScreen() {
     ]);
   };
 
+  const handleNextEmail = () => {
+    if (!selectedEmail) return;
+    const currentIndex = filteredEmails.findIndex(e => e.id === selectedEmail.id);
+    if (currentIndex !== -1 && currentIndex < filteredEmails.length - 1) {
+      const nextEmail = filteredEmails[currentIndex + 1];
+      setSelectedEmail(nextEmail);
+      if (!nextEmail.isRead && !isDemoMode) {
+        markAsRead(nextEmail.id).catch(() => {
+          console.error('Failed to mark as read');
+        });
+      }
+    }
+  };
+
+  const handlePrevEmail = () => {
+    if (!selectedEmail) return;
+    const currentIndex = filteredEmails.findIndex(e => e.id === selectedEmail.id);
+    if (currentIndex > 0) {
+      const prevEmail = filteredEmails[currentIndex - 1];
+      setSelectedEmail(prevEmail);
+      if (!prevEmail.isRead && !isDemoMode) {
+        markAsRead(prevEmail.id).catch(() => {
+          console.error('Failed to mark as read');
+        });
+      }
+    }
+  };
+
 
 
 
@@ -552,18 +586,30 @@ export default function MailScreen() {
         />
       )}
       {currentView === 'folder-detail' && renderFolderDetail()}
-      {currentView === 'detail' && selectedEmail && (
-        <EmailDetailView
-          selectedEmail={selectedEmail}
-          insets={insets}
-          onBack={() => setCurrentView('inbox')}
-          onStar={handleStar}
-          onArchive={handleArchive}
-          onReply={handleReply}
-          onReplyAll={handleReplyAll}
-          onForward={handleForward}
-        />
-      )}
+      {currentView === 'detail' && selectedEmail && (() => {
+        const currentIndex = filteredEmails.findIndex(e => e.id === selectedEmail.id);
+        const hasNext = currentIndex !== -1 && currentIndex < filteredEmails.length - 1;
+        const hasPrev = currentIndex > 0;
+        
+        return (
+          <EmailDetailView
+            selectedEmail={selectedEmail}
+            insets={insets}
+            onBack={() => setCurrentView('inbox')}
+            onStar={handleStar}
+            onArchive={handleArchive}
+            onReply={handleReply}
+            onReplyAll={handleReplyAll}
+            onForward={handleForward}
+            onNext={hasNext ? handleNextEmail : undefined}
+            onPrev={hasPrev ? handlePrevEmail : undefined}
+            hasNext={hasNext}
+            hasPrev={hasPrev}
+            currentIndex={currentIndex !== -1 ? currentIndex : undefined}
+            totalCount={filteredEmails.length}
+          />
+        );
+      })()}
       {currentView === 'compose' && (
         <ComposeView
           insets={insets}

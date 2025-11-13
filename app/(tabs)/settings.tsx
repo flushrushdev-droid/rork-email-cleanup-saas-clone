@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon } from 'lucide-react-native';
+import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon, History } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -96,6 +96,14 @@ export default function SettingsScreen() {
               <Database size={20} color={colors.secondary} />
             </View>
             <Text style={[styles.menuLabel, { color: colors.text }]}>Data Management</Text>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity testID="menu-history" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => router.push('/history')}>
+            <View style={[styles.menuIcon, { backgroundColor: '#8E8E93' + '20' }]}>
+              <History size={20} color="#8E8E93" />
+            </View>
+            <Text style={[styles.menuLabel, { color: colors.text }]}>History</Text>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>

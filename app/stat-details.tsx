@@ -120,7 +120,14 @@ export default function StatDetailsScreen() {
                   key={email.id} 
                   style={[styles.emailCard, { backgroundColor: colors.surface }]}
                   onPress={() => {
-                    router.push({ pathname: '/mail', params: { emailId: email.id } });
+                    router.push({ 
+                      pathname: '/email-detail', 
+                      params: { 
+                        emailId: email.id, 
+                        returnTo: 'stat-details',
+                        statType: type,
+                      } 
+                    });
                   }}
                   activeOpacity={0.7}
                 >
@@ -214,7 +221,14 @@ export default function StatDetailsScreen() {
                 key={email.id} 
                 style={[styles.fileCard, { backgroundColor: colors.surface }]}
                 onPress={() => {
-                  router.push({ pathname: '/mail', params: { emailId: email.id } });
+                  router.push({ 
+                    pathname: '/email-detail', 
+                    params: { 
+                      emailId: email.id,
+                      returnTo: 'stat-details',
+                      statType: type,
+                    } 
+                  });
                 }}
                 activeOpacity={0.7}
               >

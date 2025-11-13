@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Animated } from 'react-native';
-import { Search, X, FileEdit, Send, Trash2, Mail, Paperclip, Star, Plus, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, Archive, Folder, MailOpen, Check, PenSquare, Menu, Inbox } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Animated, Modal } from 'react-native';
+import { Search, X, FileEdit, Send, Trash2, Mail, Paperclip, Star, Plus, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, Archive, Folder, MailOpen, Check, Menu, Inbox, Clock, Bookmark, Calendar, File } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage, EmailCategory } from '@/constants/types';
 import { formatDate } from '@/utils/dateFormat';
 
-type FilterType = 'all' | 'unread' | 'starred' | 'drafts' | 'trash' | 'sent';
+type FilterType = 'all' | 'unread' | 'starred' | 'drafts' | 'drafts-ai' | 'trash' | 'sent';
 
 type Draft = {
   id: string;
@@ -91,6 +91,29 @@ export function InboxView({
 }: InboxViewProps) {
   const { colors } = useTheme();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(false);
+  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
+  const [activeFilterModal, setActiveFilterModal] = React.useState<'labels' | 'from' | 'to' | 'attachment' | null>(null);
+  const [labelSearchQuery, setLabelSearchQuery] = React.useState('');
+  const [contactSearchQuery, setContactSearchQuery] = React.useState('');
+  const [appliedLabelFilter, setAppliedLabelFilter] = React.useState<string | null>(null);
+  const [appliedAttachmentFilter, setAppliedAttachmentFilter] = React.useState<string | null>(null);
+  const [appliedContactFilter, setAppliedContactFilter] = React.useState<{ name: string; email: string } | null>(null);
+  const [searchHistory] = React.useState<string[]>([
+    'Important',
+    'Receipts',
+    'Newsletter',
+    'Work',
+  ]);
+  const [mockContacts] = React.useState([
+    { name: 'John Smith', email: 'john.smith@company.com', initial: 'J', color: '#FF6B6B' },
+    { name: 'Sarah Johnson', email: 'sarah.j@example.com', initial: 'S', color: '#4ECDC4' },
+    { name: 'Michael Brown', email: 'mbrown@work.com', initial: 'M', color: '#45B7D1' },
+    { name: 'Emily Davis', email: 'emily.davis@email.com', initial: 'E', color: '#96CEB4' },
+    { name: 'David Wilson', email: 'dwilson@company.com', initial: 'D', color: '#FFEAA7' },
+    { name: 'Lisa Anderson', email: 'lisa.a@domain.com', initial: 'L', color: '#DFE6E9' },
+    { name: 'James Taylor', email: 'jtaylor@work.com', initial: 'J', color: '#74B9FF' },
+    { name: 'Jessica Martinez', email: 'jmartinez@example.com', initial: 'J', color: '#A29BFE' },
+  ]);
   const sidebarSlideAnim = React.useRef(new Animated.Value(-300)).current;
 
   React.useEffect(() => {
@@ -103,6 +126,122 @@ export function InboxView({
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
+  };
+
+  const getFilteredSearchResults = () => {
+    let results = filteredEmails;
+
+    // Apply label filter
+    if (appliedLabelFilter) {
+      switch (appliedLabelFilter) {
+        case 'starred':
+          results = results.filter(e => e.isStarred);
+          break;
+        case 'important':
+          results = results.filter(e => e.priority === 'action' || e.subject.toLowerCase().includes('important'));
+          break;
+        case 'sent':
+          // For demo, show empty or some sent-like emails
+          results = [];
+          break;
+        case 'drafts':
+          results = [];
+          break;
+        case 'purchases':
+          results = results.filter(e => 
+            e.subject.toLowerCase().includes('order') ||
+            e.subject.toLowerCase().includes('receipt') ||
+            e.subject.toLowerCase().includes('purchase')
+          );
+          break;
+        case 'all':
+          // Show all
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Apply attachment filter
+    if (appliedAttachmentFilter) {
+      switch (appliedAttachmentFilter) {
+        case 'any':
+          results = results.filter(e => e.hasAttachments);
+          break;
+        case 'documents':
+          results = results.filter(e => 
+            e.hasAttachments && e.attachments?.some(a => 
+              a.filename.match(/\.(doc|docx)$/i) ||
+              a.mimeType.includes('msword') ||
+              a.mimeType.includes('wordprocessingml')
+            )
+          );
+          break;
+        case 'images':
+          results = results.filter(e => 
+            e.hasAttachments && e.attachments?.some(a => 
+              a.filename.match(/\.(jpg|jpeg|png|gif|bmp|svg|webp)$/i) ||
+              a.mimeType.startsWith('image/')
+            )
+          );
+          break;
+        case 'pdfs':
+          results = results.filter(e => 
+            e.hasAttachments && e.attachments?.some(a => 
+              a.filename.match(/\.pdf$/i) ||
+              a.mimeType === 'application/pdf'
+            )
+          );
+          break;
+        case 'videos':
+          results = results.filter(e => 
+            e.hasAttachments && e.attachments?.some(a => 
+              a.filename.match(/\.(mp4|avi|mov|wmv|flv|mkv|webm)$/i) ||
+              a.mimeType.startsWith('video/')
+            )
+          );
+          break;
+        case 'slides':
+          results = results.filter(e => 
+            e.hasAttachments && e.attachments?.some(a => 
+              a.filename.match(/\.(ppt|pptx)$/i) ||
+              a.mimeType.includes('presentation')
+            )
+          );
+          break;
+        case 'sheets':
+          results = results.filter(e => 
+            e.hasAttachments && e.attachments?.some(a => 
+              a.filename.match(/\.(xls|xlsx|csv)$/i) ||
+              a.mimeType.includes('spreadsheet')
+            )
+          );
+          break;
+        default:
+          results = results.filter(e => e.hasAttachments);
+          break;
+      }
+    }
+
+    // Apply contact filter (From/To)
+    if (appliedContactFilter) {
+      results = results.filter(e => 
+        e.from.toLowerCase().includes(appliedContactFilter.email.toLowerCase()) ||
+        e.from.toLowerCase().includes(appliedContactFilter.name.toLowerCase())
+      );
+    }
+
+    // Apply text search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      results = results.filter(e =>
+        e.subject.toLowerCase().includes(query) ||
+        e.from.toLowerCase().includes(query) ||
+        e.snippet.toLowerCase().includes(query)
+      );
+    }
+
+    return results;
   };
   
   return (
@@ -129,7 +268,11 @@ export function InboxView({
               >
                 <Menu size={20} color={colors.primary} />
               </TouchableOpacity>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>Mail</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                {activeFilter === 'all' ? 'Mail' : 
+                 activeFilter === 'drafts-ai' ? 'Drafts By AI' :
+                 activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}
+              </Text>
             </View>
             <TouchableOpacity
               testID="compose-button"
@@ -137,39 +280,200 @@ export function InboxView({
               style={[styles.composeButton, { backgroundColor: colors.primary }]}
               activeOpacity={0.8}
             >
-              <PenSquare size={20} color="#FFFFFF" />
+              <Mail size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </>
         )}
       </View>
 
-      <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
-        <Search size={18} color={colors.textSecondary} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search mail"
-          value={searchQuery}
-          onChangeText={onSearchChange}
-          placeholderTextColor={colors.textSecondary}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => onSearchChange('')}>
-            <X size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
+      {!isSearchFocused && (
+        <TouchableOpacity 
+          style={[styles.searchContainer, { backgroundColor: colors.surface }]}
+          onPress={() => setIsSearchFocused(true)}
+          activeOpacity={0.8}
+        >
+          <Search size={18} color={colors.textSecondary} />
+          <Text style={[styles.searchPlaceholder, { color: colors.textSecondary }]}>
+            Search mail
+          </Text>
+        </TouchableOpacity>
+      )}
 
-      <ScrollView 
-        style={styles.emailList} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
-      >
-        {activeFilter === 'drafts' ? (
+      {isSearchFocused ? (
+        <View style={[styles.searchView, { backgroundColor: colors.background }]}>
+          <View style={[styles.searchHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity 
+              onPress={() => {
+                setIsSearchFocused(false);
+                setAppliedLabelFilter(null);
+                setAppliedAttachmentFilter(null);
+                setAppliedContactFilter(null);
+              }} 
+              style={styles.backButton}
+            >
+              <X size={24} color={colors.text} />
+            </TouchableOpacity>
+            <View style={[styles.searchInputContainer, { backgroundColor: colors.surface }]}>
+              <Search size={18} color={colors.textSecondary} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="Search in emails"
+                value={searchQuery}
+                onChangeText={onSearchChange}
+                placeholderTextColor={colors.textSecondary}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => onSearchChange('')}>
+                  <X size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <ScrollView style={styles.searchContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.filterRow}>
+              <TouchableOpacity 
+                style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setActiveFilterModal('labels')}
+              >
+                <Text style={[styles.filterButtonText, { color: colors.text }]}>Labels</Text>
+                <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setActiveFilterModal('from')}
+              >
+                <Text style={[styles.filterButtonText, { color: colors.text }]}>From</Text>
+                <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setActiveFilterModal('to')}
+              >
+                <Text style={[styles.filterButtonText, { color: colors.text }]}>To</Text>
+                <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setActiveFilterModal('attachment')}
+              >
+                <Text style={[styles.filterButtonText, { color: colors.text }]}>Attachment</Text>
+                <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+              </TouchableOpacity>
+            </View>
+
+            {searchQuery.length === 0 && searchHistory.length > 0 && !appliedLabelFilter && !appliedAttachmentFilter && !appliedContactFilter && (
+              <View style={styles.historySection}>
+                <Text style={[styles.historyTitle, { color: colors.text }]}>Recent email searches</Text>
+                {searchHistory.map((term, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.historyItem, { borderBottomColor: colors.border }]}
+                    onPress={() => onSearchChange(term)}
+                  >
+                    <View style={[styles.historyIcon, { backgroundColor: colors.surface }]}>
+                      <Search size={16} color={colors.textSecondary} />
+                    </View>
+                    <Text style={[styles.historyText, { color: colors.text }]}>{term}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {(searchQuery.length > 0 || appliedLabelFilter || appliedAttachmentFilter || appliedContactFilter) && (
+              <View style={styles.searchResults}>
+                {(appliedLabelFilter || appliedAttachmentFilter || appliedContactFilter) && (
+                  <View style={styles.activeFiltersRow}>
+                    {appliedLabelFilter && (
+                      <View style={[styles.activeFilterChip, { backgroundColor: colors.primary + '20' }]}>
+                        <Text style={[styles.activeFilterText, { color: colors.primary }]}>
+                          {appliedLabelFilter.charAt(0).toUpperCase() + appliedLabelFilter.slice(1)}
+                        </Text>
+                        <TouchableOpacity onPress={() => setAppliedLabelFilter(null)}>
+                          <X size={14} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    {appliedAttachmentFilter && (
+                      <View style={[styles.activeFilterChip, { backgroundColor: colors.primary + '20' }]}>
+                        <Text style={[styles.activeFilterText, { color: colors.primary }]}>
+                          {appliedAttachmentFilter === 'any' ? 'Has attachment' : appliedAttachmentFilter.charAt(0).toUpperCase() + appliedAttachmentFilter.slice(1)}
+                        </Text>
+                        <TouchableOpacity onPress={() => setAppliedAttachmentFilter(null)}>
+                          <X size={14} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    {appliedContactFilter && (
+                      <View style={[styles.activeFilterChip, { backgroundColor: colors.primary + '20' }]}>
+                        <Text style={[styles.activeFilterText, { color: colors.primary }]}>
+                          {appliedContactFilter.name}
+                        </Text>
+                        <TouchableOpacity onPress={() => setAppliedContactFilter(null)}>
+                          <X size={14} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+                <Text style={[styles.resultsTitle, { color: colors.text }]}>
+                  {getFilteredSearchResults().length} results
+                </Text>
+                {getFilteredSearchResults().slice(0, 50).map((email) => {
+                  const senderName = email.from.split('<')[0].trim() || email.from;
+                  const senderInitial = senderName[0]?.toUpperCase() || '?';
+                  const senderColor = `hsl(${senderInitial.charCodeAt(0) * 137.5 % 360}, 70%, 50%)`;
+
+                  return (
+                    <TouchableOpacity
+                      key={email.id}
+                      style={[styles.searchResultItem, { borderBottomColor: colors.border }]}
+                      onPress={() => {
+                        setIsSearchFocused(false);
+                        setAppliedLabelFilter(null);
+                        setAppliedAttachmentFilter(null);
+                        setAppliedContactFilter(null);
+                        onEmailPress(email);
+                      }}
+                    >
+                      <View style={[styles.senderAvatar, { backgroundColor: senderColor }]}>
+                        <Text style={styles.senderInitial}>{senderInitial}</Text>
+                      </View>
+                      <View style={styles.searchResultContent}>
+                        <Text style={[styles.searchResultSubject, { color: colors.text }]} numberOfLines={1}>
+                          {email.subject}
+                        </Text>
+                        <Text style={[styles.searchResultFrom, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {email.from}
+                        </Text>
+                        <Text style={[styles.searchResultSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
+                          {email.snippet}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      ) : (
+        <ScrollView 
+          style={styles.emailList} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+        >
+        {activeFilter === 'drafts' || activeFilter === 'drafts-ai' ? (
           drafts.length === 0 ? (
             <View style={styles.emptyState}>
               <FileEdit size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No drafts</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start composing to save drafts</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {activeFilter === 'drafts-ai' ? 'No AI drafts' : 'No drafts'}
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                {activeFilter === 'drafts-ai' ? 'Use AI to generate email drafts' : 'Start composing to save drafts'}
+              </Text>
             </View>
           ) : (
             drafts.map((draft) => {
@@ -191,7 +495,9 @@ export function InboxView({
                   <View style={styles.draftCardContent}>
                     <View style={styles.draftCardHeader}>
                       <FileEdit size={16} color={colors.primary} />
-                      <Text style={[styles.draftBadge, { color: colors.primary }]}>Draft</Text>
+                      <Text style={[styles.draftBadge, { color: colors.primary }]}>
+                        {activeFilter === 'drafts-ai' ? 'AI Draft' : 'Draft'}
+                      </Text>
                       <Text style={[styles.draftDate, { color: colors.textSecondary }]}>{formatDate(draft.date)}</Text>
                     </View>
                     <Text style={[styles.draftTo, { color: colors.text }]} numberOfLines={1}>
@@ -325,6 +631,7 @@ export function InboxView({
           })
         )}
       </ScrollView>
+      )}
 
       {selectionMode && selectedEmails.size > 0 && (
         <View style={[styles.bottomToolbar, { backgroundColor: colors.surface, paddingBottom: insets.bottom + 16 }]}>
@@ -380,7 +687,7 @@ export function InboxView({
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Mail</Text>
             </View>
             
-            {(['all', 'unread', 'starred', 'drafts', 'sent', 'trash'] as const).map((filter) => (
+            {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'trash'] as const).map((filter) => (
               <TouchableOpacity
                 key={filter}
                 testID={`sidebar-filter-${filter}`}
@@ -397,7 +704,7 @@ export function InboxView({
                   styles.sidebarItemText,
                   { color: activeFilter === filter ? colors.primary : colors.text }
                 ]}>
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  {filter === 'drafts-ai' ? 'Drafts By AI' : filter.charAt(0).toUpperCase() + filter.slice(1)}
                 </Text>
                 {activeFilter === filter && (
                   <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />
@@ -474,6 +781,208 @@ export function InboxView({
           onPress={toggleSidebar}
         />
       )}
+
+      {/* Filter Modals */}
+      {/* Attachment Filter Modal */}
+      <Modal
+        visible={activeFilterModal === 'attachment'}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setActiveFilterModal(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Attachment</Text>
+              <TouchableOpacity onPress={() => setActiveFilterModal(null)}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {[
+                { id: 'any', label: 'Has any attachment', icon: Paperclip },
+                { id: 'documents', label: 'Documents', icon: File },
+                { id: 'slides', label: 'Slides', icon: FileEdit },
+                { id: 'sheets', label: 'Sheets', icon: FileEdit },
+                { id: 'images', label: 'Images', icon: File },
+                { id: 'pdfs', label: 'PDFs', icon: File },
+                { id: 'videos', label: 'Videos', icon: File },
+              ].map((type) => {
+                const Icon = type.icon;
+                return (
+                  <TouchableOpacity
+                    key={type.id}
+                    style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                    onPress={() => {
+                      setAppliedAttachmentFilter(type.id);
+                      setActiveFilterModal(null);
+                    }}
+                  >
+                    <Icon size={20} color={colors.primary} />
+                    <Text style={[styles.modalItemText, { color: colors.text }]}>{type.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Labels Filter Modal */}
+      <Modal
+        visible={activeFilterModal === 'labels'}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setActiveFilterModal(null);
+          setLabelSearchQuery('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Labels</Text>
+              <TouchableOpacity onPress={() => {
+                setActiveFilterModal(null);
+                setLabelSearchQuery('');
+              }}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.modalSearchContainer, { backgroundColor: colors.background }]}>
+              <Search size={18} color={colors.textSecondary} />
+              <TextInput
+                style={[styles.modalSearchInput, { color: colors.text }]}
+                placeholder="Search for labels"
+                placeholderTextColor={colors.textSecondary}
+                value={labelSearchQuery}
+                onChangeText={setLabelSearchQuery}
+              />
+            </View>
+            <ScrollView style={styles.modalList}>
+              {[
+                { id: 'starred', label: 'Starred', icon: Star },
+                { id: 'snoozed', label: 'Snoozed', icon: Clock },
+                { id: 'important', label: 'Important', icon: Bookmark },
+                { id: 'sent', label: 'Sent', icon: Send },
+                { id: 'scheduled', label: 'Scheduled', icon: Calendar },
+                { id: 'drafts', label: 'Drafts', icon: FileEdit },
+                { id: 'all', label: 'All mail', icon: Mail },
+                { id: 'purchases', label: 'Purchases', icon: ShoppingBag },
+              ]
+                .filter(label => 
+                  label.label.toLowerCase().includes(labelSearchQuery.toLowerCase())
+                )
+                .map((label) => {
+                  const Icon = label.icon;
+                  return (
+                    <TouchableOpacity
+                      key={label.id}
+                      style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                      onPress={() => {
+                        setAppliedLabelFilter(label.id);
+                        setActiveFilterModal(null);
+                        setLabelSearchQuery('');
+                      }}
+                    >
+                      <Icon size={20} color={colors.textSecondary} />
+                      <Text style={[styles.modalItemText, { color: colors.text }]}>{label.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* To/From Filter Modal */}
+      <Modal
+        visible={activeFilterModal === 'to' || activeFilterModal === 'from'}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setActiveFilterModal(null);
+          setContactSearchQuery('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {activeFilterModal === 'to' ? 'To' : 'From'}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                setActiveFilterModal(null);
+                setContactSearchQuery('');
+              }}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.modalSearchContainer, { backgroundColor: colors.background }]}>
+              <TextInput
+                style={[styles.modalSearchInput, { color: colors.text }]}
+                placeholder="Type a name or email address"
+                placeholderTextColor={colors.textSecondary}
+                value={contactSearchQuery}
+                onChangeText={setContactSearchQuery}
+              />
+            </View>
+            <ScrollView style={styles.modalList}>
+              <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>Suggestions</Text>
+              {mockContacts
+                .filter(contact =>
+                  contact.name.toLowerCase().includes(contactSearchQuery.toLowerCase()) ||
+                  contact.email.toLowerCase().includes(contactSearchQuery.toLowerCase())
+                )
+                .map((contact, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                    onPress={() => {
+                      setAppliedContactFilter({ name: contact.name, email: contact.email });
+                      setActiveFilterModal(null);
+                      setContactSearchQuery('');
+                    }}
+                  >
+                    <View style={[styles.contactAvatar, { backgroundColor: contact.color }]}>
+                      <Text style={styles.contactInitial}>{contact.initial}</Text>
+                    </View>
+                    <View style={styles.contactInfo}>
+                      <Text style={[styles.contactName, { color: colors.text }]}>{contact.name}</Text>
+                      <Text style={[styles.contactEmail, { color: colors.textSecondary }]}>{contact.email}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              
+              {contactSearchQuery.length === 0 && (
+                <>
+                  <Text style={[styles.modalSectionTitle, { color: colors.textSecondary }]}>All contacts</Text>
+                  <Text style={[styles.contactSectionLetter, { color: colors.text }]}>J</Text>
+                  {mockContacts.filter(c => c.name.startsWith('J')).map((contact, index) => (
+                    <TouchableOpacity
+                      key={`all-${index}`}
+                      style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                      onPress={() => {
+                        setAppliedContactFilter({ name: contact.name, email: contact.email });
+                        setActiveFilterModal(null);
+                        setContactSearchQuery('');
+                      }}
+                    >
+                      <View style={[styles.contactAvatar, { backgroundColor: contact.color }]}>
+                        <Text style={styles.contactInitial}>{contact.initial}</Text>
+                      </View>
+                      <View style={styles.contactInfo}>
+                        <Text style={[styles.contactName, { color: colors.text }]}>{contact.name}</Text>
+                        <Text style={[styles.contactEmail, { color: colors.textSecondary }]}>{contact.email}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -539,6 +1048,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: 0,
+  },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: 15,
   },
   emailList: {
     flex: 1,
@@ -816,5 +1329,216 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  searchView: {
+    flex: 1,
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  searchContent: {
+    flex: 1,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  filterArrow: {
+    fontSize: 10,
+  },
+  historySection: {
+    paddingTop: 16,
+  },
+  historyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  historyIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyText: {
+    flex: 1,
+    fontSize: 15,
+  },
+  searchResults: {
+    paddingTop: 16,
+  },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  activeFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  activeFilterText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  resultsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  searchResultContent: {
+    flex: 1,
+  },
+  searchResultSubject: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  searchResultFrom: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  searchResultSnippet: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    maxHeight: '80%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  modalSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+  modalList: {
+    flex: 1,
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  modalItemText: {
+    flex: 1,
+    fontSize: 15,
+  },
+  contactAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactInitial: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  contactInfo: {
+    flex: 1,
+  },
+  contactName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  contactEmail: {
+    fontSize: 13,
+  },
+  contactSectionLetter: {
+    fontSize: 18,
+    fontWeight: '700',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 });
