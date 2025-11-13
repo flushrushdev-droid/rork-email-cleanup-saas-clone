@@ -28,7 +28,7 @@ type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
 
 export default function MailScreen() {
-  const params = useLocalSearchParams<{ emailId?: string }>();
+  const params = useLocalSearchParams<{ emailId?: string; timestamp?: string }>();
   const { colors } = useTheme();
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
@@ -115,7 +115,7 @@ export default function MailScreen() {
         setCurrentView('detail');
       }
     }
-  }, [params.emailId, allEmails]);
+  }, [params.emailId, params.timestamp, allEmails]);
 
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;

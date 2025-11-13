@@ -234,13 +234,13 @@ export default function OverviewScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Action Required</Text>
-            <TouchableOpacity testID="action-view-all" onPress={() => router.push('/folders')}>
+            <TouchableOpacity testID="action-view-all" onPress={() => router.push({ pathname: '/folder-details', params: { folderName: 'Action Required', folderColor: colors.danger } })}>
               <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
             </TouchableOpacity>
           </View>
           {(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))
             .map((email) => (
-              <TouchableOpacity key={email.id} style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.danger }]} onPress={() => Alert.alert('Email', email.subject)}>
+              <TouchableOpacity key={email.id} style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.danger }]} onPress={() => router.push({ pathname: '/(tabs)/mail', params: { emailId: email.id, timestamp: Date.now().toString() } })}>
                 <View style={styles.emailHeader}>
                   <View style={styles.emailIconContainer}>
                     <AlertCircle size={20} color={colors.danger} />

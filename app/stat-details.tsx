@@ -301,7 +301,7 @@ export default function StatDetailsScreen() {
 
             <TouchableOpacity 
               style={[styles.createRuleButton, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/rules')}
+              onPress={() => router.push('/create-rule')}
             >
               <Text style={[styles.createRuleText, { color: '#FFFFFF' }]}>Create New Rule</Text>
             </TouchableOpacity>
