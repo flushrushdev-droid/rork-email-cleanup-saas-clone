@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Mail, Zap, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon } from 'lucide-react-native';
+import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,6 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { theme, colors, toggleTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [autoCleanup, setAutoCleanup] = React.useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -87,26 +86,6 @@ export default function SettingsScreen() {
               trackColor={{ false: colors.border, true: colors.primary }}
             />
           </View>
-
-          <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
-            <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: colors.warning + '20' }]}>
-                <Zap size={20} color={colors.warning} />
-              </View>
-              <View style={styles.settingContent}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Auto Cleanup</Text>
-                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Automatically archive old emails</Text>
-              </View>
-            </View>
-            <Switch
-              value={autoCleanup}
-              onValueChange={(v) => {
-                setAutoCleanup(v);
-                Alert.alert('Auto Cleanup', v ? 'Enabled' : 'Disabled');
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-            />
-          </View>
         </View>
 
         <View style={styles.section}>
@@ -164,7 +143,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>InboxAI v1.0.0</Text>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>AthenX Mail v1.0.0</Text>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>Made with ❤️ for productivity</Text>
         </View>
 
