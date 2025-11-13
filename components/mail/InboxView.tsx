@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { Search, X, FileEdit, Send, Trash2, Mail, Paperclip, Star, Plus, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, Archive, Folder, MailOpen, Check, PenSquare } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { Search, X, FileEdit, Send, Trash2, Mail, Paperclip, Star, Plus, FolderOpen, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, Archive, Folder, MailOpen, Check, PenSquare, Menu, Inbox } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage, EmailCategory } from '@/constants/types';
@@ -90,6 +90,20 @@ export function InboxView({
   onCompose,
 }: InboxViewProps) {
   const { colors } = useTheme();
+  const [isSidebarVisible, setIsSidebarVisible] = React.useState(false);
+  const sidebarSlideAnim = React.useRef(new Animated.Value(-300)).current;
+
+  React.useEffect(() => {
+    Animated.timing(sidebarSlideAnim, {
+      toValue: isSidebarVisible ? 0 : -300,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  }, [isSidebarVisible, sidebarSlideAnim]);
+
+  const toggleSidebar = () => {
+    setIsSidebarVisible(!isSidebarVisible);
+  };
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -106,7 +120,17 @@ export function InboxView({
           </>
         ) : (
           <>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Mail</Text>
+            <View style={styles.headerLeft}>
+              <TouchableOpacity
+                testID="sidebar-toggle"
+                onPress={toggleSidebar}
+                style={[styles.sidebarButton, { backgroundColor: colors.surface }]}
+                activeOpacity={0.7}
+              >
+                <Menu size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Mail</Text>
+            </View>
             <TouchableOpacity
               testID="compose-button"
               onPress={onCompose}
@@ -134,87 +158,6 @@ export function InboxView({
           </TouchableOpacity>
         )}
       </View>
-
-      <View style={styles.filterButtonsContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterButtonsScroll}
-        >
-          {(['all', 'unread', 'starred', 'drafts', 'sent', 'trash'] as const).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              testID={`filter-${filter}`}
-              style={[
-                styles.filterButton,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                activeFilter === filter && { backgroundColor: colors.primary, borderColor: colors.primary },
-              ]}
-              onPress={() => onFilterChange(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterButtonText,
-                  { color: colors.text },
-                  activeFilter === filter && styles.filterButtonTextActive,
-                ]}
-              >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {smartFolders.length > 0 && (
-        <View style={styles.smartFoldersSection}>
-          <Text style={[styles.smartFoldersTitle, { color: colors.text }]}>Smart Folders</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.smartFoldersScroll}
-          >
-            {smartFolders.map((folder) => {
-              const Icon = iconMap[folder.icon] || FolderOpen;
-              return (
-                <TouchableOpacity
-                  key={folder.id}
-                  testID={`smart-folder-${folder.id}`}
-                  style={styles.smartFolderCard}
-                  onPress={() => {
-                    router.push({
-                      pathname: '/folder-details',
-                      params: {
-                        folderName: folder.name,
-                        category: folder.category || '',
-                        folderColor: folder.color,
-                      },
-                    });
-                  }}
-                >
-                  <View style={[styles.smartFolderIcon, { backgroundColor: folder.color + '20' }]}>
-                    <Icon size={20} color={folder.color} />
-                  </View>
-                  <Text style={[styles.smartFolderName, { color: colors.text }]} numberOfLines={1}>{folder.name}</Text>
-                  <View style={[styles.smartFolderBadge, { backgroundColor: folder.color }]}>
-                    <Text style={styles.smartFolderCount}>{folder.count}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            <TouchableOpacity
-              testID="create-folder-button"
-              style={styles.smartFolderCard}
-              onPress={onCreateFolder}
-            >
-              <View style={[styles.smartFolderIcon, styles.createFolderIcon, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
-                <Plus size={24} color={colors.primary} />
-              </View>
-              <Text style={[styles.smartFolderName, styles.createFolderText, { color: colors.primary }]}>Create</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      )}
 
       <ScrollView 
         style={styles.emailList} 
@@ -419,6 +362,118 @@ export function InboxView({
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Sidebar */}
+      <Animated.View style={[styles.sidebar, { backgroundColor: colors.background, left: sidebarSlideAnim, paddingTop: insets.top }]}>
+        <View style={[styles.sidebarHeader, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.sidebarTitle, { color: colors.text }]}>Filters & Folders</Text>
+          <TouchableOpacity onPress={toggleSidebar}>
+            <X size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.sidebarContent} showsVerticalScrollIndicator={false}>
+          {/* Mail Filters Section */}
+          <View style={styles.sidebarSection}>
+            <View style={styles.sectionHeader}>
+              <Inbox size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Mail</Text>
+            </View>
+            
+            {(['all', 'unread', 'starred', 'drafts', 'sent', 'trash'] as const).map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                testID={`sidebar-filter-${filter}`}
+                style={[
+                  styles.sidebarItem,
+                  { backgroundColor: activeFilter === filter ? colors.primary + '15' : 'transparent' }
+                ]}
+                onPress={() => {
+                  onFilterChange(filter);
+                  toggleSidebar();
+                }}
+              >
+                <Text style={[
+                  styles.sidebarItemText,
+                  { color: activeFilter === filter ? colors.primary : colors.text }
+                ]}>
+                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </Text>
+                {activeFilter === filter && (
+                  <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Smart Folders Section */}
+          {smartFolders.length > 0 && (
+            <View style={styles.sidebarSection}>
+              <View style={styles.sectionHeader}>
+                <FolderOpen size={20} color={colors.secondary} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Folders</Text>
+              </View>
+              
+              {smartFolders.map((folder) => {
+                const Icon = iconMap[folder.icon] || FolderOpen;
+                return (
+                  <TouchableOpacity
+                    key={folder.id}
+                    testID={`sidebar-folder-${folder.id}`}
+                    style={styles.sidebarItem}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/folder-details',
+                        params: {
+                          folderName: folder.name,
+                          category: folder.category || '',
+                          folderColor: folder.color,
+                        },
+                      });
+                      toggleSidebar();
+                    }}
+                  >
+                    <View style={styles.folderItemContent}>
+                      <View style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}>
+                        <Icon size={16} color={folder.color} />
+                      </View>
+                      <Text style={[styles.sidebarItemText, { color: colors.text }]}>{folder.name}</Text>
+                    </View>
+                    <View style={[styles.folderBadge, { backgroundColor: folder.color }]}>
+                      <Text style={styles.folderBadgeText}>{folder.count}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                testID="sidebar-create-folder"
+                style={[styles.sidebarItem, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 16 }]}
+                onPress={() => {
+                  onCreateFolder();
+                  toggleSidebar();
+                }}
+              >
+                <View style={styles.folderItemContent}>
+                  <View style={[styles.folderIcon, { backgroundColor: colors.primary + '20' }]}>
+                    <Plus size={16} color={colors.primary} />
+                  </View>
+                  <Text style={[styles.sidebarItemText, { color: colors.primary }]}>Create Folder</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </Animated.View>
+
+      {/* Overlay */}
+      {isSidebarVisible && (
+        <TouchableOpacity
+          style={styles.sidebarOverlay}
+          activeOpacity={1}
+          onPress={toggleSidebar}
+        />
+      )}
     </View>
   );
 }
@@ -446,6 +501,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sidebarButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   composeButton: {
     width: 44,
     height: 44,
@@ -472,78 +539,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: 0,
-  },
-  filterButtonsContainer: {
-    marginBottom: 16,
-  },
-  filterButtonsScroll: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  filterButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  filterButtonActive: {
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  filterButtonTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  smartFoldersSection: {
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  smartFoldersTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 12,
-    paddingHorizontal: 16,
-  },
-  smartFoldersScroll: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  smartFolderCard: {
-    alignItems: 'center',
-    gap: 6,
-    width: 100,
-  },
-  smartFolderIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  smartFolderName: {
-    fontSize: 13,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  smartFolderBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  smartFolderCount: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  createFolderIcon: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-  },
-  createFolderText: {
   },
   emailList: {
     flex: 1,
@@ -727,5 +722,99 @@ const styles = StyleSheet.create({
   toolbarButtonText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  sidebar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 280,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 16,
+    zIndex: 1000,
+  },
+  sidebarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 999,
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  sidebarTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  sidebarContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  sidebarSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  sidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  sidebarItemText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  activeIndicator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  folderItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  folderIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  folderBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
