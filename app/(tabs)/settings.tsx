@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon, History } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Alert, Modal, TextInput } from 'react-native';
+import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Check, Moon, History, Lightbulb, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,10 +13,42 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { theme, colors, toggleTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const [featureRequestModalVisible, setFeatureRequestModalVisible] = React.useState(false);
+  const [featureTitle, setFeatureTitle] = React.useState('');
+  const [featureDescription, setFeatureDescription] = React.useState('');
+  const [successMessageVisible, setSuccessMessageVisible] = React.useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     router.replace('/login');
+  };
+
+  const handleSendFeatureRequest = () => {
+    if (!featureTitle.trim() || !featureDescription.trim()) {
+      Alert.alert('Missing Information', 'Please provide both a title and description for your feature request.');
+      return;
+    }
+    
+    // Close the form modal
+    setFeatureRequestModalVisible(false);
+    
+    // Clear the form
+    setFeatureTitle('');
+    setFeatureDescription('');
+    
+    // Show success message
+    setSuccessMessageVisible(true);
+    
+    // Auto-hide success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessageVisible(false);
+    }, 3000);
+  };
+
+  const handleCancelFeatureRequest = () => {
+    setFeatureRequestModalVisible(false);
+    setFeatureTitle('');
+    setFeatureDescription('');
   };
 
   return (
@@ -119,6 +151,14 @@ export default function SettingsScreen() {
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
+          <TouchableOpacity testID="menu-feature-request" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => setFeatureRequestModalVisible(true)}>
+            <View style={[styles.menuIcon, { backgroundColor: '#FFA500' + '20' }]}> 
+              <Lightbulb size={20} color="#FFA500" />
+            </View>
+            <Text style={[styles.menuLabel, { color: colors.text }]}>Feature Request</Text>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
           <TouchableOpacity testID="menu-terms" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Terms & Privacy', 'Read our policy on example.com/policy')}>
             <View style={[styles.menuIcon, { backgroundColor: colors.textSecondary + '20' }]}>
               <FileText size={20} color={colors.textSecondary} />
@@ -156,6 +196,90 @@ export default function SettingsScreen() {
         </View>
 
       </ScrollView>
+
+      {/* Feature Request Modal */}
+      <Modal
+        visible={featureRequestModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCancelFeatureRequest}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Feature Request</Text>
+              <TouchableOpacity onPress={handleCancelFeatureRequest}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Title</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                placeholder="Brief title for your feature request"
+                placeholderTextColor={colors.textSecondary}
+                value={featureTitle}
+                onChangeText={setFeatureTitle}
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                placeholder="Describe your feature idea in detail..."
+                placeholderTextColor={colors.textSecondary}
+                value={featureDescription}
+                onChangeText={setFeatureDescription}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                onPress={handleCancelFeatureRequest}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.sendButton, { backgroundColor: colors.primary }]}
+                onPress={handleSendFeatureRequest}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Message Modal */}
+      <Modal
+        visible={successMessageVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSuccessMessageVisible(false)}
+      >
+        <View style={styles.successOverlay}>
+          <View style={[styles.successContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.successIcon, { backgroundColor: colors.success + '20' }]}>
+              <Check size={32} color={colors.success} />
+            </View>
+            <Text style={[styles.successTitle, { color: colors.text }]}>Thank You!</Text>
+            <Text style={[styles.successMessage, { color: colors.textSecondary }]}>
+              We truly appreciate your feedback. Our team will review your feature request and work hard to bring your ideas to life!
+            </Text>
+            <TouchableOpacity
+              style={[styles.successButton, { backgroundColor: colors.primary }]}
+              onPress={() => setSuccessMessageVisible(false)}
+            >
+              <Text style={styles.successButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -361,5 +485,120 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 16,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  textArea: {
+    height: 120,
+    textAlignVertical: 'top',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  sendButton: {
+    borderWidth: 0,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  successContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  successIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  successMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  successButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  successButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
