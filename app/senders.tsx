@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Search, SlidersHorizontal, TrendingUp, Mail, HardDrive, Archive, BellOff, Tag, Trash2, Trash } from 'lucide-react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { Search, SlidersHorizontal, TrendingUp, Mail, HardDrive, Archive, BellOff, Tag, Trash2, Trash, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
@@ -18,6 +18,9 @@ export default function SendersScreen() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('noise');
   const [selectedSenders, setSelectedSenders] = useState<string[]>([]);
+  const [unsubscribeModalVisible, setUnsubscribeModalVisible] = useState(false);
+  const [unsubscribeEmail, setUnsubscribeEmail] = useState('');
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
 
   useEffect(() => {
     if (params?.q && typeof params.q === 'string') {
@@ -91,7 +94,14 @@ export default function SendersScreen() {
   };
 
   const handleUnsubscribe = (email: string) => {
-    router.push({ pathname: '/unsubscribe', params: { q: email } });
+    setUnsubscribeEmail(email);
+    setUnsubscribeModalVisible(true);
+  };
+
+  const confirmUnsubscribe = () => {
+    setUnsubscribeModalVisible(false);
+    // In a real app, this would call an API
+    setSuccessModalVisible(true);
   };
 
   const handleBulk = (action: 'mute' | 'label' | 'archive' | 'delete') => {
@@ -323,6 +333,81 @@ export default function SendersScreen() {
         })}
         <View style={{ height: 80 }} />
       </ScrollView>
+
+      <Modal
+        visible={unsubscribeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setUnsubscribeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Unsubscribe</Text>
+              <TouchableOpacity onPress={() => setUnsubscribeModalVisible(false)}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+              Are you sure you want to unsubscribe from all emails from:
+            </Text>
+            
+            <View style={[styles.emailBadge, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.emailBadgeText, { color: colors.text }]}>{unsubscribeEmail}</Text>
+            </View>
+
+            <Text style={[styles.modalWarning, { color: colors.textSecondary }]}>
+              This will automatically unsubscribe you from their mailing list.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.surface }]}
+                onPress={() => setUnsubscribeModalVisible(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.danger }]}
+                onPress={confirmUnsubscribe}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Unsubscribe</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={successModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSuccessModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.successIconContainer}>
+              <View style={[styles.successIcon, { backgroundColor: colors.success + '20' }]}>
+                <Text style={[styles.successCheckmark, { color: colors.success }]}>✓</Text>
+              </View>
+            </View>
+            
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center' }]}>Success!</Text>
+            
+            <Text style={[styles.modalMessage, { color: colors.textSecondary, textAlign: 'center' }]}>
+              You have been unsubscribed from {unsubscribeEmail}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: colors.success }]}
+              onPress={() => setSuccessModalVisible(false)}
+            >
+              <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -595,5 +680,83 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600' as const,
     color: '#FFFFFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+  },
+  modalMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  emailBadge: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  emailBadgeText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center',
+  },
+  modalWarning: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 24,
+    fontStyle: 'italic' as const,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  successIconContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successCheckmark: {
+    fontSize: 48,
+    fontWeight: '700' as const,
   },
 });
