@@ -298,7 +298,7 @@ export default function UnsubscribeManagerScreen() {
           onRequestClose={() => setSuccessModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
               <View style={styles.successIconContainer}>
                 <View style={[styles.successIcon, { backgroundColor: colors.success + '20' }]}>
                   <Text style={[styles.successCheckmark, { color: colors.success }]}>✓</Text>
@@ -312,10 +312,10 @@ export default function UnsubscribeManagerScreen() {
               </Text>
 
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.success }]}
+                style={[styles.successButton, { backgroundColor: colors.success }]}
                 onPress={() => setSuccessModalVisible(false)}
               >
-                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Done</Text>
+                <Text style={styles.successButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -613,6 +613,18 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  successButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   successIconContainer: {
     alignItems: 'center',
