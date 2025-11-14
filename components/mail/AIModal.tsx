@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { Sparkles, ChevronDown } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
-import Colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type AIModalProps = {
   visible: boolean;
@@ -12,6 +12,7 @@ type AIModalProps = {
 };
 
 export function AIModal({ visible, onClose, onGenerate, insets }: AIModalProps) {
+  const { colors } = useTheme();
   const [aiFormat, setAiFormat] = useState('professional');
   const [aiTone, setAiTone] = useState('friendly');
   const [aiLength, setAiLength] = useState('medium');
@@ -45,21 +46,21 @@ export function AIModal({ visible, onClose, onGenerate, insets }: AIModalProps) 
           activeOpacity={1}
           onPress={handleClose}
         />
-        <View style={[styles.aiModalContent, { paddingBottom: insets.bottom + 24 }]}>
-          <View style={styles.aiModalHandle} />
+        <View style={[styles.aiModalContent, { paddingBottom: insets.bottom + 24, backgroundColor: colors.background }]}>
+          <View style={[styles.aiModalHandle, { backgroundColor: colors.border }]} />
           
-          <Text style={styles.aiModalTitle}>Write with AI</Text>
+          <Text style={[styles.aiModalTitle, { color: colors.text }]}>Write with AI</Text>
           
           <ScrollView 
             style={styles.aiModalScroll}
             showsVerticalScrollIndicator={false}
             scrollEnabled={false}
           >
-            <View style={styles.aiPromptContainer}>
+            <View style={[styles.aiPromptContainer, { backgroundColor: colors.surface }]}>
               <TextInput
-                style={styles.aiPromptInput}
+                style={[styles.aiPromptInput, { color: colors.text }]}
                 placeholder="What's on your mind?"
-                placeholderTextColor={Colors.light.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={aiPrompt}
                 onChangeText={setAiPrompt}
                 multiline
@@ -68,63 +69,63 @@ export function AIModal({ visible, onClose, onGenerate, insets }: AIModalProps) 
             
             <View style={styles.aiOptionsContainer}>
               <View style={styles.aiOption}>
-                <Text style={styles.aiDropdownLabel}>Format</Text>
+                <Text style={[styles.aiDropdownLabel, { color: colors.textSecondary }]}>Format</Text>
                 <TouchableOpacity
-                  style={styles.aiDropdownButton}
+                  style={[styles.aiDropdownButton, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     setShowFormatDropdown(!showFormatDropdown);
                     setShowToneDropdown(false);
                     setShowLengthDropdown(false);
                   }}
                 >
-                  <Text style={styles.aiDropdownValue}>{aiFormat}</Text>
-                  <ChevronDown size={16} color={Colors.light.textSecondary} />
+                  <Text style={[styles.aiDropdownValue, { color: colors.text }]}>{aiFormat}</Text>
+                  <ChevronDown size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.aiOption}>
-                <Text style={styles.aiDropdownLabel}>Tone</Text>
+                <Text style={[styles.aiDropdownLabel, { color: colors.textSecondary }]}>Tone</Text>
                 <TouchableOpacity
-                  style={styles.aiDropdownButton}
+                  style={[styles.aiDropdownButton, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     setShowToneDropdown(!showToneDropdown);
                     setShowFormatDropdown(false);
                     setShowLengthDropdown(false);
                   }}
                 >
-                  <Text style={styles.aiDropdownValue}>{aiTone}</Text>
-                  <ChevronDown size={16} color={Colors.light.textSecondary} />
+                  <Text style={[styles.aiDropdownValue, { color: colors.text }]}>{aiTone}</Text>
+                  <ChevronDown size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.aiOption}>
-                <Text style={styles.aiDropdownLabel}>Length</Text>
+                <Text style={[styles.aiDropdownLabel, { color: colors.textSecondary }]}>Length</Text>
                 <TouchableOpacity
-                  style={styles.aiDropdownButton}
+                  style={[styles.aiDropdownButton, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     setShowLengthDropdown(!showLengthDropdown);
                     setShowFormatDropdown(false);
                     setShowToneDropdown(false);
                   }}
                 >
-                  <Text style={styles.aiDropdownValue}>{aiLength}</Text>
-                  <ChevronDown size={16} color={Colors.light.textSecondary} />
+                  <Text style={[styles.aiDropdownValue, { color: colors.text }]}>{aiLength}</Text>
+                  <ChevronDown size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             </View>
             
             {showFormatDropdown && (
-              <View style={styles.aiDropdownOverlay}>
+              <View style={[styles.aiDropdownOverlay, { backgroundColor: colors.surface }]}>
                 {['professional', 'casual', 'formal', 'creative'].map((format) => (
                   <TouchableOpacity
                     key={format}
-                    style={styles.aiDropdownItem}
+                    style={[styles.aiDropdownItem, { borderBottomColor: colors.border }]}
                     onPress={() => {
                       setAiFormat(format);
                       setShowFormatDropdown(false);
                     }}
                   >
-                    <Text style={[styles.aiDropdownItemText, aiFormat === format && styles.aiDropdownItemTextActive]}>
+                    <Text style={[styles.aiDropdownItemText, { color: colors.text }, aiFormat === format && { color: colors.primary, fontWeight: '600' as const }]}>
                       {format}
                     </Text>
                   </TouchableOpacity>
@@ -133,17 +134,17 @@ export function AIModal({ visible, onClose, onGenerate, insets }: AIModalProps) 
             )}
 
             {showToneDropdown && (
-              <View style={styles.aiDropdownOverlay}>
+              <View style={[styles.aiDropdownOverlay, { backgroundColor: colors.surface }]}>
                 {['friendly', 'professional', 'confident', 'empathetic'].map((tone) => (
                   <TouchableOpacity
                     key={tone}
-                    style={styles.aiDropdownItem}
+                    style={[styles.aiDropdownItem, { borderBottomColor: colors.border }]}
                     onPress={() => {
                       setAiTone(tone);
                       setShowToneDropdown(false);
                     }}
                   >
-                    <Text style={[styles.aiDropdownItemText, aiTone === tone && styles.aiDropdownItemTextActive]}>
+                    <Text style={[styles.aiDropdownItemText, { color: colors.text }, aiTone === tone && { color: colors.primary, fontWeight: '600' as const }]}>
                       {tone}
                     </Text>
                   </TouchableOpacity>
@@ -152,17 +153,17 @@ export function AIModal({ visible, onClose, onGenerate, insets }: AIModalProps) 
             )}
 
             {showLengthDropdown && (
-              <View style={styles.aiDropdownOverlay}>
+              <View style={[styles.aiDropdownOverlay, { backgroundColor: colors.surface }]}>
                 {['short', 'medium', 'long'].map((length) => (
                   <TouchableOpacity
                     key={length}
-                    style={styles.aiDropdownItem}
+                    style={[styles.aiDropdownItem, { borderBottomColor: colors.border }]}
                     onPress={() => {
                       setAiLength(length);
                       setShowLengthDropdown(false);
                     }}
                   >
-                    <Text style={[styles.aiDropdownItemText, aiLength === length && styles.aiDropdownItemTextActive]}>
+                    <Text style={[styles.aiDropdownItemText, { color: colors.text }, aiLength === length && { color: colors.primary, fontWeight: '600' as const }]}>
                       {length}
                     </Text>
                   </TouchableOpacity>
@@ -172,7 +173,7 @@ export function AIModal({ visible, onClose, onGenerate, insets }: AIModalProps) 
           </ScrollView>
           
           <TouchableOpacity
-            style={styles.aiGenerateButton}
+            style={[styles.aiGenerateButton, { backgroundColor: colors.primary }]}
             onPress={handleGenerate}
           >
             <Sparkles size={20} color="#FFFFFF" />
@@ -194,7 +195,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiModalContent: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -206,7 +206,6 @@ const styles = StyleSheet.create({
   aiModalHandle: {
     width: 36,
     height: 5,
-    backgroundColor: '#E5E5EA',
     borderRadius: 3,
     alignSelf: 'center',
     marginBottom: 20,
@@ -214,11 +213,9 @@ const styles = StyleSheet.create({
   aiModalTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: 20,
   },
   aiPromptContainer: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -226,7 +223,6 @@ const styles = StyleSheet.create({
   },
   aiPromptInput: {
     fontSize: 16,
-    color: Colors.light.text,
     lineHeight: 22,
   },
   aiOptionsContainer: {
@@ -238,7 +234,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   aiDropdownButton: {
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 12,
     flexDirection: 'row',
@@ -247,18 +242,15 @@ const styles = StyleSheet.create({
   },
   aiDropdownLabel: {
     fontSize: 13,
-    color: Colors.light.textSecondary,
     marginBottom: 8,
     fontWeight: '500',
   },
   aiDropdownValue: {
     fontSize: 15,
-    color: Colors.light.text,
     fontWeight: '500',
     textTransform: 'capitalize',
   },
   aiDropdownOverlay: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginTop: 8,
     marginBottom: 12,
@@ -273,23 +265,16 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
   },
   aiDropdownItemText: {
     fontSize: 15,
-    color: Colors.light.text,
     textTransform: 'capitalize',
-  },
-  aiDropdownItemTextActive: {
-    color: Colors.light.primary,
-    fontWeight: '600',
   },
   aiGenerateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.light.primary,
     borderRadius: 12,
     paddingVertical: 16,
     marginTop: 12,
