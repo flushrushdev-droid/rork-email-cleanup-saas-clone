@@ -75,6 +75,43 @@ export default function EmailDetailScreen() {
     return allEmails.find(e => e.id === params.emailId) || null;
   }, [params.emailId, allEmails]);
 
+  const currentIndex = useMemo(() => {
+    return allEmails.findIndex(e => e.id === params.emailId);
+  }, [params.emailId, allEmails]);
+
+  const hasNext = currentIndex >= 0 && currentIndex < allEmails.length - 1;
+  const hasPrev = currentIndex > 0;
+
+  const handleNext = () => {
+    if (!hasNext || !isMountedRef.current) return;
+    const nextEmail = allEmails[currentIndex + 1];
+    if (nextEmail) {
+      router.replace({ 
+        pathname: '/email-detail', 
+        params: { 
+          emailId: nextEmail.id,
+          returnTo: params.returnTo,
+          statType: params.statType,
+        } 
+      });
+    }
+  };
+
+  const handlePrev = () => {
+    if (!hasPrev || !isMountedRef.current) return;
+    const prevEmail = allEmails[currentIndex - 1];
+    if (prevEmail) {
+      router.replace({ 
+        pathname: '/email-detail', 
+        params: { 
+          emailId: prevEmail.id,
+          returnTo: params.returnTo,
+          statType: params.statType,
+        } 
+      });
+    }
+  };
+
   const handleBack = () => {
     try {
       // Try to go back, with fallback to mail tab
@@ -196,6 +233,12 @@ export default function EmailDetailScreen() {
         onReply={handleReply}
         onReplyAll={handleReplyAll}
         onForward={handleForward}
+        onNext={hasNext ? handleNext : undefined}
+        onPrev={hasPrev ? handlePrev : undefined}
+        hasNext={hasNext}
+        hasPrev={hasPrev}
+        currentIndex={currentIndex >= 0 ? currentIndex : undefined}
+        totalCount={allEmails.length > 0 ? allEmails.length : undefined}
       />
     </View>
   );

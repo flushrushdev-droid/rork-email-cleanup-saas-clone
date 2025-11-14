@@ -51,12 +51,9 @@ export function EmailDetailView({
     };
   }, []);
   
-  // Add null checks to prevent crashes
-  if (!selectedEmail || !selectedEmail.to || !Array.isArray(selectedEmail.to)) {
-    return null;
-  }
-  
-  const hasMultipleRecipients = selectedEmail.to.length > 1;
+  // Calculate these before any early returns
+  const hasMultipleRecipients = selectedEmail?.to?.length > 1;
+  const isValidEmail = selectedEmail && selectedEmail.to && Array.isArray(selectedEmail.to);
 
   // Memoize swipe gesture with proper safety checks
   // Critical: Only create gesture if handlers are available, and check mounted state
@@ -78,17 +75,31 @@ export function EmailDetailView({
           
           // Swipe right = go to previous email
           if (event.translationX > swipeThreshold && hasPrev && onPrev) {
-            // Double check mounted state and handler existence before calling
-            if (isMountedRef.current && typeof onPrev === 'function') {
-              onPrev();
-            }
+            // Use requestAnimationFrame to ensure gesture completes before navigation
+            requestAnimationFrame(() => {
+              // Triple check mounted state and handler existence before calling
+              if (isMountedRef.current && typeof onPrev === 'function') {
+                try {
+                  onPrev();
+                } catch (err) {
+                  console.error('Error in onPrev:', err);
+                }
+              }
+            });
           } 
           // Swipe left = go to next email
           else if (event.translationX < -swipeThreshold && hasNext && onNext) {
-            // Double check mounted state and handler existence before calling
-            if (isMountedRef.current && typeof onNext === 'function') {
-              onNext();
-            }
+            // Use requestAnimationFrame to ensure gesture completes before navigation
+            requestAnimationFrame(() => {
+              // Triple check mounted state and handler existence before calling
+              if (isMountedRef.current && typeof onNext === 'function') {
+                try {
+                  onNext();
+                } catch (err) {
+                  console.error('Error in onNext:', err);
+                }
+              }
+            });
           }
         } catch (error) {
           console.error('Error handling swipe gesture:', error);
@@ -104,6 +115,11 @@ export function EmailDetailView({
       console.error('Error in onBack handler:', error);
     }
   };
+
+  // Add null checks to prevent crashes - after all hooks
+  if (!isValidEmail) {
+    return null;
+  }
 
   return (
     <GestureDetector gesture={swipeGesture}>
