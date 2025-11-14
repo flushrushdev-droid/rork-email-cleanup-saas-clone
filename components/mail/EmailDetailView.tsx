@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Archive, Trash2, Star, ChevronLeft, ChevronRight, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTheme } from '@/contexts/ThemeContext';
 import Colors from '@/constants/colors';
 import type { EmailMessage } from '@/constants/types';
@@ -43,37 +42,10 @@ export function EmailDetailView({
   const { colors } = useTheme();
   const hasMultipleRecipients = selectedEmail.to.length > 1;
 
-  // Restrictive swipe gesture that doesn't conflict with Rork's root-level back gesture
-  // Only activates with intentional horizontal swipes, fails on vertical scrolling
-  const swipeGesture = useMemo(() => {
-    return Gesture.Pan()
-      .activeOffsetX([-20, 20]) // Only activate after 20px horizontal movement
-      .failOffsetY([-10, 10]) // Fail if vertical movement exceeds 10px (prioritize scrolling)
-      .minDistance(30) // Require minimum 30px movement
-      .onEnd((event) => {
-        try {
-          const swipeThreshold = 100; // Higher threshold to avoid conflicts with Rork's gesture
-          const velocity = event.velocityX;
-          
-          // Only trigger if swipe is very intentional (has high velocity or sufficient distance)
-          if (Math.abs(velocity) > 500 || Math.abs(event.translationX) > swipeThreshold) {
-            if (event.translationX > swipeThreshold && hasPrev && onPrev) {
-              // Swipe right = go to previous email
-              onPrev();
-            } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
-              // Swipe left = go to next email
-              onNext();
-            }
-          }
-        } catch (error) {
-          console.error('Swipe navigation error:', error);
-        }
-      });
-  }, [hasNext, hasPrev, onNext, onPrev]);
+  // Custom gesture handler removed - using Rork's root-level back gesture and button navigation only
 
   return (
-    <GestureDetector gesture={swipeGesture}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.detailHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
@@ -214,8 +186,7 @@ export function EmailDetailView({
           <Text style={styles.emailActionButtonText}>Forward</Text>
         </TouchableOpacity>
       </View>
-      </View>
-    </GestureDetector>
+    </View>
   );
 }
 
