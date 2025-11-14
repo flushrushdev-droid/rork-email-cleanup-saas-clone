@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Archive, Trash2, Star, ChevronLeft, ChevronRight, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
@@ -41,45 +41,20 @@ export function EmailDetailView({
   totalCount,
 }: EmailDetailViewProps) {
   const { colors } = useTheme();
-  
-  // Calculate these before any early returns
-  const hasMultipleRecipients = selectedEmail?.to?.length > 1;
-  const isValidEmail = selectedEmail && selectedEmail.to && Array.isArray(selectedEmail.to);
+  const hasMultipleRecipients = selectedEmail.to.length > 1;
 
-  // Memoize swipe gesture to prevent recreation on every render
-  // This is critical for proper cleanup in production builds with new architecture
-  const swipeGesture = useMemo(() => 
-    Gesture.Pan()
-      .onEnd((event) => {
-        try {
-          const swipeThreshold = 50;
-          if (event.translationX > swipeThreshold && hasPrev && onPrev) {
-            // Swipe right = go to previous email
-            onPrev();
-          } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
-            // Swipe left = go to next email
-            onNext();
-          }
-        } catch (error) {
-          console.error('Error handling swipe gesture:', error);
-        }
-      }),
-    [hasPrev, hasNext, onPrev, onNext]
-  );
-
-  // Safe back handler with error handling
-  const handleBack = () => {
-    try {
-      onBack();
-    } catch (error) {
-      console.error('Error in onBack handler:', error);
-    }
-  };
-
-  // Add null checks to prevent crashes - after all hooks
-  if (!isValidEmail) {
-    return null;
-  }
+  // Swipe gesture for navigation
+  const swipeGesture = Gesture.Pan()
+    .onEnd((event) => {
+      const swipeThreshold = 50;
+      if (event.translationX > swipeThreshold && hasPrev && onPrev) {
+        // Swipe right = go to previous email
+        onPrev();
+      } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
+        // Swipe left = go to next email
+        onNext();
+      }
+    });
 
   return (
     <GestureDetector gesture={swipeGesture}>
@@ -89,7 +64,7 @@ export function EmailDetailView({
             <TouchableOpacity
               testID="back-to-inbox"
               style={styles.backButton}
-              onPress={handleBack}
+              onPress={onBack}
             >
               <ChevronLeft size={24} color={colors.text} />
             </TouchableOpacity>
