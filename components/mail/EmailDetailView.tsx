@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Archive, Trash2, Star, ChevronLeft, ChevronRight, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
@@ -43,18 +43,24 @@ export function EmailDetailView({
   const { colors } = useTheme();
   const hasMultipleRecipients = selectedEmail.to.length > 1;
 
-  // Swipe gesture for navigation
-  const swipeGesture = Gesture.Pan()
-    .onEnd((event) => {
-      const swipeThreshold = 50;
-      if (event.translationX > swipeThreshold && hasPrev && onPrev) {
-        // Swipe right = go to previous email
-        onPrev();
-      } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
-        // Swipe left = go to next email
-        onNext();
-      }
-    });
+  // Swipe gesture for navigation with error handling for Rork Expo Go compatibility
+  const swipeGesture = useMemo(() => {
+    return Gesture.Pan()
+      .onEnd((event) => {
+        try {
+          const swipeThreshold = 50;
+          if (event.translationX > swipeThreshold && hasPrev && onPrev) {
+            // Swipe right = go to previous email
+            onPrev();
+          } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
+            // Swipe left = go to next email
+            onNext();
+          }
+        } catch (error) {
+          console.error('Swipe navigation error:', error);
+        }
+      });
+  }, [hasNext, hasPrev, onNext, onPrev]);
 
   return (
     <GestureDetector gesture={swipeGesture}>

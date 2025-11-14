@@ -68,37 +68,48 @@ export default function EmailDetailScreen() {
   const hasPrev = currentIndex > 0;
 
   const handleNext = () => {
-    if (!hasNext) return;
+    if (!hasNext || currentIndex < 0) return;
     const nextEmail = allEmails[currentIndex + 1];
-    if (nextEmail) {
-      router.replace({ 
-        pathname: '/email-detail', 
-        params: { 
-          emailId: nextEmail.id,
-          returnTo: params.returnTo,
-          statType: params.statType,
-        } 
-      });
-    }
+    if (!nextEmail) return;
+    
+    // Use push instead of replace for Rork Expo Go compatibility
+    router.push({ 
+      pathname: '/email-detail', 
+      params: { 
+        emailId: nextEmail.id,
+        returnTo: params.returnTo,
+        statType: params.statType,
+      } 
+    });
   };
 
   const handlePrev = () => {
-    if (!hasPrev) return;
+    if (!hasPrev || currentIndex < 0) return;
     const prevEmail = allEmails[currentIndex - 1];
-    if (prevEmail) {
-      router.replace({ 
-        pathname: '/email-detail', 
-        params: { 
-          emailId: prevEmail.id,
-          returnTo: params.returnTo,
-          statType: params.statType,
-        } 
-      });
-    }
+    if (!prevEmail) return;
+    
+    // Use push instead of replace for Rork Expo Go compatibility
+    router.push({ 
+      pathname: '/email-detail', 
+      params: { 
+        emailId: prevEmail.id,
+        returnTo: params.returnTo,
+        statType: params.statType,
+      } 
+    });
   };
 
   const handleBack = () => {
-    router.back();
+    // Explicit navigation instead of router.back() for Rork Expo Go compatibility
+    if (params.returnTo === 'stat-details' && params.statType) {
+      router.push({
+        pathname: '/stat-details',
+        params: { type: params.statType }
+      });
+    } else {
+      // Fallback navigation
+      router.push('/(tabs)');
+    }
   };
 
   const handleStar = async (emailId: string) => {
@@ -116,7 +127,15 @@ export default function EmailDetailScreen() {
   const handleArchive = async (email: EmailMessage) => {
     try {
       await archiveMessage(email.id);
-      router.back();
+      // Use explicit navigation for Rork Expo Go compatibility
+      if (params.returnTo === 'stat-details' && params.statType) {
+        router.push({
+          pathname: '/stat-details',
+          params: { type: params.statType }
+        });
+      } else {
+        router.push('/(tabs)');
+      }
     } catch (error) {
       console.error('Failed to archive email:', error);
     }
