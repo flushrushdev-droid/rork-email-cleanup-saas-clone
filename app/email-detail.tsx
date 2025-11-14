@@ -76,9 +76,9 @@ export default function EmailDetailScreen() {
     });
   };
 
-  const handleArchive = async (emailId: string) => {
+  const handleArchive = async (email: EmailMessage) => {
     try {
-      await archiveMessage(emailId);
+      await archiveMessage(email.id);
       router.back();
     } catch (error) {
       console.error('Failed to archive email:', error);
