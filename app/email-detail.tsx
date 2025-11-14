@@ -100,16 +100,9 @@ export default function EmailDetailScreen() {
   };
 
   const handleBack = () => {
-    // Explicit navigation instead of router.back() for Rork Expo Go compatibility
-    if (params.returnTo === 'stat-details' && params.statType) {
-      router.push({
-        pathname: '/stat-details',
-        params: { type: params.statType }
-      });
-    } else {
-      // Fallback navigation
-      router.push('/(tabs)');
-    }
+    // Use router.back() to properly pop from navigation stack
+    // This ensures correct navigation: email -> stat-details -> overview
+    router.back();
   };
 
   const handleStar = async (emailId: string) => {
@@ -127,15 +120,8 @@ export default function EmailDetailScreen() {
   const handleArchive = async (email: EmailMessage) => {
     try {
       await archiveMessage(email.id);
-      // Use explicit navigation for Rork Expo Go compatibility
-      if (params.returnTo === 'stat-details' && params.statType) {
-        router.push({
-          pathname: '/stat-details',
-          params: { type: params.statType }
-        });
-      } else {
-        router.push('/(tabs)');
-      }
+      // Use router.back() to properly pop from navigation stack
+      router.back();
     } catch (error) {
       console.error('Failed to archive email:', error);
     }
