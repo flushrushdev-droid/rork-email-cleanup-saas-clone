@@ -61,7 +61,18 @@ export default function EmailDetailScreen() {
   }, [params.emailId, allEmails]);
 
   const handleBack = () => {
-    router.back();
+    try {
+      // Try to go back, with fallback to mail tab
+      router.back();
+    } catch (error) {
+      console.error('Error navigating back:', error);
+      // Fallback to mail tab on error
+      try {
+        router.replace('/(tabs)/mail');
+      } catch (replaceError) {
+        console.error('Error with fallback navigation:', replaceError);
+      }
+    }
   };
 
   const handleStar = async (emailId: string) => {
@@ -79,43 +90,69 @@ export default function EmailDetailScreen() {
   const handleArchive = async (email: EmailMessage) => {
     try {
       await archiveMessage(email.id);
-      router.back();
+      // Use setTimeout to ensure state updates complete before navigation
+      // This prevents crashes when component unmounts during async operations
+      setTimeout(() => {
+        try {
+          router.back();
+        } catch (navError) {
+          console.error('Error navigating after archive:', navError);
+          // Fallback to mail tab
+          try {
+            router.replace('/(tabs)/mail');
+          } catch (replaceError) {
+            console.error('Error with fallback navigation:', replaceError);
+          }
+        }
+      }, 100);
     } catch (error) {
       console.error('Failed to archive email:', error);
     }
   };
 
   const handleReply = (email: EmailMessage) => {
-    // Navigate back to mail tab with compose mode
-    router.push({
-      pathname: '/(tabs)/mail',
-      params: {
-        compose: 'reply',
-        emailId: email.id,
-      }
-    });
+    try {
+      // Navigate back to mail tab with compose mode
+      router.push({
+        pathname: '/(tabs)/mail',
+        params: {
+          compose: 'reply',
+          emailId: email.id,
+        }
+      });
+    } catch (error) {
+      console.error('Error navigating to reply:', error);
+    }
   };
 
   const handleReplyAll = (email: EmailMessage) => {
-    // Navigate back to mail tab with compose mode
-    router.push({
-      pathname: '/(tabs)/mail',
-      params: {
-        compose: 'replyAll',
-        emailId: email.id,
-      }
-    });
+    try {
+      // Navigate back to mail tab with compose mode
+      router.push({
+        pathname: '/(tabs)/mail',
+        params: {
+          compose: 'replyAll',
+          emailId: email.id,
+        }
+      });
+    } catch (error) {
+      console.error('Error navigating to reply all:', error);
+    }
   };
 
   const handleForward = (email: EmailMessage) => {
-    // Navigate back to mail tab with compose mode
-    router.push({
-      pathname: '/(tabs)/mail',
-      params: {
-        compose: 'forward',
-        emailId: email.id,
-      }
-    });
+    try {
+      // Navigate back to mail tab with compose mode
+      router.push({
+        pathname: '/(tabs)/mail',
+        params: {
+          compose: 'forward',
+          emailId: email.id,
+        }
+      });
+    } catch (error) {
+      console.error('Error navigating to forward:', error);
+    }
   };
 
   if (!selectedEmail) {
