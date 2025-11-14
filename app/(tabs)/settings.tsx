@@ -482,13 +482,9 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 16,
-    width: '100%',
   },
   footerText: {
     fontSize: 13,
-    textAlign: 'center',
-    flexWrap: 'wrap',
   },
   modalOverlay: {
     flex: 1,
