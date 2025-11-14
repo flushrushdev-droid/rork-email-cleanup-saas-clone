@@ -26,7 +26,7 @@ type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
 
 export default function MailScreen() {
-  const params = useLocalSearchParams<{ emailId?: string; timestamp?: string }>();
+  const params = useLocalSearchParams<{ emailId?: string; timestamp?: string; compose?: string }>();
   const { colors } = useTheme();
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
@@ -111,10 +111,36 @@ export default function MailScreen() {
       const email = allEmails.find(e => e.id === params.emailId);
       if (email) {
         setSelectedEmail(email);
-        setCurrentView('detail');
+        // If compose parameter is present, set up compose view instead of detail view
+        if (params.compose) {
+          if (params.compose === 'reply') {
+            const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
+            setComposeTo(senderEmail);
+            setComposeCc('');
+            setComposeSubject(`Re: ${email.subject}`);
+            setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
+            setCurrentView('compose');
+          } else if (params.compose === 'replyAll') {
+            const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
+            const allRecipients = [senderEmail, ...email.to].filter(e => e !== 'sarah.chen@company.com').join(', ');
+            setComposeTo(allRecipients);
+            setComposeCc('');
+            setComposeSubject(`Re: ${email.subject}`);
+            setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
+            setCurrentView('compose');
+          } else if (params.compose === 'forward') {
+            setComposeTo('');
+            setComposeCc('');
+            setComposeSubject(`Fwd: ${email.subject}`);
+            setComposeBody(`\n\n---\nForwarded message:\nFrom: ${email.from}\nDate: ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\nSubject: ${email.subject}\n\n${email.snippet}`);
+            setCurrentView('compose');
+          }
+        } else {
+          setCurrentView('detail');
+        }
       }
     }
-  }, [params.emailId, params.timestamp, allEmails]);
+  }, [params.emailId, params.timestamp, params.compose, allEmails]);
 
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;
@@ -592,22 +618,22 @@ export default function MailScreen() {
         const hasPrev = currentIndex > 0;
         
         return (
-          <EmailDetailView
-            selectedEmail={selectedEmail}
-            insets={insets}
-            onBack={() => setCurrentView('inbox')}
-            onStar={handleStar}
-            onArchive={handleArchive}
-            onReply={handleReply}
-            onReplyAll={handleReplyAll}
-            onForward={handleForward}
+        <EmailDetailView
+          selectedEmail={selectedEmail}
+          insets={insets}
+          onBack={() => setCurrentView('inbox')}
+          onStar={handleStar}
+          onArchive={handleArchive}
+          onReply={handleReply}
+          onReplyAll={handleReplyAll}
+          onForward={handleForward}
             onNext={hasNext ? handleNextEmail : undefined}
             onPrev={hasPrev ? handlePrevEmail : undefined}
             hasNext={hasNext}
             hasPrev={hasPrev}
             currentIndex={currentIndex !== -1 ? currentIndex : undefined}
             totalCount={filteredEmails.length}
-          />
+        />
         );
       })()}
       {currentView === 'compose' && (
