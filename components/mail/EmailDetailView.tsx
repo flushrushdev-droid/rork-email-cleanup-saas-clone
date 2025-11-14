@@ -51,12 +51,9 @@ export function EmailDetailView({
     };
   }, []);
   
-  // Add null checks to prevent crashes
-  if (!selectedEmail || !selectedEmail.to || !Array.isArray(selectedEmail.to)) {
-    return null;
-  }
-  
-  const hasMultipleRecipients = selectedEmail.to.length > 1;
+  // Calculate these before any early returns
+  const hasMultipleRecipients = selectedEmail?.to?.length > 1;
+  const isValidEmail = selectedEmail && selectedEmail.to && Array.isArray(selectedEmail.to);
 
   // Memoize swipe gesture with proper safety checks
   // Critical: Only create gesture if handlers are available, and check mounted state
@@ -92,29 +89,43 @@ export function EmailDetailView({
           
           // Swipe right = go to previous email
           if (event.translationX > swipeThreshold && hasPrev && onPrev) {
-            // Double check mounted state and handler existence before calling
-            if (isMountedRef.current && typeof onPrev === 'function') {
-              console.log('[EmailDetailView] Calling onPrev handler');
-              onPrev();
-            } else {
-              console.warn('[EmailDetailView] onPrev check failed', {
-                isMounted: isMountedRef.current,
-                onPrevType: typeof onPrev
-              });
-            }
+            // Use requestAnimationFrame to ensure gesture completes before navigation
+            requestAnimationFrame(() => {
+              // Triple check mounted state and handler existence before calling
+              if (isMountedRef.current && typeof onPrev === 'function') {
+                try {
+                  console.log('[EmailDetailView] Calling onPrev handler');
+                  onPrev();
+                } catch (err) {
+                  console.error('[EmailDetailView] Error in onPrev:', err);
+                }
+              } else {
+                console.warn('[EmailDetailView] onPrev check failed', {
+                  isMounted: isMountedRef.current,
+                  onPrevType: typeof onPrev
+                });
+              }
+            });
           } 
           // Swipe left = go to next email
           else if (event.translationX < -swipeThreshold && hasNext && onNext) {
-            // Double check mounted state and handler existence before calling
-            if (isMountedRef.current && typeof onNext === 'function') {
-              console.log('[EmailDetailView] Calling onNext handler');
-              onNext();
-            } else {
-              console.warn('[EmailDetailView] onNext check failed', {
-                isMounted: isMountedRef.current,
-                onNextType: typeof onNext
-              });
-            }
+            // Use requestAnimationFrame to ensure gesture completes before navigation
+            requestAnimationFrame(() => {
+              // Triple check mounted state and handler existence before calling
+              if (isMountedRef.current && typeof onNext === 'function') {
+                try {
+                  console.log('[EmailDetailView] Calling onNext handler');
+                  onNext();
+                } catch (err) {
+                  console.error('[EmailDetailView] Error in onNext:', err);
+                }
+              } else {
+                console.warn('[EmailDetailView] onNext check failed', {
+                  isMounted: isMountedRef.current,
+                  onNextType: typeof onNext
+                });
+              }
+            });
           }
         } catch (error) {
           console.error('[EmailDetailView] Error handling swipe gesture:', error);
@@ -131,6 +142,11 @@ export function EmailDetailView({
       console.error('Error in onBack handler:', error);
     }
   };
+
+  // Add null checks to prevent crashes - after all hooks
+  if (!isValidEmail) {
+    return null;
+  }
 
   return (
     <GestureDetector gesture={swipeGesture}>
