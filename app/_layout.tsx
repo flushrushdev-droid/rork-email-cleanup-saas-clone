@@ -29,11 +29,25 @@ function RootLayoutNav() {
         headerTitleStyle: {
           color: colors.text,
         },
+        // Prevent white flash during transitions
+        contentStyle: {
+          backgroundColor: colors.background,
+        },
       }}
     >
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
+  );
+}
+
+function GestureHandlerWrapper({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      {children}
+    </GestureHandlerRootView>
   );
 }
 
@@ -49,10 +63,10 @@ export default function RootLayout() {
           <AuthProvider>
             <GmailSyncProvider>
               <HistoryProvider>
-                <GestureHandlerRootView>
+                <GestureHandlerWrapper>
                   <StatusBar style="auto" />
                   <RootLayoutNav />
-                </GestureHandlerRootView>
+                </GestureHandlerWrapper>
               </HistoryProvider>
             </GmailSyncProvider>
           </AuthProvider>

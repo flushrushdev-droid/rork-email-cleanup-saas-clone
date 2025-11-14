@@ -68,7 +68,7 @@ export default function EmailDetailScreen() {
   const hasPrev = currentIndex > 0;
 
   const handleNext = () => {
-    if (!hasNext || !isMountedRef.current) return;
+    if (!hasNext) return;
     const nextEmail = allEmails[currentIndex + 1];
     if (nextEmail) {
       router.replace({ 
@@ -83,7 +83,7 @@ export default function EmailDetailScreen() {
   };
 
   const handlePrev = () => {
-    if (!hasPrev || !isMountedRef.current) return;
+    if (!hasPrev) return;
     const prevEmail = allEmails[currentIndex - 1];
     if (prevEmail) {
       router.replace({ 

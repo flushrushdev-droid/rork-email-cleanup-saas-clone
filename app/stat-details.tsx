@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -52,7 +52,7 @@ export default function StatDetailsScreen() {
     );
   };
 
-  const getStatInfo = () => {
+  const statInfo = useMemo(() => {
     switch (type) {
       case 'unread':
         return {
@@ -95,9 +95,8 @@ export default function StatDetailsScreen() {
           description: '',
         };
     }
-  };
+  }, [type, colors.primary, messages]);
 
-  const statInfo = getStatInfo();
   const IconComponent = statInfo.icon;
 
   const renderContent = () => {
@@ -331,15 +330,18 @@ export default function StatDetailsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen 
         options={{
-          headerShown: true,
-          title: statInfo.title,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft size={24} color={colors.text} />
-            </TouchableOpacity>
-          ),
+          headerShown: false,
         }}
       />
+      
+      {/* Custom header like email-detail for smooth transitions */}
+      <View style={[styles.customHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.customHeaderTitle, { color: colors.text }]}>{statInfo.title}</Text>
+        <View style={{ width: 24 }} />
+      </View>
       
       <ScrollView 
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
@@ -362,6 +364,20 @@ export default function StatDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  customHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
   },
   backButton: {
     padding: 8,
