@@ -382,10 +382,14 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
   },
   statItem: {
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 4,
   },
   statValue: {
     fontSize: 18,
@@ -395,6 +399,9 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    flexShrink: 1,
+    minWidth: 0,
   },
   savingsContainer: {
     flexDirection: 'row',
