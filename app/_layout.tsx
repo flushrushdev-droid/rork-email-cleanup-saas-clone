@@ -33,6 +33,8 @@ function RootLayoutNav() {
         contentStyle: {
           backgroundColor: colors.background,
         },
+        // Disable native swipe-to-go-back gesture to prevent conflicts with our custom gesture
+        gestureEnabled: false,
       }}
     >
       <Stack.Screen name="login" options={{ headerShown: false }} />
