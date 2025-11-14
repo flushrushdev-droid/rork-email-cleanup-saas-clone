@@ -60,38 +60,65 @@ export function EmailDetailView({
 
   // Memoize swipe gesture with proper safety checks
   // Critical: Only create gesture if handlers are available, and check mounted state
+  // Also configure to prevent conflicts with native navigation gestures
   const swipeGesture = useMemo(() => {
     // If no handlers available, return a no-op gesture
     if (!onNext && !onPrev) {
+      console.log('[EmailDetailView] No navigation handlers available, gesture disabled');
       return Gesture.Pan(); // Empty gesture that does nothing
     }
     
     return Gesture.Pan()
+      .activeOffsetX([-10, 10]) // Only activate when horizontal movement is detected (prevents vertical scroll conflicts)
+      .failOffsetY([-20, 20]) // Fail if vertical movement is too much (allows scrolling)
       .onEnd((event) => {
         // Don't process gesture if component is unmounted
         if (!isMountedRef.current) {
+          console.warn('[EmailDetailView] Gesture ignored: component unmounted');
           return;
         }
         
         try {
           const swipeThreshold = 50;
+          console.log('[EmailDetailView] Swipe gesture detected', {
+            translationX: event.translationX,
+            translationY: event.translationY,
+            hasNext,
+            hasPrev,
+            onNextType: typeof onNext,
+            onPrevType: typeof onPrev,
+            isMounted: isMountedRef.current
+          });
           
           // Swipe right = go to previous email
           if (event.translationX > swipeThreshold && hasPrev && onPrev) {
             // Double check mounted state and handler existence before calling
             if (isMountedRef.current && typeof onPrev === 'function') {
+              console.log('[EmailDetailView] Calling onPrev handler');
               onPrev();
+            } else {
+              console.warn('[EmailDetailView] onPrev check failed', {
+                isMounted: isMountedRef.current,
+                onPrevType: typeof onPrev
+              });
             }
           } 
           // Swipe left = go to next email
           else if (event.translationX < -swipeThreshold && hasNext && onNext) {
             // Double check mounted state and handler existence before calling
             if (isMountedRef.current && typeof onNext === 'function') {
+              console.log('[EmailDetailView] Calling onNext handler');
               onNext();
+            } else {
+              console.warn('[EmailDetailView] onNext check failed', {
+                isMounted: isMountedRef.current,
+                onNextType: typeof onNext
+              });
             }
           }
         } catch (error) {
-          console.error('Error handling swipe gesture:', error);
+          console.error('[EmailDetailView] Error handling swipe gesture:', error);
+          console.error('[EmailDetailView] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         }
       });
   }, [hasPrev, hasNext, onPrev, onNext]);

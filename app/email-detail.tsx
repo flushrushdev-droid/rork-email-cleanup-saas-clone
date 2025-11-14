@@ -186,7 +186,13 @@ export default function EmailDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen 
+        options={{ 
+          headerShown: false,
+          gestureEnabled: false, // Disable native swipe-to-go-back to prevent conflict with email navigation gesture
+          animation: 'slide_from_right', // Keep animation but disable gesture
+        }} 
+      />
       <EmailDetailView
         selectedEmail={selectedEmail}
         insets={insets}
