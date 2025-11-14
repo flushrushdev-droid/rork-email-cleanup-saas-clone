@@ -99,13 +99,35 @@ export default function StatDetailsScreen() {
 
   const IconComponent = statInfo.icon;
 
+  // Memoize filtered data to prevent blocking during transitions
+  const unreadEmails = useMemo(() => {
+    if (type !== 'unread') return [];
+    return messages.length > 0 
+      ? messages.filter(m => !m.isRead) 
+      : mockRecentEmails.filter(m => !m.isRead);
+  }, [type, messages]);
+
+  const noisySenders = useMemo(() => {
+    if (type !== 'noise') return [];
+    return (senders.length > 0 ? senders : mockSenders)
+      .filter(s => s.noiseScore >= 6)
+      .sort((a, b) => b.noiseScore - a.noiseScore);
+  }, [type, senders]);
+
+  const emailsWithFiles = useMemo(() => {
+    if (type !== 'files') return [];
+    return (messages.length > 0 ? messages : mockRecentEmails)
+      .filter(m => m.hasAttachments && ('attachmentCount' in m ? m.attachmentCount > 0 : true) && !deletedEmailIds.has(m.id))
+      .sort((a, b) => {
+        const aSize = 'size' in a ? a.size : ('sizeBytes' in a ? a.sizeBytes : 0);
+        const bSize = 'size' in b ? b.size : ('sizeBytes' in b ? b.sizeBytes : 0);
+        return bSize - aSize;
+      });
+  }, [type, messages, deletedEmailIds]);
+
   const renderContent = () => {
     switch (type) {
       case 'unread':
-        const unreadEmails = messages.length > 0 
-          ? messages.filter(m => !m.isRead) 
-          : mockRecentEmails.filter(m => !m.isRead);
-        
         return (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Unread Messages ({unreadEmails.length})</Text>
@@ -153,10 +175,6 @@ export default function StatDetailsScreen() {
         );
 
       case 'noise':
-        const noisySenders = (senders.length > 0 ? senders : mockSenders)
-          .filter(s => s.noiseScore >= 6)
-          .sort((a, b) => b.noiseScore - a.noiseScore);
-        
         return (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>High Noise Senders ({noisySenders.length})</Text>
@@ -199,14 +217,6 @@ export default function StatDetailsScreen() {
         );
 
       case 'files':
-        const emailsWithFiles = (messages.length > 0 ? messages : mockRecentEmails)
-          .filter(m => m.hasAttachments && ('attachmentCount' in m ? m.attachmentCount > 0 : true) && !deletedEmailIds.has(m.id))
-          .sort((a, b) => {
-            const aSize = 'size' in a ? a.size : ('sizeBytes' in a ? a.sizeBytes : 0);
-            const bSize = 'size' in b ? b.size : ('sizeBytes' in b ? b.sizeBytes : 0);
-            return bSize - aSize;
-          });
-        
         return (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Large Attachments ({emailsWithFiles.length})</Text>
