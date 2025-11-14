@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Archive, Trash2, Star, ChevronLeft, ChevronRight, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
@@ -41,6 +41,15 @@ export function EmailDetailView({
   totalCount,
 }: EmailDetailViewProps) {
   const { colors } = useTheme();
+  const isMountedRef = useRef(true);
+  
+  // Track mounted state to prevent callbacks after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   
   // Add null checks to prevent crashes
   if (!selectedEmail || !selectedEmail.to || !Array.isArray(selectedEmail.to)) {
@@ -49,26 +58,43 @@ export function EmailDetailView({
   
   const hasMultipleRecipients = selectedEmail.to.length > 1;
 
-  // Memoize swipe gesture to prevent recreation on every render
-  // This is critical for proper cleanup in production builds with new architecture
-  const swipeGesture = useMemo(() => 
-    Gesture.Pan()
+  // Memoize swipe gesture with proper safety checks
+  // Critical: Only create gesture if handlers are available, and check mounted state
+  const swipeGesture = useMemo(() => {
+    // If no handlers available, return a no-op gesture
+    if (!onNext && !onPrev) {
+      return Gesture.Pan(); // Empty gesture that does nothing
+    }
+    
+    return Gesture.Pan()
       .onEnd((event) => {
+        // Don't process gesture if component is unmounted
+        if (!isMountedRef.current) {
+          return;
+        }
+        
         try {
           const swipeThreshold = 50;
+          
+          // Swipe right = go to previous email
           if (event.translationX > swipeThreshold && hasPrev && onPrev) {
-            // Swipe right = go to previous email
-            onPrev();
-          } else if (event.translationX < -swipeThreshold && hasNext && onNext) {
-            // Swipe left = go to next email
-            onNext();
+            // Double check mounted state and handler existence before calling
+            if (isMountedRef.current && typeof onPrev === 'function') {
+              onPrev();
+            }
+          } 
+          // Swipe left = go to next email
+          else if (event.translationX < -swipeThreshold && hasNext && onNext) {
+            // Double check mounted state and handler existence before calling
+            if (isMountedRef.current && typeof onNext === 'function') {
+              onNext();
+            }
           }
         } catch (error) {
           console.error('Error handling swipe gesture:', error);
         }
-      }),
-    [hasPrev, hasNext, onPrev, onNext]
-  );
+      });
+  }, [hasPrev, hasNext, onPrev, onNext]);
 
   // Safe back handler with error handling
   const handleBack = () => {

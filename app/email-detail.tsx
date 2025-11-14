@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +22,21 @@ export default function EmailDetailScreen() {
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
   const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
+  const isMountedRef = useRef(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track mounted state to prevent callbacks after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Clean up any pending timeouts
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const allEmails: EmailMessage[] = useMemo(() => {
     const emails = isDemoMode || messages.length === 0 
@@ -92,16 +107,22 @@ export default function EmailDetailScreen() {
       await archiveMessage(email.id);
       // Use setTimeout to ensure state updates complete before navigation
       // This prevents crashes when component unmounts during async operations
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
+        // Only navigate if component is still mounted
+        if (!isMountedRef.current) {
+          return;
+        }
         try {
           router.back();
         } catch (navError) {
           console.error('Error navigating after archive:', navError);
-          // Fallback to mail tab
-          try {
-            router.replace('/(tabs)/mail');
-          } catch (replaceError) {
-            console.error('Error with fallback navigation:', replaceError);
+          // Fallback to mail tab only if still mounted
+          if (isMountedRef.current) {
+            try {
+              router.replace('/(tabs)/mail');
+            } catch (replaceError) {
+              console.error('Error with fallback navigation:', replaceError);
+            }
           }
         }
       }, 100);
