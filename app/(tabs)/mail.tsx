@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
 import { Mail, Star, PenSquare, ChevronLeft, X } from 'lucide-react-native';
 import { useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +21,7 @@ import { ComposeView } from '@/components/mail/ComposeView';
 import { EmailDetailView } from '@/components/mail/EmailDetailView';
 import { FoldersView } from '@/components/mail/FoldersView';
 import { InboxView } from '@/components/mail/InboxView';
+import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
@@ -49,6 +51,7 @@ export default function MailScreen() {
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ message: string } | null>(null);
   
   const insets = useSafeAreaInsets();
 
@@ -328,7 +331,23 @@ export default function MailScreen() {
       
       console.log('Creating folder:', { folderName, folderRule });
       
-      Alert.alert('Success', `Folder "${folderName}" created successfully!`);
+      // Load existing custom folders
+      const existingRaw = await AsyncStorage.getItem('custom-folders-v1');
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      
+      // Add new folder
+      const newFolder = { 
+        id: Date.now().toString(), 
+        name: folderName.trim(), 
+        color: Colors.light.primary, 
+        count: 0 
+      };
+      const updatedFolders = [newFolder, ...existing];
+      
+      // Save to AsyncStorage
+      await AsyncStorage.setItem('custom-folders-v1', JSON.stringify(updatedFolders));
+      
+      setToast({ message: `Folder "${folderName}" created successfully!` });
       
       setIsModalVisible(false);
       setFolderName('');
@@ -340,6 +359,12 @@ export default function MailScreen() {
       setIsCreating(false);
     }
   };
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 1800);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const smartFolders = useSmartFolders(messages, allEmails, isDemoMode);
 
@@ -668,80 +693,22 @@ export default function MailScreen() {
         insets={insets}
       />
 
-      <Modal
+      <CreateFolderModal
         visible={isModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => !isCreating && setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Create Custom Folder</Text>
-              <TouchableOpacity
-                onPress={() => !isCreating && setIsModalVisible(false)}
-                disabled={isCreating}
-              >
-                <X size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+        folderName={folderName}
+        folderRule={folderRule}
+        isCreating={isCreating}
+        onClose={() => !isCreating && setIsModalVisible(false)}
+        onFolderNameChange={setFolderName}
+        onFolderRuleChange={setFolderRule}
+        onCreate={handleCreateFolder}
+      />
 
-            <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-              Create a smart folder using natural language rules
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Folder Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                placeholder="e.g., Important Clients"
-                placeholderTextColor={colors.textSecondary}
-                value={folderName}
-                onChangeText={setFolderName}
-                editable={!isCreating}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Folder Rule</Text>
-              <TextInput
-                style={[styles.input, styles.textArea, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                placeholder="e.g., Emails from clients about project updates or invoices"
-                placeholderTextColor={colors.textSecondary}
-                value={folderRule}
-                onChangeText={setFolderRule}
-                multiline
-                numberOfLines={4}
-                editable={!isCreating}
-              />
-              <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                Describe the rule in plain English. Our AI will understand it!
-              </Text>
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => setIsModalVisible(false)}
-                disabled={isCreating}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.createButtonModal, { backgroundColor: colors.primary }]}
-                onPress={handleCreateFolder}
-                disabled={isCreating || !folderName.trim() || !folderRule.trim()}
-              >
-                {isCreating ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.createButtonModalText}>Create Folder</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+      {toast && (
+        <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 24, backgroundColor: '#111827', padding: 12, borderRadius: 10, alignItems: 'center' }}>
+          <Text style={{ color: '#FFFFFF' }}>{toast.message}</Text>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
