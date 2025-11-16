@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform } from 'react-native';
 import { X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { KeyboardAvoid } from '@/components/common/KeyboardAvoid';
@@ -27,16 +27,33 @@ export function CreateFolderModal({
   onCreate,
 }: CreateFolderModalProps) {
   const insets = useSafeAreaInsets();
+  const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+
+  // iOS: Lift the bottom sheet while keyboard is visible
+  React.useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const onShow = Keyboard.addListener('keyboardWillShow', (e) => {
+      const height = e.endCoordinates?.height ?? 0;
+      // subtract bottom inset so we don't over-shift
+      setKeyboardOffset(Math.max(0, height - (insets.bottom || 0)));
+    });
+    const onHide = Keyboard.addListener('keyboardWillHide', () => setKeyboardOffset(0));
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, [insets.bottom]);
   return (
     <Modal
       visible={visible}
       transparent
       animationType="slide"
+      presentationStyle="overFullScreen"
       onRequestClose={() => !isCreating && onClose()}
     >
       <KeyboardAvoid>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, Platform.OS === 'ios' ? { transform: [{ translateY: -keyboardOffset }] } : null]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create Custom Folder</Text>
               <TouchableOpacity onPress={() => !isCreating && onClose()} disabled={isCreating}>
