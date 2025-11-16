@@ -46,22 +46,22 @@ export function EmailDetailView({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.detailHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
+      <View style={[styles.detailHeader, { paddingTop: insets.top + 12, borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              testID="back-to-inbox"
-              style={styles.backButton}
-              onPress={onBack}
-            >
-              <ChevronLeft size={24} color={colors.text} />
-            </TouchableOpacity>
+        <TouchableOpacity
+          testID="back-to-inbox"
+          style={styles.backButton}
+          onPress={onBack}
+        >
+          <ChevronLeft size={24} color={colors.text} />
+        </TouchableOpacity>
             {currentIndex !== undefined && totalCount !== undefined && (
               <Text style={[styles.emailCounter, { color: colors.textSecondary }]}>
                 {currentIndex + 1} of {totalCount}
               </Text>
             )}
           </View>
-          <View style={styles.detailActions}>
+        <View style={styles.detailActions}>
             {hasPrev && onPrev && (
               <TouchableOpacity
                 testID="prev-email"
