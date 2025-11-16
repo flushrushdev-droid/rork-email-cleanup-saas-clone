@@ -393,15 +393,23 @@ export default function NotesScreen() {
                   style={[styles.dueDateButton, { backgroundColor: colors.background }]}
                   onPress={() => {
                     Keyboard.dismiss();
-                    const base = dueDate ? new Date(dueDate) : new Date();
-                    const roundedMin = Math.round(base.getMinutes() / MINUTE_STEP) * MINUTE_STEP;
-                    setTmpYear(base.getFullYear());
-                    setTmpMonth(base.getMonth() + 1);
-                    setTmpDay(base.getDate());
-                    setTmpHour12(((base.getHours() % 12) || 12).toString());
-                    setTmpMinute((roundedMin % 60).toString().padStart(2, '0'));
-                    setTmpAMPM(base.getHours() >= 12 ? 'PM' : 'AM');
-                    setShowDueDatePicker(true);
+                    const openPicker = () => {
+                      const base = dueDate ? new Date(dueDate) : new Date();
+                      const roundedMin = Math.round(base.getMinutes() / MINUTE_STEP) * MINUTE_STEP;
+                      setTmpYear(base.getFullYear());
+                      setTmpMonth(base.getMonth() + 1);
+                      setTmpDay(base.getDate());
+                      setTmpHour12(((base.getHours() % 12) || 12).toString());
+                      setTmpMinute((roundedMin % 60).toString().padStart(2, '0'));
+                      setTmpAMPM(base.getHours() >= 12 ? 'PM' : 'AM');
+                      setShowDueDatePicker(true);
+                    };
+                    if (Platform.OS === 'ios') {
+                      setModalVisible(false);
+                      requestAnimationFrame(openPicker);
+                    } else {
+                      openPicker();
+                    }
                   }}
                 >
                   <Calendar size={16} color={colors.primary} />
@@ -505,7 +513,7 @@ export default function NotesScreen() {
               })()}
             </View>
             <View style={styles.pickerButtons}>
-              <TouchableOpacity onPress={() => setShowDueDatePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+              <TouchableOpacity onPress={() => { setShowDueDatePicker(false); if (Platform.OS === 'ios') setModalVisible(true); }} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
                 <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setShowDueDatePicker(false); setShowDueTimePicker(true); }} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
@@ -545,7 +553,7 @@ export default function NotesScreen() {
               })}
             </ScrollView>
             <View style={styles.pickerButtons}>
-              <TouchableOpacity onPress={() => setShowDueTimePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+              <TouchableOpacity onPress={() => { setShowDueTimePicker(false); if (Platform.OS === 'ios') setModalVisible(true); }} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
                 <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => {
@@ -553,6 +561,7 @@ export default function NotesScreen() {
                 const date = new Date(tmpYear, tmpMonth - 1, tmpDay, hour24, parseInt(tmpMinute, 10), 0, 0);
                 setDueDate(date.toISOString());
                 setShowDueTimePicker(false);
+                if (Platform.OS === 'ios') setModalVisible(true);
               }} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
                 <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Confirm</Text>
               </TouchableOpacity>
