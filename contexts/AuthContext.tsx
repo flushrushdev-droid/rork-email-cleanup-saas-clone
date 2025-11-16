@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import * as Crypto from 'expo-crypto';
+// import * as Crypto from 'expo-crypto'; // Unused for now
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import type { AuthTokens, User } from '@/constants/types';
@@ -71,6 +71,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   useEffect(() => {
     loadStoredAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setError(response.error?.message || 'Authentication failed');
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response, isDemoMode]);
 
   const loadStoredAuth = async () => {
@@ -313,7 +315,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     if (tokens.refreshToken) {
       try {
         return await refreshAccessToken(tokens.refreshToken);
-      } catch (err) {
+      } catch {
         return null;
       }
     }

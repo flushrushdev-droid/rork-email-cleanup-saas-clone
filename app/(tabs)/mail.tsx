@@ -46,7 +46,8 @@ export default function MailScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts' | 'trash' | 'sent'>('all');
+  const [customFolders, setCustomFolders] = useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred' | 'drafts' | 'drafts-ai' | 'trash' | 'sent'>('all');
   const { drafts, saveDraft, loadDraft, deleteDraft } = useDrafts();
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -331,21 +332,16 @@ export default function MailScreen() {
       
       console.log('Creating folder:', { folderName, folderRule });
       
-      // Load existing custom folders
-      const existingRaw = await AsyncStorage.getItem('custom-folders-v1');
-      const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      
-      // Add new folder
+      // Create new folder (no persistence for demo mode)
       const newFolder = { 
         id: Date.now().toString(), 
         name: folderName.trim(), 
         color: Colors.light.primary, 
         count: 0 
       };
-      const updatedFolders = [newFolder, ...existing];
       
-      // Save to AsyncStorage
-      await AsyncStorage.setItem('custom-folders-v1', JSON.stringify(updatedFolders));
+      // Add to state so it appears in sidebar
+      setCustomFolders(prev => [newFolder, ...prev]);
       
       setToast({ message: `Folder "${folderName}" created successfully!` });
       
@@ -611,6 +607,7 @@ export default function MailScreen() {
           filteredEmails={filteredEmails}
           drafts={drafts}
           smartFolders={smartFolders}
+          customFolders={customFolders}
           onEmailPress={handleEmailPress}
           onStarEmail={handleStar}
           onLoadDraft={handleLoadDraft}

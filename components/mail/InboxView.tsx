@@ -36,6 +36,7 @@ interface InboxViewProps {
   filteredEmails: EmailMessage[];
   drafts: Draft[];
   smartFolders: SmartFolder[];
+  customFolders: Array<{ id: string; name: string; color: string; count: number }>;
   onEmailPress: (email: EmailMessage) => void;
   onStarEmail: (emailId: string) => void;
   onLoadDraft: (draft: Draft) => void;
@@ -74,6 +75,7 @@ export function InboxView({
   filteredEmails,
   drafts,
   smartFolders,
+  customFolders,
   onEmailPress,
   onStarEmail,
   onLoadDraft,
@@ -92,27 +94,12 @@ export function InboxView({
 }: InboxViewProps) {
   const { colors } = useTheme();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(false);
-  const [customFolders, setCustomFolders] = React.useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   
+  // Clear persisted folders on mount (demo mode)
   React.useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem('custom-folders-v1');
-        if (raw) setCustomFolders(JSON.parse(raw));
-      } catch {}
-    })();
+    AsyncStorage.removeItem('custom-folders-v1').catch(() => {});
   }, []);
-  
-  React.useEffect(() => {
-    if (!isSidebarVisible) return;
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem('custom-folders-v1');
-        if (raw) setCustomFolders(JSON.parse(raw));
-      } catch {}
-    })();
-  }, [isSidebarVisible]);
   const [activeFilterModal, setActiveFilterModal] = React.useState<'labels' | 'from' | 'to' | 'attachment' | null>(null);
   const [labelSearchQuery, setLabelSearchQuery] = React.useState('');
   const [contactSearchQuery, setContactSearchQuery] = React.useState('');

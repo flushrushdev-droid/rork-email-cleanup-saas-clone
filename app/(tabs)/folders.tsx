@@ -55,24 +55,12 @@ export default function FoldersScreen() {
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [customFolders, setCustomFolders] = useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
-  const CUSTOM_FOLDERS_KEY = 'custom-folders-v1';
-
+  // No persistence for demo mode - folders reset on refresh
+  
+  // One-time cleanup: remove persisted folders
   React.useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(CUSTOM_FOLDERS_KEY);
-        if (raw) setCustomFolders(JSON.parse(raw));
-      } catch {}
-    })();
+    AsyncStorage.removeItem('custom-folders-v1').catch(() => {});
   }, []);
-
-  React.useEffect(() => {
-    (async () => {
-      try {
-        await AsyncStorage.setItem(CUSTOM_FOLDERS_KEY, JSON.stringify(customFolders));
-      } catch {}
-    })();
-  }, [customFolders]);
 
   const emailsWithCategories = useMemo(() => {
     if (isDemoMode || messages.length === 0) {
@@ -213,13 +201,10 @@ export default function FoldersScreen() {
       
       console.log('Creating folder:', { folderName, folderRule });
       
-      // Add to custom list and persist
+      // Add to custom list (no persistence for demo mode)
       const newFolder = { id: Date.now().toString(), name: folderName.trim(), color: Colors.light.primary, count: 0 };
       const updatedFolders = [newFolder, ...customFolders];
       setCustomFolders(updatedFolders);
-      
-      // Save to AsyncStorage so sidebar can load it
-      await AsyncStorage.setItem('custom-folders-v1', JSON.stringify(updatedFolders));
 
       Alert.alert('Success', `Folder "${folderName}" created successfully!`);
       

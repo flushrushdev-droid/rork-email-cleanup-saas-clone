@@ -1,6 +1,6 @@
 import type { EmailMessage } from '@/constants/types';
 
-export type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred' | 'unread' | 'drafts' | 'spam' | 'trash' | 'important' | 'snoozed';
+export type MailFolder = 'inbox' | 'sent' | 'archived' | 'starred' | 'unread' | 'drafts' | 'drafts-ai' | 'spam' | 'trash' | 'important' | 'snoozed';
 
 export function filterEmailsByFolder(
   emails: EmailMessage[],

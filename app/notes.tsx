@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Platform,
+  Pressable,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -94,7 +95,7 @@ const demoNotes: Note[] = [
 export default function NotesScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { addEvent } = useCalendarStore();
+  const { addEvent, setEvents } = useCalendarStore();
   const params = useLocalSearchParams<{ editNoteId?: string; prefillTitle?: string; prefillContent?: string }>();
   const [notes, setNotes] = useState<Note[]>(demoNotes);
   const [modalVisible, setModalVisible] = useState(false);
@@ -172,28 +173,12 @@ export default function NotesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params?.editNoteId, params?.prefillTitle, params?.prefillContent]);
 
-  // Persist notes so navigation away/back retains changes
+  // No persistence for demo mode - notes reset on refresh
   const NOTES_KEY = 'notes-storage-v1';
   useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(NOTES_KEY);
-        if (raw) {
-          const parsed: Note[] = JSON.parse(raw);
-          // Normalize dates if needed (strings are fine as we format with new Date())
-          setNotes(parsed);
-        }
-      } catch {}
-    })();
+    // Clear any persisted notes on mount
+    AsyncStorage.removeItem(NOTES_KEY).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-      } catch {}
-    })();
-  }, [notes]);
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -253,17 +238,27 @@ export default function NotesScreen() {
     setDueDate(undefined);
   };
 
+  const performDelete = async (noteId: string) => {
+    console.log('performDelete called for noteId:', noteId);
+    // Delete the note using functional update
+    setNotes((prevNotes) => {
+      const updatedNotes = prevNotes.filter((note) => note.id !== noteId);
+      console.log('Updated notes count:', updatedNotes.length, 'Previous count:', prevNotes.length);
+      return updatedNotes;
+    });
+    // Delete associated calendar events
+    setEvents((prevEvents) => {
+      const updatedEvents = prevEvents.filter((event) => event.noteId !== noteId);
+      console.log('Updated events count:', updatedEvents.length, 'Previous count:', prevEvents.length);
+      return updatedEvents;
+    });
+  };
+
   const handleDelete = (noteId: string) => {
-    Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          setNotes(notes.filter((note) => note.id !== noteId));
-        },
-      },
-    ]);
+    console.log('handleDelete called with noteId:', noteId);
+    // Direct delete for testing - will add confirmation modal later
+    console.log('Calling performDelete directly');
+    performDelete(noteId);
   };
 
   return (
@@ -296,44 +291,52 @@ export default function NotesScreen() {
           </View>
         ) : (
           notes.map((note) => (
-            <TouchableOpacity
+            <View
               key={note.id}
               style={[styles.noteCard, { backgroundColor: colors.surface }]}
-              onPress={() => openEditModal(note)}
-              activeOpacity={0.7}
-              testID={`note-${note.id}`}
             >
               <View style={styles.noteHeader}>
                 <Text style={[styles.noteTitle, { color: colors.text }]} numberOfLines={1}>
                   {note.title}
                 </Text>
-                <TouchableOpacity
-                  onPress={() => handleDelete(note.id)}
+                <Pressable
+                  onPress={() => {
+                    console.log('Delete button pressed for note:', note.id);
+                    handleDelete(note.id);
+                  }}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   testID={`delete-note-${note.id}`}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
                 >
                   <Trash2 size={18} color={colors.danger} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
-              <Text style={[styles.noteContent, { color: colors.textSecondary }]} numberOfLines={3}>
-                {note.content}
-              </Text>
+              <TouchableOpacity
+                onPress={() => openEditModal(note)}
+                activeOpacity={0.7}
+                testID={`note-${note.id}`}
+                style={{ flex: 1 }}
+              >
+                <Text style={[styles.noteContent, { color: colors.textSecondary }]} numberOfLines={3}>
+                  {note.content}
+                </Text>
 
-              <View style={styles.noteFooter}>
-                <View style={styles.dateContainer}>
-                  <Calendar size={14} color={colors.textSecondary} />
-                  <Text style={[styles.noteDate, { color: colors.textSecondary }]}>
-                    {note.dueDate ? formatDate(note.dueDate) : formatDate(note.updatedAt)}
-                  </Text>
+                <View style={styles.noteFooter}>
+                  <View style={styles.dateContainer}>
+                    <Calendar size={14} color={colors.textSecondary} />
+                    <Text style={[styles.noteDate, { color: colors.textSecondary }]}>
+                      {note.dueDate ? formatDate(note.dueDate) : formatDate(note.updatedAt)}
+                    </Text>
+                  </View>
+                  {note.linkedEmailSubject && (
+                    <Text style={[styles.linkedEmail, { color: colors.primary }]} numberOfLines={1}>
+                      {note.linkedEmailSubject}
+                    </Text>
+                  )}
                 </View>
-                {note.linkedEmailSubject && (
-                  <Text style={[styles.linkedEmail, { color: colors.primary }]} numberOfLines={1}>
-                    {note.linkedEmailSubject}
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
           ))
         )}
         <View style={{ height: 80 }} />
