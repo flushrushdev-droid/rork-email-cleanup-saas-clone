@@ -764,6 +764,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 2,
   },
+  pickerItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
   addNoteButton: {
     alignItems: 'center',
     justifyContent: 'center',
