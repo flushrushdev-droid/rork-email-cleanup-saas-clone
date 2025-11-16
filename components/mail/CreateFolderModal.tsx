@@ -82,7 +82,7 @@ export function CreateFolderModal({
         <View
           style={[
             styles.modalContent,
-            { paddingBottom: insets.bottom + 16, backgroundColor: colors.surface },
+            { paddingBottom: insets.bottom + 16, paddingTop: insets.top + 12, backgroundColor: colors.surface },
             Platform.OS === 'ios' ? { transform: [{ translateY: -keyboardOffset }] } : null,
           ]}
         >
