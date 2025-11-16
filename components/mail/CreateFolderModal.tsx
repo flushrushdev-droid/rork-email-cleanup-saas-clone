@@ -28,6 +28,12 @@ export function CreateFolderModal({
 }: CreateFolderModalProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  // Some environments (e.g., certain web previews) may not provide KeyboardAvoidingView at runtime.
+  // Fall back to a regular View while keeping manual keyboard translation logic.
+  // Using typeof avoids ReferenceError when the symbol isn't defined.
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  const Container: any = typeof KeyboardAvoidingView !== 'undefined' ? KeyboardAvoidingView : View;
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
   const [keyboardHeight, setKeyboardHeight] = React.useState(0);
   const scrollRef = React.useRef<ScrollView>(null);
@@ -78,11 +84,12 @@ export function CreateFolderModal({
       presentationStyle="overFullScreen"
       onRequestClose={() => !isCreating && onClose()}
     >
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+      <Container behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
         <View
           style={[
             styles.modalContent,
             { paddingBottom: insets.bottom + 16, paddingTop: insets.top + 12, backgroundColor: colors.surface },
+            Platform.OS === 'ios' && (Container === View) ? { transform: [{ translateY: -keyboardOffset }] } : null,
           ]}
         >
           <View style={styles.modalHeader}>
@@ -166,7 +173,7 @@ export function CreateFolderModal({
             </View>
           </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </Container>
     </Modal>
   );
 }
