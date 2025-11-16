@@ -705,8 +705,27 @@ export default function MailScreen() {
       />
 
       {toast && (
-        <View style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 24, backgroundColor: '#111827', padding: 12, borderRadius: 10, alignItems: 'center' }}>
-          <Text style={{ color: '#FFFFFF' }}>{toast.message}</Text>
+        <View
+          style={{
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: insets.bottom + 8, // hug the bottom as close as safe
+            backgroundColor: colors.surface,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 6,
+            elevation: 3,
+          }}
+        >
+          <Text style={{ color: colors.text }}>{toast.message}</Text>
         </View>
       )}
     </View>
