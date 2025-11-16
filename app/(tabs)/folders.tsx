@@ -9,6 +9,7 @@ import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Email, EmailCategory } from '@/constants/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
 
 const iconMap: Record<string, any> = {
   'alert-circle': AlertCircle,
@@ -342,80 +343,16 @@ export default function FoldersScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      <Modal
+      <CreateFolderModal
         visible={isModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => !isCreating && setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Custom Folder</Text>
-              <TouchableOpacity
-                onPress={() => !isCreating && setIsModalVisible(false)}
-                disabled={isCreating}
-              >
-                <X size={24} color={Colors.light.text} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalDescription}>
-              Create a smart folder using natural language rules
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Folder Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Important Clients"
-                placeholderTextColor={Colors.light.textSecondary}
-                value={folderName}
-                onChangeText={setFolderName}
-                editable={!isCreating}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Folder Rule</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="e.g., Emails from clients about project updates or invoices"
-                placeholderTextColor={Colors.light.textSecondary}
-                value={folderRule}
-                onChangeText={setFolderRule}
-                multiline
-                numberOfLines={4}
-                editable={!isCreating}
-              />
-              <Text style={styles.helperText}>
-                Describe the rule in plain English. Our AI will understand it!
-              </Text>
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setIsModalVisible(false)}
-                disabled={isCreating}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.createButtonModal]}
-                onPress={handleCreateFolder}
-                disabled={isCreating || !folderName.trim() || !folderRule.trim()}
-              >
-                {isCreating ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.createButtonModalText}>Create Folder</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        folderName={folderName}
+        folderRule={folderRule}
+        isCreating={isCreating}
+        onClose={() => !isCreating && setIsModalVisible(false)}
+        onFolderNameChange={setFolderName}
+        onFolderRuleChange={setFolderRule}
+        onCreate={handleCreateFolder}
+      />
     </View>
   );
 }
