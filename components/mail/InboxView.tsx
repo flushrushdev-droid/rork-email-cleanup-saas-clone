@@ -260,14 +260,14 @@ export function InboxView({
         ) : (
           <>
             <View style={styles.headerLeft}>
-              <TouchableOpacity
+        <TouchableOpacity
                 testID="sidebar-toggle"
                 onPress={toggleSidebar}
                 style={[styles.sidebarButton, { backgroundColor: colors.surface }]}
                 activeOpacity={0.7}
-              >
+        >
                 <Menu size={20} color={colors.primary} />
-              </TouchableOpacity>
+        </TouchableOpacity>
               <Text style={[styles.headerTitle, { color: colors.text }]}>
                 {activeFilter === 'all' ? 'Mail' : 
                  activeFilter === 'drafts-ai' ? 'Drafts By AI' :
@@ -314,22 +314,22 @@ export function InboxView({
               <X size={24} color={colors.text} />
             </TouchableOpacity>
             <View style={[styles.searchInputContainer, { backgroundColor: colors.surface }]}>
-              <Search size={18} color={colors.textSecondary} />
-              <TextInput
-                style={[styles.searchInput, { color: colors.text }]}
+        <Search size={18} color={colors.textSecondary} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search in emails"
-                value={searchQuery}
-                onChangeText={onSearchChange}
-                placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={onSearchChange}
+          placeholderTextColor={colors.textSecondary}
                 autoFocus
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => onSearchChange('')}>
-                  <X size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-              )}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => onSearchChange('')}>
+            <X size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
             </View>
-          </View>
+      </View>
 
           <ScrollView style={styles.searchContent} showsVerticalScrollIndicator={false}>
             <View style={styles.filterRow}>
@@ -340,7 +340,7 @@ export function InboxView({
                 <Text style={[styles.filterButtonText, { color: colors.text }]}>Labels</Text>
                 <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+            <TouchableOpacity
                 style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setActiveFilterModal('from')}
               >
@@ -350,10 +350,10 @@ export function InboxView({
               <TouchableOpacity 
                 style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setActiveFilterModal('to')}
-              >
+            >
                 <Text style={[styles.filterButtonText, { color: colors.text }]}>To</Text>
                 <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
-              </TouchableOpacity>
+            </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setActiveFilterModal('attachment')}
@@ -361,7 +361,7 @@ export function InboxView({
                 <Text style={[styles.filterButtonText, { color: colors.text }]}>Attachment</Text>
                 <Text style={[styles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
               </TouchableOpacity>
-            </View>
+      </View>
 
             {searchQuery.length === 0 && searchHistory.length > 0 && !appliedLabelFilter && !appliedAttachmentFilter && !appliedContactFilter && (
               <View style={styles.historySection}>
@@ -425,21 +425,21 @@ export function InboxView({
                   const senderInitial = senderName[0]?.toUpperCase() || '?';
                   const senderColor = `hsl(${senderInitial.charCodeAt(0) * 137.5 % 360}, 70%, 50%)`;
 
-                  return (
-                    <TouchableOpacity
+              return (
+                <TouchableOpacity
                       key={email.id}
                       style={[styles.searchResultItem, { borderBottomColor: colors.border }]}
-                      onPress={() => {
+                  onPress={() => {
                         setIsSearchFocused(false);
                         setAppliedLabelFilter(null);
                         setAppliedAttachmentFilter(null);
                         setAppliedContactFilter(null);
                         onEmailPress(email);
-                      }}
-                    >
+                  }}
+                >
                       <View style={[styles.senderAvatar, { backgroundColor: senderColor }]}>
                         <Text style={styles.senderInitial}>{senderInitial}</Text>
-                      </View>
+                  </View>
                       <View style={styles.searchResultContent}>
                         <Text style={[styles.searchResultSubject, { color: colors.text }]} numberOfLines={1}>
                           {email.subject}
@@ -450,20 +450,20 @@ export function InboxView({
                         <Text style={[styles.searchResultSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
                           {email.snippet}
                         </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
               </View>
             )}
           </ScrollView>
         </View>
       ) : (
-        <ScrollView 
-          style={styles.emailList} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
-        >
+      <ScrollView 
+        style={styles.emailList} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+      >
         {activeFilter === 'drafts' || activeFilter === 'drafts-ai' ? (
           drafts.length === 0 ? (
             <View style={styles.emptyState}>
@@ -482,47 +482,47 @@ export function InboxView({
               const recipientInitial = recipientName[0]?.toUpperCase() || 'D';
 
               return (
-                <TouchableOpacity
-                  key={draft.id}
-                  testID={`draft-${draft.id}`}
-                  style={[styles.draftCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}
-                  onPress={() => onLoadDraft(draft)}
-                  activeOpacity={0.7}
-                >
+              <TouchableOpacity
+                key={draft.id}
+                testID={`draft-${draft.id}`}
+                style={[styles.draftCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}
+                onPress={() => onLoadDraft(draft)}
+                activeOpacity={0.7}
+              >
                   <View style={[styles.senderAvatar, { backgroundColor: colors.primary }]}>
                     <Text style={styles.senderInitial}>{recipientInitial}</Text>
                   </View>
-                  <View style={styles.draftCardContent}>
-                    <View style={styles.draftCardHeader}>
-                      <FileEdit size={16} color={colors.primary} />
+                <View style={styles.draftCardContent}>
+                  <View style={styles.draftCardHeader}>
+                    <FileEdit size={16} color={colors.primary} />
                       <Text style={[styles.draftBadge, { color: colors.primary }]}>
                         {activeFilter === 'drafts-ai' ? 'AI Draft' : 'Draft'}
                       </Text>
-                      <Text style={[styles.draftDate, { color: colors.textSecondary }]}>{formatDate(draft.date)}</Text>
-                    </View>
-                    <Text style={[styles.draftTo, { color: colors.text }]} numberOfLines={1}>
-                      To: {draft.to || '(no recipient)'}
-                    </Text>
-                    <Text style={[styles.draftSubject, { color: colors.text }]} numberOfLines={1}>
-                      {draft.subject || '(no subject)'}
-                    </Text>
-                    {draft.body && (
-                      <Text style={[styles.draftBody, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {draft.body}
-                      </Text>
-                    )}
+                    <Text style={[styles.draftDate, { color: colors.textSecondary }]}>{formatDate(draft.date)}</Text>
                   </View>
-                  <TouchableOpacity
-                    testID={`delete-draft-${draft.id}`}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      onDeleteDraft(draft.id);
-                    }}
-                    style={styles.deleteDraftButton}
-                  >
-                    <Trash2 size={18} color={colors.danger} />
-                  </TouchableOpacity>
+                  <Text style={[styles.draftTo, { color: colors.text }]} numberOfLines={1}>
+                    To: {draft.to || '(no recipient)'}
+                  </Text>
+                  <Text style={[styles.draftSubject, { color: colors.text }]} numberOfLines={1}>
+                    {draft.subject || '(no subject)'}
+                  </Text>
+                  {draft.body && (
+                    <Text style={[styles.draftBody, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {draft.body}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  testID={`delete-draft-${draft.id}`}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onDeleteDraft(draft.id);
+                  }}
+                  style={styles.deleteDraftButton}
+                >
+                  <Trash2 size={18} color={colors.danger} />
                 </TouchableOpacity>
+              </TouchableOpacity>
               );
             })
           )
@@ -561,9 +561,9 @@ export function InboxView({
             const isSelected = selectedEmails.has(email.id);
 
             return (
-              <TouchableOpacity
-                key={email.id}
-                testID={`email-${email.id}`}
+            <TouchableOpacity
+              key={email.id}
+              testID={`email-${email.id}`}
                 style={[styles.emailCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }, !email.isRead && { backgroundColor: colors.surface }, isSelected && { backgroundColor: colors.primary + '15' }]}
                 onPress={() => {
                   if (selectionMode) {
@@ -573,52 +573,52 @@ export function InboxView({
                   }
                 }}
                 onLongPress={() => onToggleSelection(email.id)}
-                activeOpacity={0.7}
-              >
+              activeOpacity={0.7}
+            >
                 <View style={[styles.senderAvatar, { backgroundColor: avatarColor }]}>
                   <Text style={styles.senderInitial}>{initial}</Text>
                 </View>
-                <View style={styles.emailCardContent}>
-                  <View style={styles.emailCardHeader}>
-                    <Text
-                      style={[styles.emailFrom, { color: colors.text }, !email.isRead && styles.emailFromUnread]}
-                      numberOfLines={1}
-                    >
-                      {senderName}
-                    </Text>
-                    <View style={styles.emailMeta}>
-                      <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatDate(email.date)}</Text>
-                      <TouchableOpacity
-                        testID={`star-${email.id}`}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          onStarEmail(email.id);
-                        }}
-                        style={styles.starButton}
-                      >
-                        <Star
-                          size={16}
-                          color={email.isStarred ? colors.warning : colors.textSecondary}
-                          fill={email.isStarred ? colors.warning : 'none'}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+              <View style={styles.emailCardContent}>
+                <View style={styles.emailCardHeader}>
                   <Text
-                    style={[styles.emailSubject, { color: colors.text }, !email.isRead && styles.emailSubjectUnread]}
+                    style={[styles.emailFrom, { color: colors.text }, !email.isRead && styles.emailFromUnread]}
                     numberOfLines={1}
                   >
-                    {email.subject}
+                      {senderName}
                   </Text>
-                  <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
-                    {email.snippet}
-                  </Text>
-                  {email.hasAttachments && (
-                    <View style={styles.attachmentBadge}>
-                      <Paperclip size={12} color={colors.textSecondary} />
-                    </View>
-                  )}
+                  <View style={styles.emailMeta}>
+                    <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatDate(email.date)}</Text>
+                    <TouchableOpacity
+                      testID={`star-${email.id}`}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        onStarEmail(email.id);
+                      }}
+                      style={styles.starButton}
+                    >
+                      <Star
+                        size={16}
+                        color={email.isStarred ? colors.warning : colors.textSecondary}
+                        fill={email.isStarred ? colors.warning : 'none'}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
+                <Text
+                  style={[styles.emailSubject, { color: colors.text }, !email.isRead && styles.emailSubjectUnread]}
+                  numberOfLines={1}
+                >
+                  {email.subject}
+                </Text>
+                <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
+                  {email.snippet}
+                </Text>
+                {email.hasAttachments && (
+                  <View style={styles.attachmentBadge}>
+                    <Paperclip size={12} color={colors.textSecondary} />
+                  </View>
+                )}
+              </View>
                 {selectionMode ? (
                   <View style={[styles.checkbox, { borderColor: colors.border }, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
                     {isSelected && <Check size={16} color="#FFFFFF" />}
@@ -626,7 +626,7 @@ export function InboxView({
                 ) : (
                   !email.isRead && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
                 )}
-              </TouchableOpacity>
+            </TouchableOpacity>
             );
           })
         )}

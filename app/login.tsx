@@ -1,16 +1,24 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { Mail, Shield, Zap, Lock } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+import { AppText } from '@/components/common/AppText';
+import { rowText } from '@/styles/layout';
+import { Screen } from '@/components/layout/Screen';
 
 export default function LoginScreen() {
   const { signIn, signInDemo, isLoading, error, isAuthenticated } = useAuth();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  useSafeAreaInsets();
+  const { height, fontScale } = useWindowDimensions();
   const router = useRouter();
+
+  // Responsive tweaks so the screen fits without needing to scroll on smaller devices
+  const effectiveHeight = height / Math.min(fontScale || 1, 1.4);
+  const isSmall = effectiveHeight < 760;
   const handleSignIn = async () => {
     try {
       await signIn();
@@ -38,65 +46,27 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.content, { paddingTop: 60 + insets.top, paddingBottom: 40 + insets.bottom }]}>
-          <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.surface }]}>
-              <Mail size={48} color={colors.primary} strokeWidth={2} />
-            </View>
-            <Text style={[styles.title, { color: colors.text }]}>Email Cleanup</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Take control of your inbox with AI-powered email management
-            </Text>
-          </View>
-
-          <View style={styles.features}>
-            <View style={[styles.feature, { backgroundColor: colors.surface }]}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.surfaceSecondary }]}>
-                <Zap size={24} color={colors.primary} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>Smart Cleanup</Text>
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                  AI identifies and removes email noise automatically
-                </Text>
-              </View>
-            </View>
-
-            <View style={[styles.feature, { backgroundColor: colors.surface }]}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.surfaceSecondary }]}>
-                <Shield size={24} color={colors.success} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>Secure & Private</Text>
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                  Your data stays encrypted and under your control
-                </Text>
-              </View>
-            </View>
-
-            <View style={[styles.feature, { backgroundColor: colors.surface }]}>
-              <View style={[styles.featureIcon, { backgroundColor: colors.surfaceSecondary }]}>
-                <Lock size={24} color={colors.warning} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>OAuth Protected</Text>
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>
-                  Industry-standard authentication via Google
-                </Text>
-              </View>
-            </View>
-          </View>
-
+    <Screen
+      scroll={false}
+      topPadding={isSmall ? 8 : 16}
+      style={{ paddingHorizontal: isSmall ? 16 : 24 }}
+      footer={(
+        <>
           {error && (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+              <AppText style={styles.errorText}>{error}</AppText>
             </View>
           )}
 
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, { gap: isSmall ? 8 : 10 }]}>
             <TouchableOpacity
-              style={[styles.signInButton, { backgroundColor: colors.primary }]}
+              style={[
+                styles.signInButton,
+                {
+                  backgroundColor: colors.primary,
+                  paddingVertical: isSmall ? 12 : 14,
+                },
+              ]}
               onPress={handleSignIn}
               disabled={isLoading}
               activeOpacity={0.8}
@@ -105,29 +75,100 @@ export default function LoginScreen() {
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <>
-                  <View style={styles.googleIcon}>
-                    <Text style={styles.googleIconText}>G</Text>
+                  <View style={[styles.googleIcon, { width: isSmall ? 20 : 22, height: isSmall ? 20 : 22, borderRadius: isSmall ? 10 : 11 }]}>
+                    <AppText style={[styles.googleIconText, { fontSize: isSmall ? 14 : 15 }]}>G</AppText>
                   </View>
-                  <Text style={styles.signInText}>Continue with Google</Text>
+                  <AppText style={[styles.signInText, { fontSize: isSmall ? 15 : 16 }]}>
+                    Continue with Google
+                  </AppText>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.demoButton, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+              style={[
+                styles.demoButton,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.primary,
+                  paddingVertical: isSmall ? 12 : 14,
+                },
+              ]}
               onPress={handleTryDemo}
               disabled={isLoading}
               activeOpacity={0.8}
             >
-              <Text style={[styles.demoButtonText, { color: colors.primary }]}>Try Demo</Text>
+              <AppText style={[styles.demoButtonText, { color: colors.primary, fontSize: isSmall ? 15 : 16 }]}>
+                Try Demo
+              </AppText>
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
+          <AppText style={[styles.disclaimer, { color: colors.textSecondary, fontSize: isSmall ? 10 : 11, lineHeight: isSmall ? 13 : 14, paddingHorizontal: isSmall ? 8 : 12, marginTop: isSmall ? 6 : 8 }]}>
             By continuing, you agree to grant read and modify access to your Gmail account
-          </Text>
-      </View>
-    </View>
+          </AppText>
+        </>
+      )}
+    >
+        <View style={[styles.header, { width: '100%', marginTop: 0 }]}>
+            <View style={[
+              styles.iconContainer,
+              { backgroundColor: colors.surface, width: isSmall ? 52 : 72, height: isSmall ? 52 : 72, borderRadius: isSmall ? 26 : 36, marginBottom: isSmall ? 8 : 12 }
+            ]}>
+              <Mail size={isSmall ? 26 : 36} color={colors.primary} strokeWidth={2} />
+            </View>
+            <AppText maxFontSizeMultiplier={1.15} style={[styles.title, { color: colors.text, fontSize: isSmall ? 22 : 28, marginBottom: isSmall ? 4 : 6 }]}>
+              Email Cleanup
+            </AppText>
+            <AppText maxFontSizeMultiplier={1.15} style={[styles.subtitle, { color: colors.textSecondary, fontSize: isSmall ? 12 : 14, lineHeight: isSmall ? 17 : 19, paddingHorizontal: isSmall ? 8 : 12 }]}>
+              Take control of your inbox with AI-powered email management
+            </AppText>
+          </View>
+
+          <View style={[styles.features, { gap: isSmall ? 10 : 12, marginTop: isSmall ? 12 : 16 }]}>
+            <View style={[styles.feature, { backgroundColor: colors.surface, padding: isSmall ? 10 : 14 }]}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.surfaceSecondary, width: isSmall ? 40 : 48, height: isSmall ? 40 : 48, borderRadius: isSmall ? 20 : 24 }]}>
+                <Zap size={isSmall ? 20 : 22} color={colors.primary} />
+              </View>
+              <View style={styles.featureContent}>
+                <AppText maxFontSizeMultiplier={1.15} style={[rowText, styles.featureTitle, { color: colors.text, fontSize: isSmall ? 14 : 15 }]}>
+                  Smart Cleanup
+                </AppText>
+                <AppText maxFontSizeMultiplier={1.15} style={[rowText, styles.featureText, { color: colors.textSecondary, fontSize: isSmall ? 12 : 13, lineHeight: isSmall ? 17 : 18 }]}>
+                  AI identifies and removes email noise automatically
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.feature, { backgroundColor: colors.surface, padding: isSmall ? 10 : 14 }]}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.surfaceSecondary, width: isSmall ? 40 : 48, height: isSmall ? 40 : 48, borderRadius: isSmall ? 20 : 24 }]}>
+                <Shield size={isSmall ? 20 : 22} color={colors.success} />
+              </View>
+              <View style={styles.featureContent}>
+                <AppText maxFontSizeMultiplier={1.15} style={[rowText, styles.featureTitle, { color: colors.text, fontSize: isSmall ? 14 : 15 }]}>
+                  Secure & Private
+                </AppText>
+                <AppText maxFontSizeMultiplier={1.15} style={[rowText, styles.featureText, { color: colors.textSecondary, fontSize: isSmall ? 12 : 13, lineHeight: isSmall ? 17 : 18 }]}>
+                  Your data stays encrypted and under your control
+                </AppText>
+              </View>
+            </View>
+
+            <View style={[styles.feature, { backgroundColor: colors.surface, padding: isSmall ? 10 : 14 }]}>
+              <View style={[styles.featureIcon, { backgroundColor: colors.surfaceSecondary, width: isSmall ? 40 : 48, height: isSmall ? 40 : 48, borderRadius: isSmall ? 20 : 24 }]}>
+                <Lock size={isSmall ? 20 : 22} color={colors.warning} />
+              </View>
+              <View style={styles.featureContent}>
+                <AppText maxFontSizeMultiplier={1.15} style={[rowText, styles.featureTitle, { color: colors.text, fontSize: isSmall ? 14 : 15 }]}>
+                  OAuth Protected
+                </AppText>
+                <AppText maxFontSizeMultiplier={1.15} style={[rowText, styles.featureText, { color: colors.textSecondary, fontSize: isSmall ? 12 : 13, lineHeight: isSmall ? 17 : 18 }]}>
+                  Industry-standard authentication via Google
+                </AppText>
+              </View>
+            </View>
+          </View>
+    </Screen>
   );
 }
 
@@ -136,9 +177,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
+    flexGrow: 1,
   },
   header: {
     alignItems: 'center',
