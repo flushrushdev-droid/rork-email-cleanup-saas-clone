@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform, useWindowDimensions } from 'react-native';
 import { X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { KeyboardAvoid } from '@/components/common/KeyboardAvoid';
@@ -28,6 +28,11 @@ export function CreateFolderModal({
 }: CreateFolderModalProps) {
   const insets = useSafeAreaInsets();
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+  const scrollRef = React.useRef<ScrollView>(null);
+  const nameInputRef = React.useRef<TextInput>(null);
+  const ruleInputRef = React.useRef<TextInput>(null);
+  const { height: windowHeight } = useWindowDimensions();
 
   // iOS: Lift the bottom sheet while keyboard is visible
   React.useEffect(() => {
@@ -36,13 +41,34 @@ export function CreateFolderModal({
       const height = e.endCoordinates?.height ?? 0;
       // subtract bottom inset so we don't over-shift
       setKeyboardOffset(Math.max(0, height - (insets.bottom || 0)));
+      setKeyboardHeight(height);
     });
-    const onHide = Keyboard.addListener('keyboardWillHide', () => setKeyboardOffset(0));
+    const onHide = Keyboard.addListener('keyboardWillHide', () => {
+      setKeyboardOffset(0);
+      setKeyboardHeight(0);
+    });
     return () => {
       onShow.remove();
       onHide.remove();
     };
   }, [insets.bottom]);
+
+  // Ensure a focused field is visible above the keyboard on iOS
+  const ensureFieldVisible = (inputRef: React.RefObject<TextInput>) => {
+    if (Platform.OS !== 'ios') return;
+    requestAnimationFrame(() => {
+      const node = inputRef.current;
+      if (!node) return;
+      (node as any).measureInWindow?.((x: number, y: number, w: number, h: number) => {
+        const fieldBottom = y + h;
+        const visibleBottom = windowHeight - keyboardHeight - (insets.bottom || 0) - 12; // small margin
+        if (fieldBottom > visibleBottom) {
+          const delta = fieldBottom - visibleBottom;
+          scrollRef.current?.scrollTo({ y: delta, animated: true });
+        }
+      });
+    });
+  };
   return (
     <Modal
       visible={visible}
@@ -62,9 +88,11 @@ export function CreateFolderModal({
             </View>
 
             <ScrollView
+              ref={scrollRef}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+              {...(Platform.OS === 'ios' ? { contentInset: { bottom: keyboardHeight } } : {})}
             >
               <Text style={styles.modalDescription}>
                 Create a smart folder using natural language rules
@@ -73,6 +101,7 @@ export function CreateFolderModal({
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Folder Name</Text>
                 <TextInput
+                  ref={nameInputRef}
                   style={styles.input}
                   placeholder="e.g., Important Clients"
                   placeholderTextColor={Colors.light.textSecondary}
@@ -80,12 +109,14 @@ export function CreateFolderModal({
                   onChangeText={onFolderNameChange}
                   editable={!isCreating}
                   returnKeyType="next"
+                  onFocus={() => ensureFieldVisible(nameInputRef)}
                 />
               </View>
 
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Folder Rule</Text>
                 <TextInput
+                  ref={ruleInputRef}
                   style={[styles.input, styles.textArea]}
                   placeholder="e.g., Emails from clients about project updates or invoices"
                   placeholderTextColor={Colors.light.textSecondary}
@@ -94,6 +125,7 @@ export function CreateFolderModal({
                   multiline
                   numberOfLines={4}
                   editable={!isCreating}
+                  onFocus={() => ensureFieldVisible(ruleInputRef)}
                 />
                 <Text style={styles.helperText}>
                   Describe the rule in plain English. Our AI will understand it!
