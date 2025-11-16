@@ -111,21 +111,50 @@ export default function CalendarScreen() {
   const monthRef = React.useRef<ScrollView>(null);
   const dayRef = React.useRef<ScrollView>(null);
   const yearRef = React.useRef<ScrollView>(null);
+  const MINUTE_STEP = 15;
+  const ITEM_HEIGHT = 40; // must mirror styles.pickerItem.height
+  const ITEM_MARGIN_V = 2; // must mirror styles.pickerItem.marginVertical
+  const ROW_HEIGHT = ITEM_HEIGHT + ITEM_MARGIN_V * 2;
+
+  const buildTimes = React.useCallback(() => {
+    const items: { label: string; hour24: number; minute: number }[] = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += MINUTE_STEP) {
+        const d = new Date(2000, 0, 1, h, m, 0, 0);
+        const label = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        items.push({ label, hour24: h, minute: m });
+      }
+    }
+    return items;
+  }, []);
+  const TIME_ITEMS = React.useMemo(buildTimes, [buildTimes]);
 
   React.useEffect(() => {
     if (showDatePicker) {
       setTempYear(selectedDate.getFullYear().toString());
       setTempMonth((selectedDate.getMonth() + 1).toString());
       setTempDay(selectedDate.getDate().toString());
+      // Scroll each wheel to current selection
+      requestAnimationFrame(() => {
+        const mIndex = selectedDate.getMonth(); // 0-based
+        const dIndex = selectedDate.getDate() - 1; // 0-based
+        const startYear = selectedDate.getFullYear() - 5;
+        const yIndex = selectedDate.getFullYear() - startYear;
+        const PADDING_TOP = 80; // must mirror styles.pickerScrollContent.paddingVertical
+        monthRef.current?.scrollTo({ y: PADDING_TOP + mIndex * ROW_HEIGHT, animated: false });
+        dayRef.current?.scrollTo({ y: PADDING_TOP + dIndex * ROW_HEIGHT, animated: false });
+        yearRef.current?.scrollTo({ y: PADDING_TOP + yIndex * ROW_HEIGHT, animated: false });
+      });
     }
   }, [showDatePicker, selectedDate]);
 
   React.useEffect(() => {
     if (showStartTimePicker) {
       const hour = startTime.getHours();
-      const minute = startTime.getMinutes();
+      // Round minutes to nearest 15 for default position
+      const minute = Math.round(startTime.getMinutes() / MINUTE_STEP) * MINUTE_STEP;
       setTempHour(((hour % 12) || 12).toString());
-      setTempMinute(minute.toString().padStart(2, '0'));
+      setTempMinute((minute % 60).toString().padStart(2, '0'));
       setTempAMPM(hour >= 12 ? 'PM' : 'AM');
     }
   }, [showStartTimePicker, startTime]);
@@ -133,9 +162,9 @@ export default function CalendarScreen() {
   React.useEffect(() => {
     if (showEndTimePicker) {
       const hour = endTime.getHours();
-      const minute = endTime.getMinutes();
+      const minute = Math.round(endTime.getMinutes() / MINUTE_STEP) * MINUTE_STEP;
       setTempHour(((hour % 12) || 12).toString());
-      setTempMinute(minute.toString().padStart(2, '0'));
+      setTempMinute((minute % 60).toString().padStart(2, '0'));
       setTempAMPM(hour >= 12 ? 'PM' : 'AM');
     }
   }, [showEndTimePicker, endTime]);
@@ -164,7 +193,9 @@ export default function CalendarScreen() {
         adjustedHour = 0;
       }
       const newStartTime = new Date(selectedDate);
-      newStartTime.setHours(adjustedHour, minute, 0, 0);
+      // snap to 15-min grid
+      const snapped = Math.round(minute / MINUTE_STEP) * MINUTE_STEP;
+      newStartTime.setHours(adjustedHour, snapped % 60, 0, 0);
       setStartTime(newStartTime);
     }
     setShowStartTimePicker(false);
@@ -184,7 +215,8 @@ export default function CalendarScreen() {
         adjustedHour = 0;
       }
       const newEndTime = new Date(selectedDate);
-      newEndTime.setHours(adjustedHour, minute, 0, 0);
+      const snapped = Math.round(minute / MINUTE_STEP) * MINUTE_STEP;
+      newEndTime.setHours(adjustedHour, snapped % 60, 0, 0);
       setEndTime(newEndTime);
     }
     setShowEndTimePicker(false);
@@ -465,60 +497,83 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* Date Picker Modal */}
+      {/* Date Picker Modal - Grid UI */}
       <Modal visible={showDatePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
-          <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.pickerContent, { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, borderColor: colors.border + '80', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: -4 } }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Date</Text>
-            <View style={[styles.timePicker, { height: 220 }]}>
-              {/* Month */}
-              <View style={styles.pickerColumn}>
-                <ScrollView ref={monthRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <TouchableOpacity
-                      key={m}
-                      onPress={() => setTempMonth(m.toString())}
-                      style={[styles.pickerItem, tempMonth === m.toString() && { backgroundColor: colors.primary + '20' }]}
-                    >
-                      <Text style={[styles.pickerItemText, { color: tempMonth === m.toString() ? colors.primary : colors.text }]}>
-                        {new Date(2000, m - 1, 1).toLocaleString('en-US', { month: 'short' })}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              {/* Day */}
-              <View style={styles.pickerColumn}>
-                <ScrollView ref={dayRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <TouchableOpacity
-                      key={d}
-                      onPress={() => setTempDay(d.toString())}
-                      style={[styles.pickerItem, tempDay === d.toString() && { backgroundColor: colors.primary + '20' }]}
-                    >
-                      <Text style={[styles.pickerItemText, { color: tempDay === d.toString() ? colors.primary : colors.text }]}>
-                        {d.toString().padStart(2, '0')}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              {/* Year */}
-              <View style={styles.pickerColumn}>
-                <ScrollView ref={yearRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 10 }, (_, i) => selectedDate.getFullYear() - 5 + i).map((y) => (
-                    <TouchableOpacity
-                      key={y}
-                      onPress={() => setTempYear(y.toString())}
-                      style={[styles.pickerItem, tempYear === y.toString() && { backgroundColor: colors.primary + '20' }]}
-                    >
-                      <Text style={[styles.pickerItemText, { color: tempYear === y.toString() ? colors.primary : colors.text }]}>
-                        {y}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+            {/* Month header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 8 }}>
+              <TouchableOpacity onPress={() => {
+                let m = parseInt(tempMonth, 10) - 2; // convert to 0-based and decrement
+                let y = parseInt(tempYear, 10);
+                if (m < 0) { m = 11; y -= 1; }
+                setTempMonth((m + 1).toString());
+                setTempYear(y.toString());
+              }} style={styles.navButton}>
+                <ChevronLeft size={20} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={[styles.monthText, { color: colors.text }]}>
+                {new Date(parseInt(tempYear, 10), parseInt(tempMonth, 10) - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                let m = parseInt(tempMonth, 10); // 1-based
+                let y = parseInt(tempYear, 10);
+                if (m >= 12) { m = 1; y += 1; } else { m += 1; }
+                setTempMonth(m.toString());
+                setTempYear(y.toString());
+              }} style={styles.navButton}>
+                <ChevronRight size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {/* Day names */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 12, marginBottom: 6 }}>
+              {['S','M','T','W','T','F','S'].map((d, i) => (
+                <Text key={`${d}-${i}`} style={{ width: 36, textAlign: 'center', color: colors.textSecondary }}>{d}</Text>
+              ))}
+            </View>
+            {/* Grid */}
+            <View style={{ paddingHorizontal: 8, paddingBottom: 8 }}>
+              {(() => {
+                const year = parseInt(tempYear, 10);
+                const monthIdx = parseInt(tempMonth, 10) - 1;
+                const first = new Date(year, monthIdx, 1);
+                const last = new Date(year, monthIdx + 1, 0);
+                const startPad = first.getDay();
+                const total = startPad + last.getDate();
+                const days = Array.from({ length: Math.ceil(total / 7) * 7 }, (_, i) => i - startPad + 1);
+                const rows = [];
+                for (let i = 0; i < days.length; i += 7) rows.push(days.slice(i, i + 7));
+                const selDayNum = parseInt(tempDay, 10);
+                const today = new Date();
+                const isTodayMonth = today.getFullYear() === year && today.getMonth() === monthIdx;
+                return rows.map((row, rIdx) => (
+                  <View key={rIdx} style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 6 }}>
+                    {row.map((d, cIdx) => {
+                      const valid = d > 0 && d <= last.getDate();
+                      const isSelected = valid && d === selDayNum;
+                      const isTodayCell = valid && isTodayMonth && d === today.getDate();
+                      return (
+                        <TouchableOpacity
+                          key={`${rIdx}-${cIdx}`}
+                          disabled={!valid}
+                          onPress={() => setTempDay(d.toString())}
+                          style={[
+                            { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+                            isSelected && { backgroundColor: colors.primary + '33' },
+                            isTodayCell && !isSelected && { borderWidth: 1, borderColor: colors.primary },
+                            !valid && { opacity: 0 },
+                          ]}
+                        >
+                          {valid && (
+                            <Text style={{ color: isSelected ? colors.primary : colors.text }}>{d}</Text>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ));
+              })()}
             </View>
             <View style={styles.pickerButtons}>
               <TouchableOpacity
@@ -541,86 +596,32 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* Start Time Picker Modal */}
+      {/* Start Time Picker Modal (15-min list) */}
       <Modal visible={showStartTimePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
           <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Start Time</Text>
-            <View style={styles.timePicker}>
-              <View style={styles.pickerColumn}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-                    <TouchableOpacity
-                      key={hour}
-                      onPress={() => setTempHour(hour.toString())}
-                      style={[
-                        styles.pickerItem,
-                        tempHour === hour.toString() && { backgroundColor: colors.primary + '20' }
-                      ]}
-                    >
-                      <Text style={[
-                        styles.pickerItemText,
-                        { color: tempHour === hour.toString() ? colors.primary : colors.text }
-                      ]}>
-                        {hour.toString().padStart(2, '0')}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <Text style={[styles.pickerSeparator, { color: colors.text }]}>:</Text>
-              <View style={styles.pickerColumn}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                    <TouchableOpacity
-                      key={minute}
-                      onPress={() => setTempMinute(minute.toString().padStart(2, '0'))}
-                      style={[
-                        styles.pickerItem,
-                        tempMinute === minute.toString().padStart(2, '0') && { backgroundColor: colors.primary + '20' }
-                      ]}
-                    >
-                      <Text style={[
-                        styles.pickerItemText,
-                        { color: tempMinute === minute.toString().padStart(2, '0') ? colors.primary : colors.text }
-                      ]}>
-                        {minute.toString().padStart(2, '0')}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <View style={styles.pickerColumn}>
-                <TouchableOpacity
-                  onPress={() => setTempAMPM('AM')}
-                  style={[
-                    styles.pickerItem,
-                    tempAMPM === 'AM' && { backgroundColor: colors.primary + '20' }
-                  ]}
-                >
-                  <Text style={[
-                    styles.pickerItemText,
-                    { color: tempAMPM === 'AM' ? colors.primary : colors.text }
-                  ]}>
-                    AM
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setTempAMPM('PM')}
-                  style={[
-                    styles.pickerItem,
-                    tempAMPM === 'PM' && { backgroundColor: colors.primary + '20' }
-                  ]}
-                >
-                  <Text style={[
-                    styles.pickerItemText,
-                    { color: tempAMPM === 'PM' ? colors.primary : colors.text }
-                  ]}>
-                    PM
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ paddingVertical: 8 }}>
+              {TIME_ITEMS.map((t) => {
+                const currentHour = parseInt(tempHour, 10);
+                const hour12 = ((t.hour24 % 12) || 12).toString();
+                const ampm = t.hour24 >= 12 ? 'PM' : 'AM';
+                const selected = hour12 === tempHour && t.minute.toString().padStart(2, '0') === tempMinute && ampm === tempAMPM;
+                return (
+                  <TouchableOpacity
+                    key={`${t.hour24}:${t.minute}`}
+                    onPress={() => {
+                      setTempHour(hour12);
+                      setTempMinute(t.minute.toString().padStart(2, '0'));
+                      setTempAMPM(ampm);
+                    }}
+                    style={[styles.pickerItem, { marginHorizontal: 16 }, selected && { backgroundColor: colors.primary + '20' }]}
+                  >
+                    <Text style={[styles.pickerItemText, { color: selected ? colors.primary : colors.text }]}>{t.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
             <View style={styles.pickerButtons}>
               <TouchableOpacity
                 onPress={() => {
@@ -642,85 +643,49 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
-      {/* End Time Picker Modal */}
+      {/* End Time Picker Modal (15-min list + duration presets) */}
       <Modal visible={showEndTimePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
           <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select End Time</Text>
-            <View style={styles.timePicker}>
-              <View style={styles.pickerColumn}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-                    <TouchableOpacity
-                      key={hour}
-                      onPress={() => setTempHour(hour.toString())}
-                      style={[
-                        styles.pickerItem,
-                        tempHour === hour.toString() && { backgroundColor: colors.primary + '20' }
-                      ]}
-                    >
-                      <Text style={[
-                        styles.pickerItemText,
-                        { color: tempHour === hour.toString() ? colors.primary : colors.text }
-                      ]}>
-                        {hour.toString().padStart(2, '0')}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <Text style={[styles.pickerSeparator, { color: colors.text }]}>:</Text>
-              <View style={styles.pickerColumn}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
-                  {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                    <TouchableOpacity
-                      key={minute}
-                      onPress={() => setTempMinute(minute.toString().padStart(2, '0'))}
-                      style={[
-                        styles.pickerItem,
-                        tempMinute === minute.toString().padStart(2, '0') && { backgroundColor: colors.primary + '20' }
-                      ]}
-                    >
-                      <Text style={[
-                        styles.pickerItemText,
-                        { color: tempMinute === minute.toString().padStart(2, '0') ? colors.primary : colors.text }
-                      ]}>
-                        {minute.toString().padStart(2, '0')}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-              <View style={styles.pickerColumn}>
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ paddingVertical: 8 }}>
+              {TIME_ITEMS.map((t) => {
+                const hour12 = ((t.hour24 % 12) || 12).toString();
+                const ampm = t.hour24 >= 12 ? 'PM' : 'AM';
+                const selected = hour12 === tempHour && t.minute.toString().padStart(2, '0') === tempMinute && ampm === tempAMPM;
+                return (
+                  <TouchableOpacity
+                    key={`${t.hour24}:${t.minute}`}
+                    onPress={() => {
+                      setTempHour(hour12);
+                      setTempMinute(t.minute.toString().padStart(2, '0'));
+                      setTempAMPM(ampm);
+                    }}
+                    style={[styles.pickerItem, { marginHorizontal: 16 }, selected && { backgroundColor: colors.primary + '20' }]}
+                  >
+                    <Text style={[styles.pickerItemText, { color: selected ? colors.primary : colors.text }]}>{t.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Quick duration presets */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingTop: 8 }}>
+              {[30, 45, 60, 90, 120].map((mins) => (
                 <TouchableOpacity
-                  onPress={() => setTempAMPM('AM')}
-                  style={[
-                    styles.pickerItem,
-                    tempAMPM === 'AM' && { backgroundColor: colors.primary + '20' }
-                  ]}
+                  key={mins}
+                  onPress={() => {
+                    const newEnd = new Date(startTime);
+                    newEnd.setMinutes(startTime.getMinutes() + mins);
+                    setTempHour((((newEnd.getHours() % 12) || 12)).toString());
+                    setTempMinute((Math.round(newEnd.getMinutes() / MINUTE_STEP) * MINUTE_STEP % 60).toString().padStart(2, '0'));
+                    setTempAMPM(newEnd.getHours() >= 12 ? 'PM' : 'AM');
+                  }}
+                  style={[styles.pickerChip, { borderColor: colors.border }]}
                 >
-                  <Text style={[
-                    styles.pickerItemText,
-                    { color: tempAMPM === 'AM' ? colors.primary : colors.text }
-                  ]}>
-                    AM
-                  </Text>
+                  <Text style={{ color: colors.text }}>{mins < 60 ? `${mins} mins` : `${mins / 60} hr${mins === 60 ? '' : 's'}`}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setTempAMPM('PM')}
-                  style={[
-                    styles.pickerItem,
-                    tempAMPM === 'PM' && { backgroundColor: colors.primary + '20' }
-                  ]}
-                >
-                  <Text style={[
-                    styles.pickerItemText,
-                    { color: tempAMPM === 'PM' ? colors.primary : colors.text }
-                  ]}>
-                    PM
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              ))}
             </View>
             <View style={styles.pickerButtons}>
               <TouchableOpacity
@@ -1055,6 +1020,12 @@ function createStyles(colors: any) {
     pickerItemText: {
       fontSize: 18,
       fontWeight: '500',
+    },
+    pickerChip: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 16,
+      borderWidth: 1,
     },
     pickerSeparator: {
       fontSize: 24,
