@@ -78,12 +78,11 @@ export function CreateFolderModal({
       presentationStyle="overFullScreen"
       onRequestClose={() => !isCreating && onClose()}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
         <View
           style={[
             styles.modalContent,
             { paddingBottom: insets.bottom + 16, paddingTop: insets.top + 12, backgroundColor: colors.surface },
-            Platform.OS === 'ios' ? { transform: [{ translateY: -keyboardOffset }] } : null,
           ]}
         >
           <View style={styles.modalHeader}>
@@ -167,7 +166,7 @@ export function CreateFolderModal({
             </View>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
