@@ -332,6 +332,19 @@ export default function CalendarScreen() {
               onChangeText={setMeetingTitle}
             />
 
+            {/* Date selector */}
+            <View style={styles.dateTimeRow}>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={[styles.timeButton, { flex: 1, backgroundColor: colors.background, borderColor: colors.border }]}
+              >
+                <Calendar size={16} color={colors.textSecondary} />
+                <Text style={[styles.timeButtonText, { color: colors.text }]}>
+                  {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 onPress={() => setShowStartTimePicker(true)}
@@ -416,6 +429,79 @@ export default function CalendarScreen() {
                 style={[styles.modalButton, styles.primaryButton, { backgroundColor: colors.primary }]}
               >
                 <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Date Picker Modal */}
+      <Modal visible={showDatePicker} transparent animationType="slide">
+        <View style={styles.pickerOverlay}>
+          <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Date</Text>
+            <View style={[styles.timePicker, { height: 220 }]}>
+              {/* Month */}
+              <View style={styles.pickerColumn}>
+                <ScrollView ref={monthRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <TouchableOpacity
+                      key={m}
+                      onPress={() => setTempMonth(m.toString())}
+                      style={[styles.pickerItem, tempMonth === m.toString() && { backgroundColor: colors.primary + '20' }]}
+                    >
+                      <Text style={[styles.pickerItemText, { color: tempMonth === m.toString() ? colors.primary : colors.text }]}>
+                        {new Date(2000, m - 1, 1).toLocaleString('en-US', { month: 'short' })}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              {/* Day */}
+              <View style={styles.pickerColumn}>
+                <ScrollView ref={dayRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => setTempDay(d.toString())}
+                      style={[styles.pickerItem, tempDay === d.toString() && { backgroundColor: colors.primary + '20' }]}
+                    >
+                      <Text style={[styles.pickerItemText, { color: tempDay === d.toString() ? colors.primary : colors.text }]}>
+                        {d.toString().padStart(2, '0')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              {/* Year */}
+              <View style={styles.pickerColumn}>
+                <ScrollView ref={yearRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pickerScrollContent}>
+                  {Array.from({ length: 10 }, (_, i) => selectedDate.getFullYear() - 5 + i).map((y) => (
+                    <TouchableOpacity
+                      key={y}
+                      onPress={() => setTempYear(y.toString())}
+                      style={[styles.pickerItem, tempYear === y.toString() && { backgroundColor: colors.primary + '20' }]}
+                    >
+                      <Text style={[styles.pickerItemText, { color: tempYear === y.toString() ? colors.primary : colors.text }]}>
+                        {y}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                style={[styles.pickerButton, { backgroundColor: colors.background }]}
+              >
+                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleDateConfirm}
+                style={[styles.pickerButton, { backgroundColor: colors.primary }]}
+              >
+                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Confirm</Text>
               </TouchableOpacity>
             </View>
           </View>
