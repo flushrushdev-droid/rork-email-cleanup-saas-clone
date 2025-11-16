@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-never push to git without user consent
-always perform proper flow for pushing to git, checking which files need to be updated

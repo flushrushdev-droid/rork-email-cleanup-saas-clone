@@ -46,3 +46,6 @@ yarn-error.*
 *.local.*
 LOCAL_DEV.md
 TODO.local.md
+
+# Editor/runtime metadata
+.cursor/
