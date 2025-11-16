@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -391,6 +392,7 @@ export default function NotesScreen() {
                 <TouchableOpacity
                   style={[styles.dueDateButton, { backgroundColor: colors.background }]}
                   onPress={() => {
+                    Keyboard.dismiss();
                     const base = dueDate ? new Date(dueDate) : new Date();
                     const roundedMin = Math.round(base.getMinutes() / MINUTE_STEP) * MINUTE_STEP;
                     setTmpYear(base.getFullYear());
@@ -441,7 +443,7 @@ export default function NotesScreen() {
       </Modal>
 
       {/* Due Date Picker - Grid */}
-      <Modal visible={showDueDatePicker} transparent animationType="slide">
+      <Modal visible={showDueDatePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.modalOverlay}>
           <View style={[styles.pickerSheet, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Due Date</Text>
@@ -515,7 +517,7 @@ export default function NotesScreen() {
       </Modal>
 
       {/* Due Time Picker - 15 min list */}
-      <Modal visible={showDueTimePicker} transparent animationType="slide">
+      <Modal visible={showDueTimePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.modalOverlay}>
           <View style={[styles.pickerSheet, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Time</Text>
