@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,7 +11,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCalendarStore } from '@/contexts/CalendarContext';
+import type { CalendarEvent } from '@/hooks/useCalendar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { X, Trash2, Calendar, FileText } from 'lucide-react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
@@ -88,28 +92,48 @@ const demoNotes: Note[] = [
 
 export default function NotesScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { addEvent } = useCalendarStore();
+  const params = useLocalSearchParams<{ editNoteId?: string; prefillTitle?: string; prefillContent?: string }>();
   const [notes, setNotes] = useState<Note[]>(demoNotes);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [dueDate, setDueDate] = useState<string | undefined>(undefined);
+  // Due date/time pickers
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+  const [showDueTimePicker, setShowDueTimePicker] = useState(false);
+  const [tmpYear, setTmpYear] = useState<number>(new Date().getFullYear());
+  const [tmpMonth, setTmpMonth] = useState<number>(new Date().getMonth() + 1); // 1-based
+  const [tmpDay, setTmpDay] = useState<number>(new Date().getDate());
+  const [tmpHour12, setTmpHour12] = useState<string>('12');
+  const [tmpMinute, setTmpMinute] = useState<string>('00');
+  const [tmpAMPM, setTmpAMPM] = useState<'AM' | 'PM'>('PM');
+  const MINUTE_STEP = 15;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    // Signed day difference (positive for future dates)
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diffDays = Math.round((date.setHours(0,0,0,0) - now.setHours(0,0,0,0)) / msPerDay);
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-
-    return date.toLocaleDateString('en-US', {
+    const showYear = new Date(dateString).getFullYear() !== new Date().getFullYear();
+    const concrete = new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      year: showYear ? 'numeric' : undefined,
     });
+
+    if (diffDays === 0) return `Today • ${concrete}`;
+    if (diffDays === 1) return `Tomorrow • ${concrete}`;
+    if (diffDays === -1) return `Yesterday • ${concrete}`;
+    if (diffDays > 1 && diffDays < 7) return `In ${diffDays} days • ${concrete}`;
+    if (diffDays < -1 && diffDays > -7) return `${Math.abs(diffDays)} days ago • ${concrete}`;
+
+    // Fallback to concrete date
+    return concrete;
   };
 
 
@@ -130,30 +154,96 @@ export default function NotesScreen() {
     setModalVisible(true);
   };
 
+  // Handle deep link edits from calendar (note-sourced events)
+  React.useEffect(() => {
+    if (params?.editNoteId || params?.prefillTitle || params?.prefillContent) {
+      const existing = notes.find(n => n.id === params.editNoteId);
+      if (existing) {
+        openEditModal(existing);
+      } else {
+        setEditingNote(null);
+        setTitle(params.prefillTitle ?? '');
+        setContent(params.prefillContent ?? '');
+        setDueDate(undefined);
+        setModalVisible(true);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params?.editNoteId, params?.prefillTitle, params?.prefillContent]);
+
+  // Persist notes so navigation away/back retains changes
+  const NOTES_KEY = 'notes-storage-v1';
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(NOTES_KEY);
+        if (raw) {
+          const parsed: Note[] = JSON.parse(raw);
+          // Normalize dates if needed (strings are fine as we format with new Date())
+          setNotes(parsed);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+      } catch {}
+    })();
+  }, [notes]);
+
   const handleSave = () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a title');
       return;
     }
 
+    let createdNoteId: string | undefined;
+
     if (editingNote) {
-      setNotes(
-        notes.map((note) =>
+      setNotes(prev =>
+        prev.map((note) =>
           note.id === editingNote.id
             ? { ...note, title, content, dueDate, updatedAt: new Date().toISOString() }
             : note
         )
       );
     } else {
+      createdNoteId = Date.now().toString();
       const newNote: Note = {
-        id: Date.now().toString(),
+        id: createdNoteId,
         title,
         content,
         dueDate,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      setNotes([newNote, ...notes]);
+      setNotes(prev => [newNote, ...prev]);
+    }
+
+    // Link to Calendar if dueDate is set
+    if (dueDate) {
+      const start = new Date(dueDate);
+      const end = new Date(start.getTime() + 60 * 60 * 1000); // default 60 mins
+      const event: CalendarEvent = {
+        id: `note-${Date.now().toString()}`,
+        title: title || 'Note',
+        date: new Date(start),
+        time: start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        startTime: start,
+        endTime: end,
+        location: '',
+        description: content,
+        type: 'in-person',
+        color: '#7C3AED',
+        source: 'note',
+        noteId: editingNote?.id ?? createdNoteId,
+      };
+      try {
+        addEvent(event);
+      } catch {}
     }
 
     setModalVisible(false);
@@ -258,7 +348,7 @@ export default function NotesScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, paddingBottom: insets.bottom + 16 }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>{editingNote ? 'Edit Note' : 'New Note'}</Text>
               <TouchableOpacity
@@ -301,37 +391,26 @@ export default function NotesScreen() {
                 <TouchableOpacity
                   style={[styles.dueDateButton, { backgroundColor: colors.background }]}
                   onPress={() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    Alert.prompt(
-                      'Set Due Date',
-                      'Enter date (YYYY-MM-DD)',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Clear',
-                          onPress: () => setDueDate(undefined),
-                        },
-                        {
-                          text: 'Set',
-                          onPress: (text?: string) => {
-                            if (text) {
-                              setDueDate(new Date(text).toISOString());
-                            }
-                          },
-                        },
-                      ],
-                      'plain-text',
-                      dueDate ? new Date(dueDate).toISOString().split('T')[0] : today
-                    );
+                    const base = dueDate ? new Date(dueDate) : new Date();
+                    const roundedMin = Math.round(base.getMinutes() / MINUTE_STEP) * MINUTE_STEP;
+                    setTmpYear(base.getFullYear());
+                    setTmpMonth(base.getMonth() + 1);
+                    setTmpDay(base.getDate());
+                    setTmpHour12(((base.getHours() % 12) || 12).toString());
+                    setTmpMinute((roundedMin % 60).toString().padStart(2, '0'));
+                    setTmpAMPM(base.getHours() >= 12 ? 'PM' : 'AM');
+                    setShowDueDatePicker(true);
                   }}
                 >
                   <Calendar size={16} color={colors.primary} />
                   <Text style={[styles.dueDateButtonText, { color: colors.primary }]}>
                     {dueDate
-                      ? new Date(dueDate).toLocaleDateString('en-US', {
+                      ? new Date(dueDate).toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })
                       : 'Set Due Date'}
                   </Text>
@@ -359,6 +438,125 @@ export default function NotesScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Due Date Picker - Grid */}
+      <Modal visible={showDueDatePicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.pickerSheet, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Due Date</Text>
+            {/* Month header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 8 }}>
+              <TouchableOpacity onPress={() => {
+                let m = tmpMonth - 1; let y = tmpYear;
+                if (m <= 0) { m = 12; y -= 1; }
+                setTmpMonth(m); setTmpYear(y);
+              }} style={styles.navButton}>
+                <Calendar size={16} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={[styles.monthText, { color: colors.text }]}>
+                {new Date(tmpYear, tmpMonth - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                let m = tmpMonth + 1; let y = tmpYear;
+                if (m > 12) { m = 1; y += 1; }
+                setTmpMonth(m); setTmpYear(y);
+              }} style={styles.navButton}>
+                <Calendar size={16} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {/* Day names */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 12, marginBottom: 6 }}>
+              {['S','M','T','W','T','F','S'].map((d, i) => (
+                <Text key={`${d}-${i}`} style={{ width: 36, textAlign: 'center', color: colors.textSecondary }}>{d}</Text>
+              ))}
+            </View>
+            {/* Grid */}
+            <View style={{ paddingHorizontal: 8, paddingBottom: 8 }}>
+              {(() => {
+                const first = new Date(tmpYear, tmpMonth - 1, 1);
+                const last = new Date(tmpYear, tmpMonth, 0);
+                const startPad = first.getDay();
+                const total = startPad + last.getDate();
+                const days = Array.from({ length: Math.ceil(total / 7) * 7 }, (_, i) => i - startPad + 1);
+                const rows = []; for (let i = 0; i < days.length; i += 7) rows.push(days.slice(i, i + 7));
+                return rows.map((row, rIdx) => (
+                  <View key={rIdx} style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 6 }}>
+                    {row.map((d, cIdx) => {
+                      const valid = d > 0 && d <= last.getDate();
+                      const selected = valid && d === tmpDay;
+                      return (
+                        <TouchableOpacity
+                          key={`${rIdx}-${cIdx}`}
+                          disabled={!valid}
+                          onPress={() => setTmpDay(d)}
+                          style={[{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+                            selected && { backgroundColor: colors.primary + '33' },
+                            !valid && { opacity: 0 }]}
+                        >
+                          {valid && <Text style={{ color: selected ? colors.primary : colors.text }}>{d}</Text>}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ));
+              })()}
+            </View>
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity onPress={() => setShowDueDatePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setShowDueDatePicker(false); setShowDueTimePicker(true); }} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Due Time Picker - 15 min list */}
+      <Modal visible={showDueTimePicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.pickerSheet, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Time</Text>
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ paddingVertical: 8 }}>
+              {Array.from({ length: (24 * 60) / MINUTE_STEP }, (_, i) => i * MINUTE_STEP).map((m) => {
+                const hour24 = Math.floor(m / 60);
+                const minute = m % 60;
+                const label = new Date(2000, 0, 1, hour24, minute).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const hour12 = ((hour24 % 12) || 12).toString();
+                const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                const selected = hour12 === tmpHour12 && tmpMinute === minute.toString().padStart(2, '0') && ampm === tmpAMPM;
+                return (
+                  <TouchableOpacity
+                    key={`${hour24}:${minute}`}
+                    onPress={() => {
+                      setTmpHour12(hour12);
+                      setTmpMinute(minute.toString().padStart(2, '0'));
+                      setTmpAMPM(ampm);
+                    }}
+                    style={[styles.pickerItem, { marginHorizontal: 16 }, selected && { backgroundColor: colors.primary + '20' }]}
+                  >
+                    <Text style={[styles.pickerItemText, { color: selected ? colors.primary : colors.text }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity onPress={() => setShowDueTimePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                const hour24 = (tmpAMPM === 'PM' ? (parseInt(tmpHour12, 10) % 12) + 12 : parseInt(tmpHour12, 10) % 12);
+                const date = new Date(tmpYear, tmpMonth - 1, tmpDay, hour24, parseInt(tmpMinute, 10), 0, 0);
+                setDueDate(date.toISOString());
+                setShowDueTimePicker(false);
+              }} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -444,7 +642,7 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: '85%',
+    height: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -524,6 +722,47 @@ const styles = StyleSheet.create({
   dueDateButtonText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+
+  // Pickers (reuse styles similar to calendar)
+  pickerSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  pickerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pickerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  pickerButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  monthText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  pickerItem: {
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginVertical: 2,
   },
   addNoteButton: {
     alignItems: 'center',

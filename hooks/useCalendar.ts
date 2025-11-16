@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Animated, Dimensions, BackHandler, Platform } from 'react-native';
+import { useCalendarStore } from '@/contexts/CalendarContext';
 
 export interface CalendarEvent {
   id: string;
@@ -12,6 +13,8 @@ export interface CalendarEvent {
   description: string;
   type: 'in-person' | 'video';
   color?: string;
+  source?: 'calendar' | 'note';
+  noteId?: string;
 }
 
 export type CalendarFeedback = {
@@ -33,8 +36,9 @@ export function useCalendar() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const { events, setEvents, addEvent } = useCalendarStore();
   const [pendingDeleteEventId, setPendingDeleteEventId] = useState<string | null>(null);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<CalendarFeedback | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -104,21 +108,43 @@ export function useCalendar() {
 
     const timeString = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
-    const newEvent: CalendarEvent = {
-      id: Date.now().toString(),
-      title: meetingTitle,
-      date: selectedDate,
-      time: timeString,
-      startTime: startTime,
-      endTime: endTime,
-      location: meetingLocation,
-      description: meetingDescription,
-      type: meetingType,
-      color: '#007AFF',
-    };
+    if (editingEventId) {
+      setEvents(prev =>
+        prev.map(e =>
+          e.id === editingEventId
+            ? {
+                ...e,
+                title: meetingTitle,
+                date: selectedDate,
+                time: timeString,
+                startTime,
+                endTime,
+                location: meetingLocation,
+                description: meetingDescription,
+                type: meetingType,
+              }
+            : e,
+        ),
+      );
+      showFeedback('success', 'Event updated.');
+      setEditingEventId(null);
+    } else {
+      const newEvent: CalendarEvent = {
+        id: Date.now().toString(),
+        title: meetingTitle,
+        date: selectedDate,
+        time: timeString,
+        startTime: startTime,
+        endTime: endTime,
+        location: meetingLocation,
+        description: meetingDescription,
+        type: meetingType,
+        color: '#007AFF',
+      };
 
-    setEvents(prev => [...prev, newEvent]);
-    showFeedback('success', 'Meeting created successfully.');
+      setEvents(prev => [...prev, newEvent]);
+      showFeedback('success', 'Meeting created successfully.');
+    }
 
     setMeetingTitle('');
     setMeetingLocation('');
@@ -204,6 +230,18 @@ export function useCalendar() {
     });
   };
 
+  const beginEditEvent = (event: CalendarEvent) => {
+    setEditingEventId(event.id);
+    setMeetingTitle(event.title);
+    setMeetingLocation(event.location);
+    setMeetingDescription(event.description);
+    setMeetingType(event.type);
+    setSelectedDate(new Date(event.date));
+    setStartTime(new Date(event.startTime));
+    setEndTime(new Date(event.endTime));
+    setIsNewMeetingModalVisible(true);
+  };
+
   return {
     isCalendarVisible,
     selectedDate,
@@ -235,6 +273,7 @@ export function useCalendar() {
     pendingDeleteEvent,
     toggleCalendar,
     handleCreateMeeting,
+    beginEditEvent,
     handleDateChange,
     handleStartTimeChange,
     handleEndTimeChange,

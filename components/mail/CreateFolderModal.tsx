@@ -79,7 +79,7 @@ export function CreateFolderModal({
     >
       <KeyboardAvoid>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, Platform.OS === 'ios' ? { transform: [{ translateY: -keyboardOffset }] } : null]}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }, Platform.OS === 'ios' ? { transform: [{ translateY: -keyboardOffset }] } : null]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create Custom Folder</Text>
               <TouchableOpacity onPress={() => !isCreating && onClose()} disabled={isCreating}>

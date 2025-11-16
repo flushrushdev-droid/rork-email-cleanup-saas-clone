@@ -166,8 +166,8 @@ export default function LoginScreen() {
                   Industry-standard authentication via Google
                 </AppText>
               </View>
-            </View>
-          </View>
+      </View>
+    </View>
     </Screen>
   );
 }

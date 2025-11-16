@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, Platform, 
 import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Video, MapPin, Trash2, Clock, ArrowLeft } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCalendar } from '@/hooks/useCalendar';
@@ -17,8 +18,10 @@ export default function CalendarScreen() {
   const {
     selectedDate,
     setSelectedDate,
+    events,
     isNewMeetingModalVisible,
     setIsNewMeetingModalVisible,
+    beginEditEvent,
     meetingTitle,
     setMeetingTitle,
     startTime,
@@ -226,8 +229,98 @@ export default function CalendarScreen() {
   };
 
   const eventsForSelectedDate = getEventsForSelectedDate();
+  // no-op placeholder removed
   const styles = React.useMemo(() => createStyles(colors), [colors]);
 
+  // Inline Note Editor (for note-sourced events)
+  const [isNoteEditVisible, setIsNoteEditVisible] = React.useState(false);
+  const [noteEditId, setNoteEditId] = React.useState<string | null>(null);
+  const [noteTitle, setNoteTitle] = React.useState('');
+  const [noteContent, setNoteContent] = React.useState('');
+  const NOTES_KEY = 'notes-storage-v1';
+  // temp date/time for note due
+  const [noteYear, setNoteYear] = React.useState<number>(new Date().getFullYear());
+  const [noteMonth, setNoteMonth] = React.useState<number>(new Date().getMonth() + 1);
+  const [noteDay, setNoteDay] = React.useState<number>(new Date().getDate());
+  const [noteHour12, setNoteHour12] = React.useState<string>('12');
+  const [noteMinute, setNoteMinute] = React.useState<string>('00');
+  const [noteAMPM, setNoteAMPM] = React.useState<'AM' | 'PM'>('PM');
+  const [showNoteDatePicker, setShowNoteDatePicker] = React.useState(false);
+  const [showNoteTimePicker, setShowNoteTimePicker] = React.useState(false);
+
+  const openInlineNoteEditor = async (event: any) => {
+    try {
+      setNoteEditId(event.noteId || null);
+      let title = event.title || '';
+      let content = event.description || '';
+      // initialize temp date/time from event start
+      const s = new Date(event.startTime || Date.now());
+      setNoteYear(s.getFullYear());
+      setNoteMonth(s.getMonth() + 1);
+      setNoteDay(s.getDate());
+      setNoteHour12(((s.getHours() % 12) || 12).toString());
+      setNoteMinute(s.getMinutes().toString().padStart(2, '0'));
+      setNoteAMPM(s.getHours() >= 12 ? 'PM' : 'AM');
+      if (event.noteId) {
+        const raw = await AsyncStorage.getItem(NOTES_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as any[];
+          const existing = parsed.find((n) => n.id === event.noteId);
+          if (existing) {
+            title = existing.title ?? title;
+            content = existing.content ?? content;
+          }
+        }
+      }
+      setNoteTitle(title);
+      setNoteContent(content);
+      setIsNoteEditVisible(true);
+    } catch {
+      setNoteTitle(event.title || '');
+      setNoteContent(event.description || '');
+      setIsNoteEditVisible(true);
+    }
+  };
+
+  const saveInlineNote = async () => {
+    try {
+      // build due date from temp fields
+      const hour24 =
+        noteAMPM === 'PM' ? ((parseInt(noteHour12, 10) % 12) + 12) : (parseInt(noteHour12, 10) % 12);
+      const due = new Date(noteYear, noteMonth - 1, noteDay, hour24, parseInt(noteMinute, 10), 0, 0);
+
+      const raw = await AsyncStorage.getItem(NOTES_KEY);
+      let list: any[] = raw ? JSON.parse(raw) : [];
+      if (noteEditId) {
+        list = list.map((n) =>
+          n.id === noteEditId ? { ...n, title: noteTitle, content: noteContent, dueDate: due.toISOString(), updatedAt: new Date().toISOString() } : n,
+        );
+      } else {
+        const newId = Date.now().toString();
+        list = [{ id: newId, title: noteTitle, content: noteContent, dueDate: due.toISOString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, ...list];
+        setNoteEditId(newId);
+      }
+      await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(list));
+
+      // Reflect updates in events list (title/description)
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.source === 'note' && (e.noteId === noteEditId || (!e.noteId && noteEditId))
+            ? {
+                ...e,
+                title: noteTitle,
+                description: noteContent,
+                date: new Date(due),
+                startTime: new Date(due),
+                endTime: new Date(due.getTime() + 60 * 60 * 1000),
+                time: due.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+              }
+            : e,
+        ),
+      );
+    } catch {}
+    setIsNoteEditVisible(false);
+  };
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -235,7 +328,19 @@ export default function CalendarScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 16, backgroundColor: colors.surface }]}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => {
+            try {
+              // Prefer popping if possible; otherwise go to home
+              // @ts-ignore - canGoBack is available in expo-router
+              if (typeof router.canGoBack === 'function' ? router.canGoBack() : true) {
+                router.back();
+              } else {
+                router.replace('/');
+              }
+            } catch {
+              router.replace('/');
+            }
+          }}
           style={styles.backButton}
         >
           <ArrowLeft size={24} color={colors.text} />
@@ -283,12 +388,22 @@ export default function CalendarScreen() {
                   disabled={!day}
                 >
                   {day && (
-                    <Text style={[
-                      styles.dayText,
-                      { color: isSelected(day) ? '#FFFFFF' : colors.text }
-                    ]}>
-                      {day}
-                    </Text>
+                    <>
+                      <Text style={[
+                        styles.dayText,
+                        { color: isSelected(day) ? '#FFFFFF' : colors.text }
+                      ]}>
+                        {day}
+                      </Text>
+                      {/* Event dot indicator */}
+                      {events.some(e =>
+                        e.date.getFullYear() === currentYear &&
+                        e.date.getMonth() === currentMonth &&
+                        e.date.getDate() === day
+                      ) && (
+                        <View style={{ position: 'absolute', bottom: 6, width: 6, height: 6, borderRadius: 3, backgroundColor: isSelected(day) ? '#FFFFFF' : colors.primary }} />
+                      )}
+                    </>
                   )}
                 </TouchableOpacity>
               ))}
@@ -319,7 +434,18 @@ export default function CalendarScreen() {
             </View>
           ) : (
             eventsForSelectedDate.map((event) => (
-              <View key={event.id} style={[styles.eventCard, { backgroundColor: colors.background }]}>
+              <TouchableOpacity
+                key={event.id}
+                style={[styles.eventCard, { backgroundColor: colors.background }]}
+                onPress={() => {
+                  if (event.source === 'note') {
+                    openInlineNoteEditor(event);
+                  } else {
+                    beginEditEvent(event);
+                  }
+                }}
+                activeOpacity={0.8}
+              >
                 <View style={styles.eventContent}>
                   <View style={[styles.eventColorBar, { backgroundColor: event.color || colors.primary }]} />
                   <View style={styles.eventDetails}>
@@ -348,7 +474,7 @@ export default function CalendarScreen() {
                 >
                   <Trash2 size={18} color={colors.danger} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
@@ -497,6 +623,152 @@ export default function CalendarScreen() {
         </View>
       </Modal>
 
+      {/* Inline Note Edit Modal */}
+      <Modal visible={isNoteEditVisible} transparent animationType="slide" presentationStyle="overFullScreen">
+        <View style={styles.pickerOverlay}>
+          <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Note</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              placeholder="Title"
+              placeholderTextColor={colors.textSecondary}
+              value={noteTitle}
+              onChangeText={setNoteTitle}
+            />
+            <TextInput
+              style={[styles.input, styles.textArea, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+              placeholder="Content"
+              placeholderTextColor={colors.textSecondary}
+              value={noteContent}
+              onChangeText={setNoteContent}
+              multiline
+              numberOfLines={4}
+            />
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.eventsSectionTitle, { color: colors.text, marginBottom: 8 }]}>Due</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
+                  onPress={() => setShowNoteDatePicker(true)}
+                >
+                  <Calendar size={16} color={colors.textSecondary} />
+                  <Text style={[styles.timeButtonText, { color: colors.text }]}>
+                    {new Date(noteYear, noteMonth - 1, noteDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
+                  onPress={() => setShowNoteTimePicker(true)}
+                >
+                  <Clock size={16} color={colors.textSecondary} />
+                  <Text style={[styles.timeButtonText, { color: colors.text }]}>
+                    {(() => {
+                      const h24 = noteAMPM === 'PM' ? ((parseInt(noteHour12, 10) % 12) + 12) : (parseInt(noteHour12, 10) % 12);
+                      const d = new Date(2000, 0, 1, h24, parseInt(noteMinute, 10));
+                      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    })()}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity onPress={() => setIsNoteEditVisible(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={saveInlineNote} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Note Due Date Picker */}
+      <Modal visible={showNoteDatePicker} transparent animationType="slide">
+        <View style={styles.pickerOverlay}>
+          <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Date</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 8 }}>
+              <TouchableOpacity onPress={() => { let m = noteMonth - 1, y = noteYear; if (m <= 0) { m = 12; y -= 1; } setNoteMonth(m); setNoteYear(y); }} style={styles.navButton}>
+                <ChevronLeft size={20} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={[styles.monthText, { color: colors.text }]}>{new Date(noteYear, noteMonth - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })}</Text>
+              <TouchableOpacity onPress={() => { let m = noteMonth + 1, y = noteYear; if (m > 12) { m = 1; y += 1; } setNoteMonth(m); setNoteYear(y); }} style={styles.navButton}>
+                <ChevronRight size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 12, marginBottom: 6 }}>
+              {['S','M','T','W','T','F','S'].map((d, i) => (
+                <Text key={`${d}-${i}`} style={{ width: 36, textAlign: 'center', color: colors.textSecondary }}>{d}</Text>
+              ))}
+            </View>
+            <View style={{ paddingHorizontal: 8, paddingBottom: 8 }}>
+              {(() => {
+                const first = new Date(noteYear, noteMonth - 1, 1);
+                const last = new Date(noteYear, noteMonth, 0);
+                const startPad = first.getDay();
+                const total = startPad + last.getDate();
+                const days = Array.from({ length: Math.ceil(total / 7) * 7 }, (_, i) => i - startPad + 1);
+                const rows = []; for (let i = 0; i < days.length; i += 7) rows.push(days.slice(i, i + 7));
+                return rows.map((row, rIdx) => (
+                  <View key={rIdx} style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 6 }}>
+                    {row.map((d, cIdx) => {
+                      const valid = d > 0 && d <= last.getDate();
+                      const selected = valid && d === noteDay;
+                      return (
+                        <TouchableOpacity key={`${rIdx}-${cIdx}`} disabled={!valid} onPress={() => setNoteDay(d)} style={[{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, selected && { backgroundColor: colors.primary + '33' }, !valid && { opacity: 0 }]}>
+                          {valid && <Text style={{ color: selected ? colors.primary : colors.text }}>{d}</Text>}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ));
+              })()}
+            </View>
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity onPress={() => setShowNoteDatePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowNoteDatePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Note Time Picker */}
+      <Modal visible={showNoteTimePicker} transparent animationType="slide">
+        <View style={styles.pickerOverlay}>
+          <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Time</Text>
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ paddingVertical: 8 }}>
+              {Array.from({ length: (24 * 60) / 15 }, (_, i) => i * 15).map((m) => {
+                const hour24 = Math.floor(m / 60);
+                const minute = m % 60;
+                const label = new Date(2000, 0, 1, hour24, minute).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const h12 = ((hour24 % 12) || 12).toString();
+                const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                const selected = h12 === noteHour12 && noteMinute === minute.toString().padStart(2, '0') && ampm === noteAMPM;
+                return (
+                  <TouchableOpacity key={`${hour24}:${minute}`} onPress={() => { setNoteHour12(h12); setNoteMinute(minute.toString().padStart(2, '0')); setNoteAMPM(ampm); }} style={[styles.pickerItem, { marginHorizontal: 16 }, selected && { backgroundColor: colors.primary + '20' }]}>
+                    <Text style={[styles.pickerItemText, { color: selected ? colors.primary : colors.text }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity onPress={() => setShowNoteTimePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
+                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowNoteTimePicker(false)} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Date Picker Modal - Grid UI */}
       <Modal visible={showDatePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
@@ -547,6 +819,15 @@ export default function CalendarScreen() {
                 const selDayNum = parseInt(tempDay, 10);
                 const today = new Date();
                 const isTodayMonth = today.getFullYear() === year && today.getMonth() === monthIdx;
+                const hasEvent = (d: number) => {
+                  // count events for that date
+                  const target = new Date(year, monthIdx, d);
+                  return events.some(e =>
+                    e.date.getFullYear() === target.getFullYear() &&
+                    e.date.getMonth() === target.getMonth() &&
+                    e.date.getDate() === target.getDate()
+                  );
+                };
                 return rows.map((row, rIdx) => (
                   <View key={rIdx} style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 6 }}>
                     {row.map((d, cIdx) => {
@@ -566,7 +847,12 @@ export default function CalendarScreen() {
                           ]}
                         >
                           {valid && (
-                            <Text style={{ color: isSelected ? colors.primary : colors.text }}>{d}</Text>
+                            <>
+                              <Text style={{ color: isSelected ? colors.primary : colors.text }}>{d}</Text>
+                              {hasEvent(d) && (
+                                <View style={{ position: 'absolute', bottom: 4, width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
+                              )}
+                            </>
                           )}
                         </TouchableOpacity>
                       );

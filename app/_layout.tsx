@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { GmailSyncProvider } from '@/contexts/GmailSyncContext';
 import { HistoryProvider } from '@/contexts/HistoryContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
+import { CalendarProvider } from '@/contexts/CalendarContext';
 import { trpc, trpcClient } from '@/lib/trpc';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -66,7 +67,9 @@ export default function RootLayout() {
               <HistoryProvider>
                 <GestureHandlerWrapper>
                   <StatusBar style="auto" />
-                  <RootLayoutNav />
+                  <CalendarProvider>
+                    <RootLayoutNav />
+                  </CalendarProvider>
                 </GestureHandlerWrapper>
               </HistoryProvider>
             </GmailSyncProvider>
