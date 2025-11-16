@@ -436,7 +436,7 @@ export default function CalendarScreen() {
       </Modal>
 
       {/* Date Picker Modal */}
-      <Modal visible={showDatePicker} transparent animationType="slide">
+      <Modal visible={showDatePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
           <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Date</Text>
@@ -509,7 +509,7 @@ export default function CalendarScreen() {
       </Modal>
 
       {/* Start Time Picker Modal */}
-      <Modal visible={showStartTimePicker} transparent animationType="slide">
+      <Modal visible={showStartTimePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
           <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select Start Time</Text>
@@ -607,7 +607,7 @@ export default function CalendarScreen() {
       </Modal>
 
       {/* End Time Picker Modal */}
-      <Modal visible={showEndTimePicker} transparent animationType="slide">
+      <Modal visible={showEndTimePicker} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
           <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Select End Time</Text>
