@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage, EmailCategory } from '@/constants/types';
 import { formatDate } from '@/utils/dateFormat';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type FilterType = 'all' | 'unread' | 'starred' | 'drafts' | 'drafts-ai' | 'trash' | 'sent';
 
@@ -91,7 +92,27 @@ export function InboxView({
 }: InboxViewProps) {
   const { colors } = useTheme();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(false);
+  const [customFolders, setCustomFolders] = React.useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
+  
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('custom-folders-v1');
+        if (raw) setCustomFolders(JSON.parse(raw));
+      } catch {}
+    })();
+  }, []);
+  
+  React.useEffect(() => {
+    if (!isSidebarVisible) return;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('custom-folders-v1');
+        if (raw) setCustomFolders(JSON.parse(raw));
+      } catch {}
+    })();
+  }, [isSidebarVisible]);
   const [activeFilterModal, setActiveFilterModal] = React.useState<'labels' | 'from' | 'to' | 'attachment' | null>(null);
   const [labelSearchQuery, setLabelSearchQuery] = React.useState('');
   const [contactSearchQuery, setContactSearchQuery] = React.useState('');
@@ -713,6 +734,45 @@ export function InboxView({
             ))}
           </View>
 
+          {/* My Folders (custom) Section */}
+          {customFolders.length > 0 && (
+            <View style={styles.sidebarSection}>
+              <View style={styles.sectionHeader}>
+                <FolderOpen size={20} color={colors.secondary} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>My Folders</Text>
+              </View>
+              {customFolders.map((folder) => (
+                <TouchableOpacity
+                  key={folder.id}
+                  testID={`sidebar-folder-custom-${folder.id}`}
+                  style={styles.sidebarItem}
+                  onPress={() => {
+                    router.push({
+                      pathname: '/folder-details',
+                      params: {
+                        folderName: folder.name,
+                        category: '',
+                        folderColor: folder.color,
+                        isCustom: '1',
+                      },
+                    });
+                    toggleSidebar();
+                  }}
+                >
+                  <View style={styles.folderItemContent}>
+                    <View style={[styles.folderIcon, { backgroundColor: (folder.color || colors.primary) + '20' }]}>
+                      <FolderOpen size={16} color={folder.color || colors.primary} />
+                    </View>
+                    <Text style={[styles.sidebarItemText, { color: colors.text }]}>{folder.name}</Text>
+                  </View>
+                  <View style={[styles.folderBadge, { backgroundColor: folder.color || colors.primary }]}>
+                    <Text style={styles.folderBadgeText}>{folder.count ?? 0}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* Smart Folders Section */}
           {smartFolders.length > 0 && (
             <View style={styles.sidebarSection}>
@@ -720,7 +780,7 @@ export function InboxView({
                 <FolderOpen size={20} color={colors.secondary} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Folders</Text>
               </View>
-              
+
               {smartFolders.map((folder) => {
                 const Icon = iconMap[folder.icon] || FolderOpen;
                 return (

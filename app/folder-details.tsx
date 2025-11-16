@@ -35,7 +35,7 @@ function categorizeEmail(email: Email): EmailCategory | undefined {
 }
 
 export default function FolderDetailsScreen() {
-  const params = useLocalSearchParams<{ folderName: string; category?: string; folderColor: string }>();
+  const params = useLocalSearchParams<{ folderName: string; category?: string; folderColor: string; isCustom?: string }>();
   const { messages } = useGmailSync();
   const { isDemoMode } = useAuth();
   const { colors } = useTheme();
@@ -59,6 +59,10 @@ export default function FolderDetailsScreen() {
   }, [messages, isDemoMode]);
 
   const filteredEmails = useMemo(() => {
+    // For now, custom folders have no rule logic -> show empty
+    if (params.isCustom === '1') {
+      return [] as any[];
+    }
     if (params.folderName === 'Action Required') {
       return emailsWithCategories.filter(email => 
         email.priority === 'action' || 

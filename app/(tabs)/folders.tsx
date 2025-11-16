@@ -8,6 +8,7 @@ import { mockSmartFolders, mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Email, EmailCategory } from '@/constants/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const iconMap: Record<string, any> = {
   'alert-circle': AlertCircle,
@@ -52,6 +53,25 @@ export default function FoldersScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [customFolders, setCustomFolders] = useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
+  const CUSTOM_FOLDERS_KEY = 'custom-folders-v1';
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(CUSTOM_FOLDERS_KEY);
+        if (raw) setCustomFolders(JSON.parse(raw));
+      } catch {}
+    })();
+  }, []);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        await AsyncStorage.setItem(CUSTOM_FOLDERS_KEY, JSON.stringify(customFolders));
+      } catch {}
+    })();
+  }, [customFolders]);
 
   const emailsWithCategories = useMemo(() => {
     if (isDemoMode || messages.length === 0) {
@@ -192,6 +212,14 @@ export default function FoldersScreen() {
       
       console.log('Creating folder:', { folderName, folderRule });
       
+      // Add to custom list and persist
+      const newFolder = { id: Date.now().toString(), name: folderName.trim(), color: Colors.light.primary, count: 0 };
+      const updatedFolders = [newFolder, ...customFolders];
+      setCustomFolders(updatedFolders);
+      
+      // Save to AsyncStorage so sidebar can load it
+      await AsyncStorage.setItem('custom-folders-v1', JSON.stringify(updatedFolders));
+
       Alert.alert('Success', `Folder "${folderName}" created successfully!`);
       
       setIsModalVisible(false);
@@ -223,7 +251,7 @@ export default function FoldersScreen() {
           <Text style={styles.createButtonText}>Create Custom Folder</Text>
         </TouchableOpacity>
 
-        {smartFolders.length === 0 ? (
+        {smartFolders.length === 0 && customFolders.length === 0 ? (
           <View style={styles.emptyState}>
             <FolderOpen size={48} color={Colors.light.textSecondary} />
             <Text style={styles.emptyStateTitle}>No folders yet</Text>
@@ -231,7 +259,7 @@ export default function FoldersScreen() {
           </View>
         ) : (
           <View style={styles.foldersGrid}>
-            {smartFolders.map((folder) => {
+            {[...customFolders.map(f => ({...f, isCustom: true} as any)), ...smartFolders].map((folder: any) => {
               const Icon = iconMap[folder.icon] || FolderOpen;
               
               return (
@@ -245,13 +273,14 @@ export default function FoldersScreen() {
                       params: {
                         folderName: folder.name,
                         category: folder.category,
-                        folderColor: folder.color,
+                        folderColor: folder.color || Colors.light.primary,
+                        ...(folder.isCustom ? { isCustom: '1' } : {}),
                       },
                     });
                   }}
                 >
                   <View style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}>
-                    <Icon size={28} color={folder.color} />
+                    {folder.isCustom ? <FolderOpen size={28} color={folder.color || Colors.light.primary} /> : <Icon size={28} color={folder.color} />}
                   </View>
                   <View style={styles.folderContent}>
                     <Text style={styles.folderName}>{folder.name}</Text>
