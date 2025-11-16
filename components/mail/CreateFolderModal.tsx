@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform, useWindowDimensions, KeyboardAvoidingView } from 'react-native';
 import { X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useTheme } from '@/contexts/ThemeContext';
