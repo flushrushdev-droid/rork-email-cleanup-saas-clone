@@ -148,6 +148,9 @@ export default function CalendarScreen() {
       setSelectedDate(new Date(year, month, day));
     }
     setShowDatePicker(false);
+    if (Platform.OS === 'ios') {
+      setIsNewMeetingModalVisible(true);
+    }
   };
 
   const handleStartTimeConfirm = () => {
@@ -165,6 +168,9 @@ export default function CalendarScreen() {
       setStartTime(newStartTime);
     }
     setShowStartTimePicker(false);
+    if (Platform.OS === 'ios') {
+      setIsNewMeetingModalVisible(true);
+    }
   };
 
   const handleEndTimeConfirm = () => {
@@ -182,6 +188,9 @@ export default function CalendarScreen() {
       setEndTime(newEndTime);
     }
     setShowEndTimePicker(false);
+    if (Platform.OS === 'ios') {
+      setIsNewMeetingModalVisible(true);
+    }
   };
 
   const eventsForSelectedDate = getEventsForSelectedDate();
@@ -335,7 +344,14 @@ export default function CalendarScreen() {
             {/* Date selector */}
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
-                onPress={() => setShowDatePicker(true)}
+                onPress={() => {
+                  if (Platform.OS === 'ios') {
+                    setIsNewMeetingModalVisible(false);
+                    requestAnimationFrame(() => setShowDatePicker(true));
+                  } else {
+                    setShowDatePicker(true);
+                  }
+                }}
                 style={[styles.timeButton, { flex: 1, backgroundColor: colors.background, borderColor: colors.border }]}
               >
                 <Calendar size={16} color={colors.textSecondary} />
@@ -347,7 +363,14 @@ export default function CalendarScreen() {
 
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
-                onPress={() => setShowStartTimePicker(true)}
+                onPress={() => {
+                  if (Platform.OS === 'ios') {
+                    setIsNewMeetingModalVisible(false);
+                    requestAnimationFrame(() => setShowStartTimePicker(true));
+                  } else {
+                    setShowStartTimePicker(true);
+                  }
+                }}
                 style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border }]}
               >
                 <Clock size={16} color={colors.textSecondary} />
@@ -357,7 +380,14 @@ export default function CalendarScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setShowEndTimePicker(true)}
+                onPress={() => {
+                  if (Platform.OS === 'ios') {
+                    setIsNewMeetingModalVisible(false);
+                    requestAnimationFrame(() => setShowEndTimePicker(true));
+                  } else {
+                    setShowEndTimePicker(true);
+                  }
+                }}
                 style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border }]}
               >
                 <Clock size={16} color={colors.textSecondary} />
@@ -492,7 +522,10 @@ export default function CalendarScreen() {
             </View>
             <View style={styles.pickerButtons}>
               <TouchableOpacity
-                onPress={() => setShowDatePicker(false)}
+                onPress={() => {
+                  setShowDatePicker(false);
+                  if (Platform.OS === 'ios') setIsNewMeetingModalVisible(true);
+                }}
                 style={[styles.pickerButton, { backgroundColor: colors.background }]}
               >
                 <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
@@ -590,7 +623,10 @@ export default function CalendarScreen() {
             </View>
             <View style={styles.pickerButtons}>
               <TouchableOpacity
-                onPress={() => setShowStartTimePicker(false)}
+                onPress={() => {
+                  setShowStartTimePicker(false);
+                  if (Platform.OS === 'ios') setIsNewMeetingModalVisible(true);
+                }}
                 style={[styles.pickerButton, { backgroundColor: colors.background }]}
               >
                 <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
@@ -688,7 +724,10 @@ export default function CalendarScreen() {
             </View>
             <View style={styles.pickerButtons}>
               <TouchableOpacity
-                onPress={() => setShowEndTimePicker(false)}
+                onPress={() => {
+                  setShowEndTimePicker(false);
+                  if (Platform.OS === 'ios') setIsNewMeetingModalVisible(true);
+                }}
                 style={[styles.pickerButton, { backgroundColor: colors.background }]}
               >
                 <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
