@@ -7,7 +7,7 @@ import type { EmailMessage, EmailCategory } from '@/constants/types';
 import { formatDate } from '@/utils/dateFormat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type FilterType = 'all' | 'unread' | 'starred' | 'drafts' | 'drafts-ai' | 'trash' | 'sent';
+type FilterType = 'all' | 'unread' | 'starred' | 'drafts' | 'drafts-ai' | 'trash' | 'sent' | 'archived';
 
 type Draft = {
   id: string;
@@ -540,17 +540,19 @@ export function InboxView({
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No sent emails</Text>
             <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Your sent messages will appear here</Text>
           </View>
-        ) : activeFilter === 'trash' ? (
-          <View style={styles.emptyState}>
-            <Trash2 size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Trash is empty</Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Deleted emails will appear here</Text>
-          </View>
         ) : filteredEmails.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Mail size={48} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
-          </View>
+          activeFilter === 'trash' ? (
+            <View style={styles.emptyState}>
+              <Trash2 size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Trash is empty</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Deleted emails will appear here</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Mail size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
+            </View>
+          )
         ) : (
           filteredEmails.map((email: EmailMessage) => {
             // Extract sender name and get initial
@@ -695,7 +697,7 @@ export function InboxView({
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Mail</Text>
             </View>
             
-            {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'trash'] as const).map((filter) => (
+            {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'archived', 'trash'] as const).map((filter) => (
               <TouchableOpacity
                 key={filter}
                 testID={`sidebar-filter-${filter}`}

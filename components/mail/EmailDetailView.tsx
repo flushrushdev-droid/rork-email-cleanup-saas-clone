@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Archive, Trash2, Star, ChevronLeft, ChevronRight, Paperclip, Mail, Users, Send } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -12,6 +12,7 @@ interface EmailDetailViewProps {
   onBack: () => void;
   onStar: (emailId: string) => void;
   onArchive: (email: EmailMessage) => void;
+  onDelete: (email: EmailMessage) => void;
   onReply: (email: EmailMessage) => void;
   onReplyAll: (email: EmailMessage) => void;
   onForward: (email: EmailMessage) => void;
@@ -29,6 +30,7 @@ export function EmailDetailView({
   onBack,
   onStar,
   onArchive,
+  onDelete,
   onReply,
   onReplyAll,
   onForward,
@@ -101,7 +103,7 @@ export function EmailDetailView({
           <TouchableOpacity
             testID="delete-email"
             style={styles.actionButton}
-            onPress={() => Alert.alert('Delete', 'Delete this email?')}
+            onPress={() => onDelete(selectedEmail)}
           >
             <Trash2 size={20} color={colors.danger} />
           </TouchableOpacity>

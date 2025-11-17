@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform, useWindowDimensions, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ActivityIndicator, StyleSheet, ScrollView, Keyboard, Platform, KeyboardAvoidingView } from 'react-native';
 import { X } from 'lucide-react-native';
-import Colors from '@/constants/colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,15 +30,12 @@ export function CreateFolderModal({
   // Some environments (e.g., certain web previews) may not provide KeyboardAvoidingView at runtime.
   // Fall back to a regular View while keeping manual keyboard translation logic.
   // Using typeof avoids ReferenceError when the symbol isn't defined.
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const Container: any = typeof KeyboardAvoidingView !== 'undefined' ? KeyboardAvoidingView : View;
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
-  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
   const [showError, setShowError] = React.useState(false);
   const nameInputRef = React.useRef<TextInput>(null);
   const ruleInputRef = React.useRef<TextInput>(null);
-  const { height: windowHeight } = useWindowDimensions();
 
   // iOS: Lift the bottom sheet while keyboard is visible
   React.useEffect(() => {
@@ -48,11 +44,9 @@ export function CreateFolderModal({
       const height = e.endCoordinates?.height ?? 0;
       // subtract bottom inset so we don't over-shift
       setKeyboardOffset(Math.max(0, height - (insets.bottom || 0)));
-      setKeyboardHeight(height);
     });
     const onHide = Keyboard.addListener('keyboardWillHide', () => {
       setKeyboardOffset(0);
-      setKeyboardHeight(0);
     });
     return () => {
       onShow.remove();

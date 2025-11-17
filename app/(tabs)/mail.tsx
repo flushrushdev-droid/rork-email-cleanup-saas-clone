@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, BackHandler, Modal, ActivityIndicator } from 'react-native';
 import { Mail, Star, PenSquare, ChevronLeft, X, Check } from 'lucide-react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -22,6 +23,7 @@ import { EmailDetailView } from '@/components/mail/EmailDetailView';
 import { FoldersView } from '@/components/mail/FoldersView';
 import { InboxView } from '@/components/mail/InboxView';
 import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
+import { useEmailState } from '@/contexts/EmailStateContext';
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
@@ -40,7 +42,6 @@ export default function MailScreen() {
   const [composeCc, setComposeCc] = useState('');
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
-  const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
   const [selectedFolder] = useState<{ id: string; name: string; color: string; category?: EmailCategory } | null>(null);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [folderName, setFolderName] = useState<string>('');
@@ -52,7 +53,20 @@ export default function MailScreen() {
   const [isAIModalVisible, setIsAIModalVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
-  const [toast, setToast] = useState<{ message: string } | null>(null);
+  const [toast, setToast] = useState<{ message: string; onUndo?: () => void; timer?: number } | null>(null);
+  const [toastTimer, setToastTimer] = useState(5);
+  const [pendingArchive, setPendingArchive] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<Set<string>>(new Set());
+  const [archivedEmails, setArchivedEmails] = useState<Set<string>>(new Set());
+  const [trashedEmails, setTrashedEmails] = useState<Set<string>>(new Set());
+  const archiveTimeoutRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const deleteTimeoutRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
+  
+  // Use shared email state context for starred only (to avoid render issues)
+  const { 
+    starredEmails, 
+    toggleStarredEmail,
+  } = useEmailState();
   
   const insets = useSafeAreaInsets();
 
@@ -149,6 +163,22 @@ export default function MailScreen() {
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;
 
+    // Filter out archived emails (unless viewing archived folder)
+    // Note: pendingArchive emails stay visible until timeout
+    // Archived filter is handled in the activeFilter switch below
+    if (activeFilter !== 'archived') {
+      filtered = filtered.filter((email: EmailMessage) => !archivedEmails.has(email.id));
+    }
+    
+    // Filter out trashed emails (unless viewing trash folder)
+    // Note: pendingDelete emails stay visible until timeout
+    if (activeFilter !== 'trash') {
+      filtered = filtered.filter((email: EmailMessage) => !trashedEmails.has(email.id));
+    } else {
+      // Show only trashed emails in trash folder
+      filtered = filtered.filter((email: EmailMessage) => trashedEmails.has(email.id));
+    }
+
     if (currentView === 'folder-detail' && selectedFolder) {
       if (selectedFolder.name === 'Action Required') {
         filtered = filtered.filter((email: EmailMessage) => 
@@ -190,10 +220,10 @@ export default function MailScreen() {
           filtered = [];
           break;
         case 'trash':
-          filtered = [];
+          // Trash filter is handled above in main filter logic
           break;
         case 'archived':
-          filtered = [];
+          // Archived filter is handled above in main filter logic
           break;
         default:
           filtered = filtered.filter((email: EmailMessage) => email.labels.includes('inbox') || email.labels.includes('INBOX'));
@@ -217,13 +247,17 @@ export default function MailScreen() {
         case 'starred':
           filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
           break;
+        case 'archived':
+          // Show only archived emails
+          filtered = filtered.filter((email: EmailMessage) => archivedEmails.has(email.id));
+          break;
+        case 'trash':
+          // Show only trashed emails (handled above in main filter)
+          break;
         case 'drafts':
           filtered = [];
           break;
         case 'drafts-ai':
-          filtered = [];
-          break;
-        case 'trash':
           filtered = [];
           break;
         case 'sent':
@@ -235,7 +269,7 @@ export default function MailScreen() {
     }
 
     return filtered.sort((a: EmailMessage, b: EmailMessage) => b.date.getTime() - a.date.getTime());
-  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails, activeFilter]);
+  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails, activeFilter, archivedEmails, trashedEmails]);
 
   const handleEmailPress = (email: EmailMessage) => {
     setSelectedEmail(email);
@@ -294,7 +328,50 @@ export default function MailScreen() {
 
   const handleArchive = async (email: EmailMessage) => {
     if (isDemoMode) {
-      Alert.alert('Demo Mode', 'Archive is disabled in demo mode');
+      // Clear any existing timeout for this email
+      const existingTimeout = archiveTimeoutRef.current.get(email.id);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+        archiveTimeoutRef.current.delete(email.id);
+      }
+      
+      // Add to pending archive (will be archived after timeout)
+      setPendingArchive(prev => new Set(prev).add(email.id));
+      
+      // Show toast with undo option
+      setToast({
+        message: 'Email archived',
+        onUndo: () => {
+          // Clear the timeout
+          const timeout = archiveTimeoutRef.current.get(email.id);
+          if (timeout) {
+            clearTimeout(timeout);
+            archiveTimeoutRef.current.delete(email.id);
+          }
+          // Remove from pending
+          setPendingArchive(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(email.id);
+            return newSet;
+          });
+          setToast(null);
+        },
+      });
+      
+      // Archive after 5 seconds if not undone
+      const timeout = setTimeout(() => {
+        setPendingArchive(prev => {
+          if (prev.has(email.id)) {
+            setArchivedEmails(archived => new Set(archived).add(email.id));
+            return new Set([...prev].filter(id => id !== email.id));
+          }
+          return prev;
+        });
+        archiveTimeoutRef.current.delete(email.id);
+        setToast(null);
+      }, 5000);
+      
+      archiveTimeoutRef.current.set(email.id, timeout);
       return;
     }
 
@@ -307,16 +384,90 @@ export default function MailScreen() {
     }
   };
 
-  const handleStar = (emailId: string) => {
-    setStarredEmails(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(emailId)) {
-        newSet.delete(emailId);
-      } else {
-        newSet.add(emailId);
+  const handleDelete = async (email: EmailMessage) => {
+    if (isDemoMode) {
+      // Clear any existing timeout for this email
+      const existingTimeout = deleteTimeoutRef.current.get(email.id);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+        deleteTimeoutRef.current.delete(email.id);
       }
-      return newSet;
-    });
+      
+      // Find next email BEFORE state updates
+      const emailIndex = filteredEmails.findIndex(e => e.id === email.id);
+      const hasNextEmail = emailIndex >= 0 && emailIndex < filteredEmails.length - 1;
+      const nextEmail = hasNextEmail ? filteredEmails[emailIndex + 1] : null;
+      
+      // Add to pending delete (will be deleted after timeout)
+      setPendingDelete(prev => new Set(prev).add(email.id));
+      
+      // Show toast with undo option
+      setToast({
+        message: 'Email moved to Trash',
+        onUndo: () => {
+          // Clear the timeout
+          const timeout = deleteTimeoutRef.current.get(email.id);
+          if (timeout) {
+            clearTimeout(timeout);
+            deleteTimeoutRef.current.delete(email.id);
+          }
+          // Remove from pending
+          setPendingDelete(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(email.id);
+            return newSet;
+          });
+          setToast(null);
+        },
+      });
+      
+      // Navigate to next email immediately (or go back if no next)
+      if (currentView === 'detail') {
+        if (nextEmail) {
+          setSelectedEmail(nextEmail);
+          if (!nextEmail.isRead && !isDemoMode) {
+            markAsRead(nextEmail.id).catch(() => {
+              console.error('Failed to mark as read');
+            });
+          }
+        } else {
+          setCurrentView('inbox');
+        }
+      }
+      
+      // Delete after 5 seconds if not undone
+      const timeout = setTimeout(() => {
+        setPendingDelete(prev => {
+          if (prev.has(email.id)) {
+            setTrashedEmails(trashed => new Set(trashed).add(email.id));
+            return new Set([...prev].filter(id => id !== email.id));
+          }
+          return prev;
+        });
+        deleteTimeoutRef.current.delete(email.id);
+        setToast(null);
+        
+        // Navigate back to inbox if still in detail view and no next email
+        if (currentView === 'detail' && !nextEmail) {
+          setCurrentView('inbox');
+        }
+      }, 5000);
+      
+      deleteTimeoutRef.current.set(email.id, timeout);
+      return;
+    }
+
+    try {
+      // In production, call delete API
+      // await deleteMessage(email.id);
+      setCurrentView('inbox');
+    } catch {
+      Alert.alert('Error', 'Failed to delete email');
+    }
+  };
+
+  const handleStar = (emailId: string) => {
+    toggleStarredEmail(emailId);
   };
 
   const handleCreateFolder = async () => {
@@ -358,8 +509,31 @@ export default function MailScreen() {
 
   useEffect(() => {
     if (!toast) return;
+    // If toast has undo, don't auto-dismiss (let the archive timeout handle it)
+    if (toast.onUndo) return;
     const t = setTimeout(() => setToast(null), 1800);
     return () => clearTimeout(t);
+  }, [toast]);
+
+  // Countdown timer for undo toasts
+  useEffect(() => {
+    if (!toast || !toast.onUndo) {
+      setToastTimer(5);
+      return;
+    }
+
+    setToastTimer(5);
+    const interval = setInterval(() => {
+      setToastTimer((prev) => {
+        if (prev <= 0.1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 0.1;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
   }, [toast]);
 
   const smartFolders = useSmartFolders(messages, allEmails, isDemoMode);
@@ -538,7 +712,13 @@ export default function MailScreen() {
 
   const handleBulkArchive = () => {
     if (isDemoMode) {
-      Alert.alert('Demo Mode', 'Bulk archive is disabled in demo mode');
+      // In demo mode, mark all selected emails as archived
+      setArchivedEmails(prev => {
+        const newSet = new Set(prev);
+        selectedEmails.forEach(id => newSet.add(id));
+        return newSet;
+      });
+      handleCancelSelection();
       return;
     }
     Alert.alert('Success', `${selectedEmails.size} emails archived`);
@@ -646,6 +826,7 @@ export default function MailScreen() {
           onBack={() => setCurrentView('inbox')}
           onStar={handleStar}
           onArchive={handleArchive}
+          onDelete={handleDelete}
           onReply={handleReply}
           onReplyAll={handleReplyAll}
           onForward={handleForward}
@@ -707,14 +888,16 @@ export default function MailScreen() {
             position: 'absolute',
             left: 16,
             right: 16,
-            bottom: insets.bottom + 8, // hug the bottom as close as safe
+            bottom: insets.bottom + 8,
             backgroundColor: colors.surface,
-            paddingVertical: 10,
-            paddingHorizontal: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
             borderRadius: 14,
+            flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'space-between',
             borderWidth: 1,
-            borderColor: '#10B98155', // emerald tint
+            borderColor: '#10B98155',
             shadowColor: '#10B981',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
@@ -722,7 +905,7 @@ export default function MailScreen() {
             elevation: 4,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
             <View
               style={{
                 width: 28,
@@ -730,15 +913,52 @@ export default function MailScreen() {
                 borderRadius: 14,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#10B98122', // soft emerald background
+                backgroundColor: '#10B98122',
                 borderWidth: 1,
                 borderColor: '#10B98155',
               }}
             >
               <Check size={18} color="#10B981" strokeWidth={3} />
             </View>
-            <Text style={{ color: colors.text }}>{toast.message}</Text>
+            <Text style={{ color: colors.text, flex: 1 }}>{toast.message}</Text>
           </View>
+          {toast.onUndo && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {/* Circular Timer */}
+              <View style={{ width: 20, height: 20 }}>
+                <Svg width={20} height={20} style={{ transform: [{ rotate: '-90deg' }] }}>
+                  <Circle
+                    cx={10}
+                    cy={10}
+                    r={8}
+                    stroke="#10B98133"
+                    strokeWidth={2}
+                    fill="none"
+                  />
+                  <Circle
+                    cx={10}
+                    cy={10}
+                    r={8}
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 8}`}
+                    strokeDashoffset={`${2 * Math.PI * 8 * (1 - toastTimer / 5)}`}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              </View>
+              <TouchableOpacity
+                onPress={toast.onUndo}
+                style={{
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                }}
+              >
+                <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Undo</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
     </View>
