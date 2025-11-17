@@ -36,6 +36,7 @@ export function CreateFolderModal({
   const Container: any = typeof KeyboardAvoidingView !== 'undefined' ? KeyboardAvoidingView : View;
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
   const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+  const [showError, setShowError] = React.useState(false);
   const nameInputRef = React.useRef<TextInput>(null);
   const ruleInputRef = React.useRef<TextInput>(null);
   const { height: windowHeight } = useWindowDimensions();
@@ -58,6 +59,29 @@ export function CreateFolderModal({
       onHide.remove();
     };
   }, [insets.bottom]);
+
+  // Clear error when modal opens/closes
+  React.useEffect(() => {
+    if (!visible) {
+      setShowError(false);
+    }
+  }, [visible]);
+
+  // Clear error when user starts typing
+  React.useEffect(() => {
+    if (folderName.trim() && folderRule.trim() && showError) {
+      setShowError(false);
+    }
+  }, [folderName, folderRule, showError]);
+
+  const handleCreate = () => {
+    if (!folderName.trim() || !folderRule.trim()) {
+      setShowError(true);
+      return;
+    }
+    setShowError(false);
+    onCreate();
+  };
 
   // No programmatic scrolling; we rely on KeyboardAvoidingView to lift content.
   return (
@@ -132,6 +156,12 @@ export function CreateFolderModal({
               </Text>
             </View>
 
+            {showError && (
+              <Text style={[styles.errorText, { color: colors.danger || '#EF4444' }]}>
+                Please Fill In All The Details
+              </Text>
+            )}
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }]}
@@ -142,8 +172,8 @@ export function CreateFolderModal({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
-                onPress={onCreate}
-                disabled={isCreating || !folderName.trim() || !folderRule.trim()}
+                onPress={handleCreate}
+                disabled={isCreating}
               >
                 {isCreating ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -206,6 +236,13 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 13,
     marginTop: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    marginTop: 8,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   modalActions: {
     flexDirection: 'row',
