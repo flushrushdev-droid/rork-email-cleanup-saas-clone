@@ -1,7 +1,8 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { X, Send, Paperclip, Save, Sparkles } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { X, Send, Paperclip, Save, Sparkles, Trash2 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import * as DocumentPicker from 'expo-document-picker';
 
 interface ComposeViewProps {
   insets: { top: number; bottom: number };
@@ -17,6 +18,13 @@ interface ComposeViewProps {
   onSend: () => void;
   onSaveDraft: () => void;
   onOpenAIModal: () => void;
+}
+
+interface Attachment {
+  uri: string;
+  name: string;
+  mimeType: string | null;
+  size: number | null;
 }
 
 export function ComposeView({
@@ -35,6 +43,41 @@ export function ComposeView({
   onOpenAIModal,
 }: ComposeViewProps) {
   const { colors } = useTheme();
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+
+  const formatFileSize = (bytes: number | null): string => {
+    if (!bytes) return 'Unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleAttachFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (!result.canceled && result.assets) {
+        const newAttachments: Attachment[] = result.assets.map(asset => ({
+          uri: asset.uri,
+          name: asset.name || 'Unknown file',
+          mimeType: asset.mimeType || null,
+          size: asset.size || null,
+        }));
+        setAttachments(prev => [...prev, ...newAttachments]);
+      }
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert('Error', 'Failed to pick document. Please try again.');
+    }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -120,10 +163,45 @@ export function ComposeView({
           />
         </View>
 
-        <TouchableOpacity style={[styles.attachButton, { borderColor: colors.border }]}>
+        <TouchableOpacity 
+          style={[styles.attachButton, { borderColor: colors.border }]}
+          onPress={handleAttachFile}
+        >
           <Paperclip size={20} color={colors.primary} />
           <Text style={[styles.attachButtonText, { color: colors.primary }]}>Attach file</Text>
         </TouchableOpacity>
+
+        {attachments.length > 0 && (
+          <View style={styles.attachmentsContainer}>
+            {attachments.map((attachment, index) => (
+              <View 
+                key={index} 
+                style={[styles.attachmentItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              >
+                <View style={styles.attachmentInfo}>
+                  <Paperclip size={16} color={colors.primary} />
+                  <View style={styles.attachmentDetails}>
+                    <Text 
+                      style={[styles.attachmentName, { color: colors.text }]} 
+                      numberOfLines={1}
+                    >
+                      {attachment.name}
+                    </Text>
+                    <Text style={[styles.attachmentSize, { color: colors.textSecondary }]}>
+                      {formatFileSize(attachment.size)}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleRemoveAttachment(index)}
+                  style={styles.removeAttachmentButton}
+                >
+                  <Trash2 size={16} color={colors.error || '#EF4444'} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
 
         <TouchableOpacity 
           style={[styles.aiButton, { borderColor: colors.border }]}
@@ -220,5 +298,39 @@ const styles = StyleSheet.create({
   aiButtonText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  attachmentsContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    gap: 8,
+  },
+  attachmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  attachmentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  attachmentDetails: {
+    flex: 1,
+    gap: 2,
+  },
+  attachmentName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  attachmentSize: {
+    fontSize: 12,
+  },
+  removeAttachmentButton: {
+    padding: 4,
+    marginLeft: 8,
   },
 });
