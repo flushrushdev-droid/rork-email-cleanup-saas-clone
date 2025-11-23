@@ -50,3 +50,13 @@ TODO.local.md
 # Editor/runtime metadata
 .cursor/
 .idea/
+
+# Test results
+test-results/
+
+# Coverage
+coverage/
+
+# Native build folders (generated, don't commit)
+android/
+ios/

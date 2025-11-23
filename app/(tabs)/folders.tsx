@@ -205,7 +205,7 @@ export default function FoldersScreen() {
       const newFolder = { id: Date.now().toString(), name: folderName.trim(), color: Colors.light.primary, count: 0 };
       const updatedFolders = [newFolder, ...customFolders];
       setCustomFolders(updatedFolders);
-
+      
       Alert.alert('Success', `Folder "${folderName}" created successfully!`);
       
       setIsModalVisible(false);

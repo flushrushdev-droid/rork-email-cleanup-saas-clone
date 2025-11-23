@@ -154,9 +154,9 @@ export default function MailScreen() {
             setCurrentView('compose');
           }
         } else {
-          setCurrentView('detail');
-        }
+        setCurrentView('detail');
       }
+    }
     }
   }, [params.emailId, params.timestamp, params.compose, allEmails]);
 
@@ -413,7 +413,7 @@ export default function MailScreen() {
           }
           // Remove from pending
           setPendingDelete(prev => {
-            const newSet = new Set(prev);
+      const newSet = new Set(prev);
             newSet.delete(email.id);
             return newSet;
           });
@@ -430,7 +430,7 @@ export default function MailScreen() {
               console.error('Failed to mark as read');
             });
           }
-        } else {
+      } else {
           setCurrentView('inbox');
         }
       }
@@ -441,7 +441,7 @@ export default function MailScreen() {
           if (prev.has(email.id)) {
             setTrashedEmails(trashed => new Set(trashed).add(email.id));
             return new Set([...prev].filter(id => id !== email.id));
-          }
+      }
           return prev;
         });
         deleteTimeoutRef.current.delete(email.id);
@@ -917,11 +917,11 @@ export default function MailScreen() {
                 borderWidth: 1,
                 borderColor: '#10B98155',
               }}
-            >
+              >
               <Check size={18} color="#10B981" strokeWidth={3} />
             </View>
             <Text style={{ color: colors.text, flex: 1 }}>{toast.message}</Text>
-          </View>
+            </View>
           {toast.onUndo && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {/* Circular Timer */}
@@ -947,7 +947,7 @@ export default function MailScreen() {
                     strokeLinecap="round"
                   />
                 </Svg>
-              </View>
+            </View>
               <TouchableOpacity
                 onPress={toast.onUndo}
                 style={{
@@ -958,8 +958,8 @@ export default function MailScreen() {
                 <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Undo</Text>
               </TouchableOpacity>
             </View>
-          )}
-        </View>
+                )}
+            </View>
       )}
     </View>
   );

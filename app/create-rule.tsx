@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,9 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
-import { Plus, X, ChevronDown } from 'lucide-react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Plus, X, ChevronDown, Check } from 'lucide-react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -19,21 +19,119 @@ import {
   RuleConditionField,
   RuleConditionOperator,
   RuleActionType,
+  Rule,
 } from '@/constants/types';
+
+// Mock rules for editing (same as in rules.tsx)
+const mockRules: Rule[] = [
+  {
+    id: '1',
+    name: 'Archive old newsletters',
+    enabled: true,
+    conditions: [
+      { field: 'sender', operator: 'contains', value: 'newsletter' },
+      { field: 'age', operator: 'greaterThan', value: 90 },
+    ],
+    actions: [{ type: 'archive' }],
+    createdAt: new Date('2024-11-01'),
+    lastRun: new Date(Date.now() - 86400000),
+    matchCount: 347,
+  },
+  {
+    id: '2',
+    name: 'Label receipts automatically',
+    enabled: true,
+    conditions: [
+      { field: 'semantic', operator: 'matches', value: 'receipt OR invoice' },
+    ],
+    actions: [
+      { type: 'label', value: 'Receipts' },
+      { type: 'tag', value: 'finance' },
+    ],
+    createdAt: new Date('2024-10-15'),
+    lastRun: new Date(Date.now() - 3600000),
+    matchCount: 156,
+  },
+  {
+    id: '3',
+    name: 'Delete spam from specific domain',
+    enabled: false,
+    conditions: [
+      { field: 'domain', operator: 'equals', value: 'spam-domain.com' },
+    ],
+    actions: [{ type: 'delete' }],
+    createdAt: new Date('2024-09-20'),
+    matchCount: 0,
+  },
+];
 
 const CONDITION_FIELDS: { value: RuleConditionField; label: string }[] = [
   { value: 'sender', label: 'Sender' },
+  { value: 'subject', label: 'Subject' },
+  { value: 'body', label: 'Body' },
   { value: 'domain', label: 'Domain' },
   { value: 'age', label: 'Age (days)' },
-  { value: 'semantic', label: 'Content matches' },
+  { value: 'size', label: 'Size (bytes)' },
+  { value: 'date', label: 'Date' },
+  { value: 'hasAttachments', label: 'Has Attachments' },
+  { value: 'isRead', label: 'Is Read' },
+  { value: 'isStarred', label: 'Is Starred' },
+  { value: 'label', label: 'Label' },
+  { value: 'semantic', label: 'Content matches (AI)' },
 ];
 
 const OPERATORS: { value: RuleConditionOperator; label: string }[] = [
   { value: 'contains', label: 'contains' },
+  { value: 'notContains', label: 'does not contain' },
   { value: 'equals', label: 'equals' },
+  { value: 'notEquals', label: 'does not equal' },
+  { value: 'startsWith', label: 'starts with' },
+  { value: 'endsWith', label: 'ends with' },
   { value: 'greaterThan', label: 'greater than' },
-  { value: 'matches', label: 'matches' },
+  { value: 'lessThan', label: 'less than' },
+  { value: 'greaterThanOrEqual', label: 'greater than or equal' },
+  { value: 'lessThanOrEqual', label: 'less than or equal' },
+  { value: 'matches', label: 'matches (regex)' },
+  { value: 'isTrue', label: 'is true' },
+  { value: 'isFalse', label: 'is false' },
+  { value: 'before', label: 'before' },
+  { value: 'after', label: 'after' },
 ];
+
+// Get valid operators for a given field type
+const getValidOperators = (field: RuleConditionField): RuleConditionOperator[] => {
+  switch (field) {
+    // Text fields
+    case 'sender':
+    case 'subject':
+    case 'body':
+    case 'domain':
+    case 'label':
+      return ['contains', 'notContains', 'equals', 'notEquals', 'startsWith', 'endsWith', 'matches'];
+    
+    // Numeric fields
+    case 'age':
+    case 'size':
+      return ['equals', 'notEquals', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual'];
+    
+    // Date fields
+    case 'date':
+      return ['equals', 'before', 'after', 'greaterThan', 'lessThan'];
+    
+    // Boolean fields
+    case 'hasAttachments':
+    case 'isRead':
+    case 'isStarred':
+      return ['isTrue', 'isFalse', 'equals'];
+    
+    // AI/Semantic fields
+    case 'semantic':
+      return ['matches', 'contains', 'notContains'];
+    
+    default:
+      return ['contains', 'equals'];
+  }
+};
 
 const ACTION_TYPES: { value: RuleActionType; label: string }[] = [
   { value: 'label', label: 'Add Label' },
@@ -50,6 +148,11 @@ type DropdownState = {
 
 export default function CreateRuleScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ ruleId?: string }>();
+  const isEditMode = !!params.ruleId;
+  const ruleToEdit = params.ruleId ? mockRules.find(r => r.id === params.ruleId) : null;
+
   const [ruleName, setRuleName] = useState<string>('');
   const [conditions, setConditions] = useState<RuleCondition[]>([
     { field: 'sender', operator: 'contains', value: '' },
@@ -62,6 +165,24 @@ export default function CreateRuleScreen() {
     type: null,
     index: -1,
   });
+  const [toast, setToast] = useState<{ message: string } | null>(null);
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (ruleToEdit) {
+      setRuleName(ruleToEdit.name);
+      // Validate and fix operators when loading existing rule
+      const validatedConditions = ruleToEdit.conditions.map((cond) => {
+        const validOperators = getValidOperators(cond.field);
+        if (!validOperators.includes(cond.operator)) {
+          return { ...cond, operator: validOperators[0] };
+        }
+        return cond;
+      });
+      setConditions(validatedConditions);
+      setActions(ruleToEdit.actions);
+    }
+  }, [ruleToEdit]);
 
   const addCondition = () => {
     setConditions([...conditions, { field: 'sender', operator: 'contains', value: '' }]);
@@ -117,7 +238,17 @@ export default function CreateRuleScreen() {
     const { type, index } = dropdown;
 
     if (type === 'field') {
-      updateCondition(index, 'field', value as RuleConditionField);
+      const newField = value as RuleConditionField;
+      const validOperators = getValidOperators(newField);
+      const currentOperator = conditions[index].operator;
+      
+      // If current operator is not valid for the new field, reset to first valid operator
+      if (!validOperators.includes(currentOperator)) {
+        updateCondition(index, 'field', newField);
+        updateCondition(index, 'operator', validOperators[0]);
+      } else {
+        updateCondition(index, 'field', newField);
+      }
     } else if (type === 'operator') {
       updateCondition(index, 'operator', value as RuleConditionOperator);
     } else if (type === 'action') {
@@ -128,34 +259,101 @@ export default function CreateRuleScreen() {
   };
 
   const handleSave = () => {
+    console.log('handleSave called', { ruleName, conditions, actions, isEditMode });
+    
+    // Validate rule name
     if (!ruleName.trim()) {
+      console.log('Validation failed: rule name empty');
       Alert.alert('Error', 'Please enter a rule name');
       return;
     }
 
-    const hasEmptyConditions = conditions.some((c) => !c.value);
+    // Validate conditions - check if value is needed based on operator
+    const hasEmptyConditions = conditions.some((c) => {
+      // Boolean operators don't need values
+      if (c.operator === 'isTrue' || c.operator === 'isFalse') {
+        return false;
+      }
+      
+      // Check if value is empty
+      if (c.field === 'age' || c.field === 'size') {
+        return !c.value || (typeof c.value === 'number' && c.value <= 0);
+      }
+      return !c.value || (typeof c.value === 'string' && !c.value.trim());
+    });
+    
     if (hasEmptyConditions) {
+      console.log('Validation failed: empty conditions');
       Alert.alert('Error', 'Please fill in all condition values');
       return;
     }
 
+    // Validate operators are valid for their fields
+    const hasInvalidOperators = conditions.some((c) => {
+      const validOperators = getValidOperators(c.field);
+      return !validOperators.includes(c.operator);
+    });
+    if (hasInvalidOperators) {
+      console.log('Validation failed: invalid operators');
+      Alert.alert('Error', 'Please select valid operators for each field');
+      return;
+    }
+
+    // Validate actions
     const actionsNeedingValue = actions.filter((a) => a.type === 'label' || a.type === 'tag');
-    const hasEmptyActions = actionsNeedingValue.some((a) => !a.value);
+    const hasEmptyActions = actionsNeedingValue.some((a) => !a.value || !a.value.trim());
     if (hasEmptyActions) {
+      console.log('Validation failed: empty actions');
       Alert.alert('Error', 'Please fill in all action values');
       return;
     }
 
-    Alert.alert('Success', `Rule "${ruleName}" created successfully!`, [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    console.log('Validation passed, showing success toast');
+    
+    // Prepare updated rule data
+    const updatedRule: Rule = {
+      id: ruleToEdit?.id || Date.now().toString(),
+      name: ruleName.trim(),
+      enabled: ruleToEdit?.enabled ?? true,
+      conditions,
+      actions,
+      createdAt: ruleToEdit?.createdAt || new Date(),
+      lastRun: ruleToEdit?.lastRun,
+      matchCount: ruleToEdit?.matchCount || 0,
+    };
+    
+    // Show success toast
+    setToast({
+      message: `Rule "${ruleName}" ${isEditMode ? 'updated' : 'created'} successfully!`,
+    });
+
+    // Navigate to rules page with updated rule data after a short delay
+    setTimeout(() => {
+      router.push({
+        pathname: '/rules',
+        params: {
+          updatedRule: JSON.stringify(updatedRule),
+          isEdit: isEditMode ? 'true' : 'false',
+        },
+      });
+    }, 1500);
   };
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Create New Rule',
+          title: isEditMode ? 'Edit Rule' : 'Create New Rule',
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.text,
         }}
@@ -221,7 +419,7 @@ export default function CreateRuleScreen() {
                     </TouchableOpacity>
                     {dropdown.visible && dropdown.type === 'operator' && dropdown.index === index && (
                       <View style={[styles.dropdownMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        {OPERATORS.map((operator) => (
+                        {OPERATORS.filter((op) => getValidOperators(condition.field).includes(op.value)).map((operator) => (
                           <TouchableOpacity
                             key={operator.value}
                             style={[styles.dropdownOption, { borderBottomColor: colors.border }]}
@@ -235,26 +433,37 @@ export default function CreateRuleScreen() {
                   </View>
                 </View>
 
-                <View style={styles.valueRow}>
-                  <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Value</Text>
-                  <TextInput
-                    style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                    placeholder={
-                      condition.field === 'age'
-                        ? 'Number of days'
-                        : condition.field === 'semantic'
-                        ? 'Keywords or phrase'
-                        : 'Text to match'
-                    }
-                    placeholderTextColor={colors.textSecondary}
-                    value={String(condition.value)}
-                    onChangeText={(text) => {
-                      const value = condition.field === 'age' ? Number(text) || 0 : text;
-                      updateCondition(index, 'value', value);
-                    }}
-                    keyboardType={condition.field === 'age' ? 'numeric' : 'default'}
-                  />
-                </View>
+                {(condition.operator !== 'isTrue' && condition.operator !== 'isFalse') && (
+                  <View style={styles.valueRow}>
+                    <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Value</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                      placeholder={
+                        condition.field === 'age'
+                          ? 'Number of days (e.g., 30)'
+                          : condition.field === 'size'
+                          ? 'Size in bytes (e.g., 1048576)'
+                          : condition.field === 'date'
+                          ? 'Date (e.g., 2024-01-15)'
+                          : condition.field === 'semantic'
+                          ? 'Keywords or phrase'
+                          : condition.field === 'subject' || condition.field === 'body'
+                          ? 'Text to search for'
+                          : 'Text to match'
+                      }
+                      placeholderTextColor={colors.textSecondary}
+                      value={String(condition.value || '')}
+                      onChangeText={(text) => {
+                        let value: string | number = text;
+                        if (condition.field === 'age' || condition.field === 'size') {
+                          value = Number(text) || 0;
+                        }
+                        updateCondition(index, 'value', value);
+                      }}
+                      keyboardType={condition.field === 'age' || condition.field === 'size' ? 'numeric' : 'default'}
+                    />
+                  </View>
+                )}
 
                 {conditions.length > 1 && (
                   <TouchableOpacity
@@ -352,10 +561,58 @@ export default function CreateRuleScreen() {
           <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.background, borderColor: colors.border }]} onPress={() => router.back()}>
             <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primary }]} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Create Rule</Text>
+          <TouchableOpacity 
+            style={[styles.saveButton, { backgroundColor: colors.primary }]} 
+            onPress={() => {
+              console.log('Save button pressed!');
+              handleSave();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.saveButtonText}>{isEditMode ? 'Save Changes' : 'Create Rule'}</Text>
           </TouchableOpacity>
         </View>
+
+        {toast && (
+          <View
+            style={{
+              position: 'absolute',
+              left: 16,
+              right: 16,
+              bottom: insets.bottom + 16,
+              backgroundColor: colors.surface,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderRadius: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              borderWidth: 1,
+              borderColor: colors.success + '55',
+              shadowColor: colors.success,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 10,
+              elevation: 4,
+            }}
+          >
+            <View
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.success + '22',
+                borderWidth: 1,
+                borderColor: colors.success + '55',
+              }}
+            >
+              <Check size={18} color={colors.success} strokeWidth={3} />
+            </View>
+            <Text style={{ color: colors.text, flex: 1, fontSize: 14 }}>{toast.message}</Text>
+          </View>
+        )}
       </SafeAreaView>
     </>
   );

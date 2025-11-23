@@ -70,7 +70,7 @@ export default function RootLayout() {
                   <StatusBar style="auto" />
                   <CalendarProvider>
                     <EmailStateProvider>
-                      <RootLayoutNav />
+                  <RootLayoutNav />
                     </EmailStateProvider>
                   </CalendarProvider>
                 </GestureHandlerWrapper>

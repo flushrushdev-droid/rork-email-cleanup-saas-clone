@@ -542,16 +542,16 @@ export function InboxView({
           </View>
         ) : filteredEmails.length === 0 ? (
           activeFilter === 'trash' ? (
-            <View style={styles.emptyState}>
-              <Trash2 size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Trash is empty</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Deleted emails will appear here</Text>
-            </View>
+          <View style={styles.emptyState}>
+            <Trash2 size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Trash is empty</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Deleted emails will appear here</Text>
+          </View>
           ) : (
-            <View style={styles.emptyState}>
-              <Mail size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
-            </View>
+          <View style={styles.emptyState}>
+            <Mail size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
+          </View>
           )
         ) : (
           filteredEmails.map((email: EmailMessage) => {

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
-import { Plus, Zap, Clock, Mail, Tag, Archive, Trash2, ChevronRight, Play } from 'lucide-react-native';
+import { Stack, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { Plus, Zap, Clock, Mail, Tag, Archive, Trash2, Settings, Play } from 'lucide-react-native';
 
 import { Rule } from '@/constants/types';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -51,7 +51,44 @@ const mockRules: Rule[] = [
 
 export default function RulesScreen() {
   const { colors } = useTheme();
+  const params = useLocalSearchParams<{ updatedRule?: string; isEdit?: string }>();
   const [rules, setRules] = useState(mockRules);
+
+  // Update rules when returning from create-rule screen
+  useFocusEffect(
+    useCallback(() => {
+      if (params.updatedRule) {
+        try {
+          const ruleData = JSON.parse(params.updatedRule);
+          const isEdit = params.isEdit === 'true';
+          
+          // Convert date strings back to Date objects
+          const updatedRule: Rule = {
+            ...ruleData,
+            createdAt: new Date(ruleData.createdAt),
+            lastRun: ruleData.lastRun ? new Date(ruleData.lastRun) : undefined,
+          };
+          
+          setRules((prev) => {
+            if (isEdit) {
+              // Update existing rule
+              return prev.map((rule) =>
+                rule.id === updatedRule.id ? updatedRule : rule
+              );
+            } else {
+              // Add new rule
+              return [updatedRule, ...prev];
+            }
+          });
+          
+          // Clear params to prevent re-applying on next focus
+          router.setParams({ updatedRule: undefined, isEdit: undefined });
+        } catch (error) {
+          console.error('Error parsing updated rule:', error);
+        }
+      }
+    }, [params.updatedRule, params.isEdit])
+  );
 
   const toggleRule = (ruleId: string) => {
     setRules((prev) =>
@@ -204,8 +241,8 @@ export default function RulesScreen() {
                       <Play size={16} color={colors.primary} />
                       <Text style={[styles.testButtonText, { color: colors.primary }]}>Test</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity testID={`edit-${rule.id}`} style={[styles.editButton, { backgroundColor: colors.background }]} onPress={() => alert(`Edit rule: ${rule.name}`)}>
-                      <ChevronRight size={16} color={colors.text} />
+                    <TouchableOpacity testID={`edit-${rule.id}`} style={[styles.editButton, { backgroundColor: colors.background }]} onPress={() => router.push({ pathname: '/create-rule', params: { ruleId: rule.id } })}>
+                      <Settings size={16} color={colors.text} />
                     </TouchableOpacity>
                   </View>
                 </View>

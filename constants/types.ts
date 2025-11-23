@@ -160,8 +160,36 @@ export interface EmailMessage {
   confidence?: number;
 }
 
-export type RuleConditionField = 'sender' | 'age' | 'semantic' | 'domain';
-export type RuleConditionOperator = 'contains' | 'greaterThan' | 'matches' | 'equals';
+export type RuleConditionField = 
+  | 'sender' 
+  | 'subject' 
+  | 'body' 
+  | 'domain' 
+  | 'age' 
+  | 'size' 
+  | 'hasAttachments' 
+  | 'isRead' 
+  | 'isStarred'
+  | 'semantic'
+  | 'label'
+  | 'date';
+
+export type RuleConditionOperator = 
+  | 'contains' 
+  | 'notContains' 
+  | 'equals' 
+  | 'notEquals'
+  | 'startsWith' 
+  | 'endsWith'
+  | 'greaterThan' 
+  | 'lessThan'
+  | 'greaterThanOrEqual'
+  | 'lessThanOrEqual'
+  | 'matches' 
+  | 'isTrue'
+  | 'isFalse'
+  | 'before'
+  | 'after';
 export type RuleActionType = 'label' | 'tag' | 'archive' | 'delete';
 
 export interface RuleCondition {

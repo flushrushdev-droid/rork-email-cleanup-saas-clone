@@ -108,47 +108,47 @@ export function CreateFolderModal({
             scrollEnabled={false}
           >
             <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
-              Create a smart folder using natural language rules
-            </Text>
+            Create a smart folder using natural language rules
+          </Text>
 
-            <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>Folder Name</Text>
-              <TextInput
+            <TextInput
                 ref={nameInputRef}
                 style={[
                   styles.input,
                   { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
                 ]}
-                placeholder="e.g., Important Clients"
+              placeholder="e.g., Important Clients"
                 placeholderTextColor={colors.textSecondary}
-                value={folderName}
-                onChangeText={onFolderNameChange}
-                editable={!isCreating}
+              value={folderName}
+              onChangeText={onFolderNameChange}
+              editable={!isCreating}
                 returnKeyType="next"
-              />
-            </View>
+            />
+          </View>
 
-            <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>Folder Rule</Text>
-              <TextInput
+            <TextInput
                 ref={ruleInputRef}
                 style={[
                   styles.input,
                   styles.textArea,
                   { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
                 ]}
-                placeholder="e.g., Emails from clients about project updates or invoices"
+              placeholder="e.g., Emails from clients about project updates or invoices"
                 placeholderTextColor={colors.textSecondary}
-                value={folderRule}
-                onChangeText={onFolderRuleChange}
-                multiline
-                numberOfLines={4}
-                editable={!isCreating}
-              />
+              value={folderRule}
+              onChangeText={onFolderRuleChange}
+              multiline
+              numberOfLines={4}
+              editable={!isCreating}
+            />
               <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-                Describe the rule in plain English. Our AI will understand it!
-              </Text>
-            </View>
+              Describe the rule in plain English. Our AI will understand it!
+            </Text>
+          </View>
 
             {showError && (
               <Text style={[styles.errorText, { color: colors.danger || '#EF4444' }]}>
@@ -156,26 +156,26 @@ export function CreateFolderModal({
               </Text>
             )}
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
+          <View style={styles.modalActions}>
+            <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border }]}
-                onPress={onClose}
-                disabled={isCreating}
-              >
+              onPress={onClose}
+              disabled={isCreating}
+            >
                 <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+            </TouchableOpacity>
+            <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.primary }]}
                 onPress={handleCreate}
                 disabled={isCreating}
-              >
-                {isCreating ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.createButtonText}>Create Folder</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            >
+              {isCreating ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.createButtonText}>Create Folder</Text>
+              )}
+            </TouchableOpacity>
+          </View>
           </ScrollView>
         </View>
       </Container>
