@@ -6,6 +6,7 @@ import { Mail, Archive, HardDrive, Sparkles, ArrowLeft, AlertCircle, Trash2, XCi
 import { mockSenders, mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useEmailState } from '@/contexts/EmailStateContext';
 
 type StatType = 'unread' | 'noise' | 'files' | 'automated';
 
@@ -16,7 +17,7 @@ export default function StatDetailsScreen() {
   const { messages, senders } = useGmailSync();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const [deletedEmailIds, setDeletedEmailIds] = useState<Set<string>>(new Set());
+  const { trashedEmails } = useEmailState();
 
   const handleDelete = (emailId: string, subject: string) => {
     Alert.alert(
@@ -28,7 +29,8 @@ export default function StatDetailsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            setDeletedEmailIds(prev => new Set(prev).add(emailId));
+            // Email deletion is handled in email-detail screen
+            // This is just for UI consistency
           },
         },
       ]
@@ -45,7 +47,8 @@ export default function StatDetailsScreen() {
           text: 'Delete Forever',
           style: 'destructive',
           onPress: () => {
-            setDeletedEmailIds(prev => new Set(prev).add(emailId));
+            // Email deletion is handled in email-detail screen
+            // This is just for UI consistency
           },
         },
       ]
@@ -102,10 +105,12 @@ export default function StatDetailsScreen() {
   // Memoize filtered data to prevent blocking during transitions
   const unreadEmails = useMemo(() => {
     if (type !== 'unread') return [];
-    return messages.length > 0 
+    const emails = messages.length > 0 
       ? messages.filter(m => !m.isRead) 
       : mockRecentEmails.filter(m => !m.isRead);
-  }, [type, messages]);
+    // Filter out trashed emails
+    return emails.filter(m => !trashedEmails.has(m.id));
+  }, [type, messages, trashedEmails]);
 
   const noisySenders = useMemo(() => {
     if (type !== 'noise') return [];
@@ -117,13 +122,13 @@ export default function StatDetailsScreen() {
   const emailsWithFiles = useMemo(() => {
     if (type !== 'files') return [];
     return (messages.length > 0 ? messages : mockRecentEmails)
-      .filter(m => m.hasAttachments && ('attachmentCount' in m ? m.attachmentCount > 0 : true) && !deletedEmailIds.has(m.id))
+      .filter(m => m.hasAttachments && ('attachmentCount' in m ? m.attachmentCount > 0 : true) && !trashedEmails.has(m.id))
       .sort((a, b) => {
         const aSize = 'size' in a ? a.size : ('sizeBytes' in a ? a.sizeBytes : 0);
         const bSize = 'size' in b ? b.size : ('sizeBytes' in b ? b.sizeBytes : 0);
         return bSize - aSize;
       });
-  }, [type, messages, deletedEmailIds]);
+  }, [type, messages, trashedEmails]);
 
   const renderContent = () => {
     switch (type) {

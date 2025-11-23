@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Check } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -18,6 +18,7 @@ export default function EmailDetailScreen() {
     emailId: string; 
     returnTo?: string; 
     statType?: string;
+    showDeleteToast?: string; // ID of email that was just deleted (to show toast)
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -27,16 +28,19 @@ export default function EmailDetailScreen() {
   const [pendingArchive, setPendingArchive] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<Set<string>>(new Set());
   const [archivedEmails, setArchivedEmails] = useState<Set<string>>(new Set());
-  const [trashedEmails, setTrashedEmails] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; onUndo?: () => void } | null>(null);
   const [toastTimer, setToastTimer] = useState(5);
-  const archiveTimeoutRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
-  const deleteTimeoutRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const archiveTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const deleteTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const isMountedRef = useRef(true);
   
-  // Use shared email state context for starred only
+  // Use shared email state context for starred and trashed emails
   const { 
     starredEmails, 
     toggleStarredEmail,
+    trashedEmails,
+    addTrashedEmail,
+    removeTrashedEmail,
   } = useEmailState();
 
   const allEmails: EmailMessage[] = useMemo(() => {
@@ -69,8 +73,8 @@ export default function EmailDetailScreen() {
           email.category = categorizeEmail(email);
           return email;
         });
-    // Filter out trashed emails (unless viewing trash folder)
-    return emails.filter(email => !trashedEmails.has(email.id));
+    // Filter out trashed emails (but keep pendingDelete emails so we can navigate to next)
+    return emails.filter(email => !trashedEmails.has(email.id) || pendingDelete.has(email.id));
   }, [isDemoMode, messages, starredEmails, trashedEmails]);
 
   const selectedEmail = useMemo(() => {
@@ -89,7 +93,7 @@ export default function EmailDetailScreen() {
     const nextEmail = allEmails[currentIndex + 1];
     if (!nextEmail) return;
     
-    // Use push instead of replace for Rork Expo Go compatibility
+    // Use push to maintain navigation stack
     router.push({ 
       pathname: '/email-detail', 
       params: { 
@@ -105,7 +109,7 @@ export default function EmailDetailScreen() {
     const prevEmail = allEmails[currentIndex - 1];
     if (!prevEmail) return;
     
-    // Use push instead of replace for Rork Expo Go compatibility
+    // Use push to maintain navigation stack
     router.push({ 
       pathname: '/email-detail', 
       params: { 
@@ -117,14 +121,73 @@ export default function EmailDetailScreen() {
   };
 
   const handleBack = () => {
-    // Use router.back() to properly pop from navigation stack
-    // This ensures correct navigation: email -> stat-details -> overview
+    // Rely on the navigation stack:
+    // Overview -> Stat-details -> Email-detail
+    // Back from Email-detail -> Stat-details, back again -> Overview
     router.back();
   };
 
   const handleStar = async (emailId: string) => {
     toggleStarredEmail(emailId);
   };
+
+  // Track mount status to avoid state updates after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Show toast if we navigated here after deleting previous email
+  useEffect(() => {
+    if (params.showDeleteToast && params.showDeleteToast !== params.emailId) {
+      // Track this email as pending delete for undo purposes
+      setPendingDelete(prev => new Set(prev).add(params.showDeleteToast!));
+      
+      // Show toast with undo option
+      setToast({
+        message: 'Email moved to Trash',
+        onUndo: () => {
+          // Clear the timeout from the original screen
+          const timeout = deleteTimeoutRef.current.get(params.showDeleteToast!);
+          if (timeout) {
+            clearTimeout(timeout);
+            deleteTimeoutRef.current.delete(params.showDeleteToast!);
+          }
+          // Remove from pending and from trash (email reappears in lists)
+          setPendingDelete(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(params.showDeleteToast!);
+            return newSet;
+          });
+          // Remove from trash so email reappears in lists
+          removeTrashedEmail(params.showDeleteToast!);
+          setToast(null);
+        },
+      });
+      setToastTimer(5);
+      
+      // Auto-hide toast after 5 seconds
+      const timeout = setTimeout(() => {
+        if (isMountedRef.current) {
+          setToast(null);
+        }
+        deleteTimeoutRef.current.delete(params.showDeleteToast!);
+      }, 5000);
+      
+      deleteTimeoutRef.current.set(params.showDeleteToast!, timeout);
+      
+      // Cleanup on unmount
+      return () => {
+        const timeout = deleteTimeoutRef.current.get(params.showDeleteToast!);
+        if (timeout) {
+          clearTimeout(timeout);
+          deleteTimeoutRef.current.delete(params.showDeleteToast!);
+        }
+      };
+    }
+  }, [params.showDeleteToast, params.emailId]);
 
   // Countdown timer for undo toasts
   useEffect(() => {
@@ -181,16 +244,26 @@ export default function EmailDetailScreen() {
       
       // Archive after 5 seconds if not undone
       const timeout = setTimeout(() => {
+        let shouldArchive = false;
         setPendingArchive(prev => {
           if (prev.has(email.id)) {
-            setArchivedEmails(archived => new Set(archived).add(email.id));
-            return new Set([...prev].filter(id => id !== email.id));
+            shouldArchive = true;
+            const newSet = new Set(prev);
+            newSet.delete(email.id);
+            return newSet;
           }
           return prev;
         });
+
+        if (shouldArchive) {
+          setArchivedEmails(archived => new Set(archived).add(email.id));
+          if (isMountedRef.current) {
+            setToast(null);
+            router.back();
+          }
+        }
+
         archiveTimeoutRef.current.delete(email.id);
-        setToast(null);
-        router.back();
       }, 5000);
       
       archiveTimeoutRef.current.set(email.id, timeout);
@@ -229,62 +302,54 @@ export default function EmailDetailScreen() {
         console.log('Delete clicked. Email index:', emailIndex, 'Total emails:', allEmails.length, 'Has next:', hasNextEmail, 'Next email:', nextEmail?.id, nextEmail?.subject);
       }
       
-      // Add to pending delete (will be deleted after timeout)
+      // Immediately add to trash so it disappears from lists
+      addTrashedEmail(email.id);
+      
+      // Track as pending delete for undo functionality
       setPendingDelete(prev => new Set(prev).add(email.id));
       
-      // Show toast with undo option
-      setToast({
-        message: 'Email moved to Trash',
-        onUndo: () => {
-          // Clear the timeout
-          const timeout = deleteTimeoutRef.current.get(email.id);
-          if (timeout) {
-            clearTimeout(timeout);
-            deleteTimeoutRef.current.delete(email.id);
-          }
-          // Remove from pending
-          setPendingDelete(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(email.id);
-            return newSet;
-          });
-          setToast(null);
-        },
-      });
-      
       // Navigate to next email immediately (or go back if no next)
-      // Do this synchronously to ensure it happens immediately
+      // Don't show toast here - it will show on the next screen via showDeleteToast param
       if (nextEmail) {
         if (__DEV__) {
           console.log('Navigating to next email:', nextEmail.id, nextEmail.subject);
         }
-        // Use push instead of replace to maintain navigation stack
-        router.push({ 
+        // Use replace to replace current screen (not add to stack)
+        // This ensures: Overview -> Stat-details -> Email-detail (next, replaces deleted)
+        router.replace({ 
           pathname: '/email-detail', 
           params: { 
             emailId: nextEmail.id,
             returnTo: params.returnTo,
             statType: params.statType,
+            showDeleteToast: email.id, // Pass deleted email ID to show toast on next screen
           } 
         });
       } else {
         if (__DEV__) {
-          console.log('No next email, going back to mail list');
+          console.log('No next email, going back');
         }
-        router.back();
+        // Navigate back to stat-details if that's where we came from
+        if (params.returnTo === 'stat-details' && params.statType) {
+          router.push({
+            pathname: '/stat-details',
+            params: { type: params.statType }
+          });
+        } else {
+          router.back();
+        }
       }
       
-      // Delete after 5 seconds if not undone
+      // After 5 seconds, if not undone, just remove from pendingDelete
+      // (email is already in trashedEmails, so it stays deleted)
       const timeout = setTimeout(() => {
         setPendingDelete(prev => {
           if (prev.has(email.id)) {
-            setTrashedEmails(trashed => new Set(trashed).add(email.id));
             return new Set([...prev].filter(id => id !== email.id));
           }
           return prev;
         });
         deleteTimeoutRef.current.delete(email.id);
-        setToast(null);
       }, 5000);
       
       deleteTimeoutRef.current.set(email.id, timeout);
@@ -299,6 +364,19 @@ export default function EmailDetailScreen() {
       console.error('Failed to delete email:', error);
     }
   };
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all archive timeouts
+      archiveTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      archiveTimeoutRef.current.clear();
+      
+      // Clear all delete timeouts
+      deleteTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      deleteTimeoutRef.current.clear();
+    };
+  }, []);
 
   const handleReply = (email: EmailMessage) => {
     // Navigate back to mail tab with compose mode
@@ -332,6 +410,23 @@ export default function EmailDetailScreen() {
       }
     });
   };
+
+  // If email not found (was deleted), navigate back to avoid black screen
+  // Use replace to remove this screen from the stack
+  useEffect(() => {
+    if (!selectedEmail && params.emailId && !params.showDeleteToast) {
+      // Navigate back to stat-details if that's where we came from
+      // Use replace to remove the deleted email screen from the stack
+      if (params.returnTo === 'stat-details' && params.statType) {
+        router.replace({
+          pathname: '/stat-details',
+          params: { type: params.statType }
+        });
+      } else {
+        router.back();
+      }
+    }
+  }, [selectedEmail, params.emailId, params.showDeleteToast, params.returnTo, params.statType, router]);
 
   if (!selectedEmail) {
     return (
