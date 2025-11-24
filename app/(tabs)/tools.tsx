@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, ListRenderItem } from 'react-native';
 import { MailX, ChevronRight, Sparkles, Users, UserX, FileText, Shield, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,12 +79,12 @@ export default function ToolsScreen() {
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your inbox efficiently</Text>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
-        {tools.map((tool) => {
+      <FlatList
+        data={tools}
+        renderItem={({ item: tool }) => {
           const Icon = tool.icon;
           return (
             <TouchableOpacity
-              key={tool.id}
               testID={`tool-${tool.id}`}
               style={[styles.toolCard, { backgroundColor: colors.surface }]}
               onPress={() => {
@@ -104,8 +104,16 @@ export default function ToolsScreen() {
               <ChevronRight size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           );
-        })}
-      </ScrollView>
+        }}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        updateCellsBatchingPeriod={50}
+      />
     </View>
   );
 }

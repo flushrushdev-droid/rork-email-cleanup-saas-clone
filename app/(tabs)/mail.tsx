@@ -76,7 +76,9 @@ export default function MailScreen() {
     handleBulkArchive,
     handleBulkMarkRead,
     handleBulkMove,
+    handleRefresh,
     isDemoMode,
+    isSyncing,
   } = useMailScreen();
 
 
@@ -98,6 +100,8 @@ export default function MailScreen() {
           onLoadDraft={handleLoadDraft}
           onDeleteDraft={handleDeleteDraft}
           onCreateFolder={() => setIsModalVisible(true)}
+          onRefresh={handleRefresh}
+          isRefreshing={isSyncing}
           selectionMode={selectionMode}
           selectedEmails={selectedEmails}
           onToggleSelection={handleToggleSelection}

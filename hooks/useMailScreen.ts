@@ -17,7 +17,7 @@ export function useMailScreen() {
   const params = useLocalSearchParams<{ emailId?: string; timestamp?: string; compose?: string }>();
   const router = useRouter();
   const { isDemoMode } = useAuth();
-  const { messages, markAsRead, archiveMessage } = useGmailSync();
+  const { messages, markAsRead, archiveMessage, syncMailbox, isSyncing } = useGmailSync();
   const { starredEmails, toggleStarredEmail } = useEmailState();
   const { drafts, saveDraft, loadDraft, deleteDraft } = useDrafts();
 
@@ -417,6 +417,33 @@ export function useMailScreen() {
     }
   }, [selectedEmail, filteredEmails, isDemoMode, markAsRead]);
 
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    if (isDemoMode) {
+      // In demo mode, restore all deleted/archived emails by clearing the state
+      setArchivedEmails(new Set());
+      setTrashedEmails(new Set());
+      setPendingArchive(new Set());
+      setPendingDelete(new Set());
+      // Clear any pending timeouts
+      archiveTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      deleteTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+      archiveTimeoutRef.current.clear();
+      deleteTimeoutRef.current.clear();
+      return;
+    }
+    
+    if (!syncMailbox) {
+      return;
+    }
+    
+    try {
+      await syncMailbox();
+    } catch (error) {
+      console.error('Error refreshing emails:', error);
+    }
+  }, [isDemoMode, syncMailbox]);
+
   // Handle create folder
   const handleCreateFolder = useCallback(async () => {
     if (!folderName.trim() || !folderRule.trim()) {
@@ -678,8 +705,10 @@ export function useMailScreen() {
     handleBulkArchive,
     handleBulkMarkRead,
     handleBulkMove,
+    handleRefresh,
     // Additional state
     isDemoMode,
+    isSyncing,
   };
 }
 

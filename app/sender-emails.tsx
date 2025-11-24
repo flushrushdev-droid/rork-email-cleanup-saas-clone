@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, Alert, ListRenderItem } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Mail, Calendar, Paperclip, Star, Archive, Trash2, MoreHorizontal } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -156,12 +156,65 @@ export default function SenderEmailsScreen() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Emails from this sender ({senderEmails.length})
-        </Text>
+      <FlatList
+        data={senderEmails}
+        renderItem={({ item: email }) => {
+          const isSelected = selectedEmails.includes(email.id);
+          
+          return (
+            <TouchableOpacity
+              testID={`email-card-${email.id}`}
+              style={[
+                styles.emailCard,
+                { backgroundColor: colors.surface },
+                isSelected && { borderWidth: 2, borderColor: colors.primary }
+              ]}
+              onPress={() => toggleEmail(email.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.emailHeader}>
+                <View style={styles.emailMeta}>
+                  <Calendar size={14} color={colors.textSecondary} />
+                  <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatShortRelativeDate(email.date)}</Text>
+                  {email.hasAttachments && (
+                    <>
+                      <Paperclip size={14} color={colors.textSecondary} />
+                      <Text style={[styles.emailAttachments, { color: colors.textSecondary }]}>
+                        {email.attachmentCount}
+                      </Text>
+                    </>
+                  )}
+                </View>
+                {email.isStarred && <Star size={16} color={colors.warning} fill={colors.warning} />}
+              </View>
 
-        {senderEmails.length === 0 ? (
+              <Text style={[styles.emailSubject, { color: colors.text }]} numberOfLines={2}>
+                {email.subject}
+              </Text>
+              <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
+                {email.snippet}
+              </Text>
+
+              <View style={styles.emailFooter}>
+                <View style={styles.emailTags}>
+                  {email.tags?.slice(0, 2).map((tag, idx) => (
+                    <View key={idx} style={[styles.tag, { backgroundColor: colors.primary + '15' }]}>
+                      <Text style={[styles.tagText, { color: colors.primary }]}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={[styles.emailSize, { color: colors.textSecondary }]}>{formatBytes(email.size)}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Emails from this sender ({senderEmails.length})
+          </Text>
+        }
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Mail size={48} color={colors.textSecondary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No emails to display</Text>
@@ -169,61 +222,15 @@ export default function SenderEmailsScreen() {
               This is a preview with limited mock data
             </Text>
           </View>
-        ) : (
-          senderEmails.map((email) => {
-            const isSelected = selectedEmails.includes(email.id);
-            
-            return (
-              <TouchableOpacity
-                key={email.id}
-                testID={`email-card-${email.id}`}
-                style={[
-                  styles.emailCard,
-                  { backgroundColor: colors.surface },
-                  isSelected && { borderWidth: 2, borderColor: colors.primary }
-                ]}
-                onPress={() => toggleEmail(email.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.emailHeader}>
-                  <View style={styles.emailMeta}>
-                    <Calendar size={14} color={colors.textSecondary} />
-                    <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatShortRelativeDate(email.date)}</Text>
-                    {email.hasAttachments && (
-                      <>
-                        <Paperclip size={14} color={colors.textSecondary} />
-                        <Text style={[styles.emailAttachments, { color: colors.textSecondary }]}>
-                          {email.attachmentCount}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                  {email.isStarred && <Star size={16} color={colors.warning} fill={colors.warning} />}
-                </View>
-
-                <Text style={[styles.emailSubject, { color: colors.text }]} numberOfLines={2}>
-                  {email.subject}
-                </Text>
-                <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
-                  {email.snippet}
-                </Text>
-
-                <View style={styles.emailFooter}>
-                  <View style={styles.emailTags}>
-                    {email.tags?.slice(0, 2).map((tag, idx) => (
-                      <View key={idx} style={[styles.tag, { backgroundColor: colors.primary + '15' }]}>
-                        <Text style={[styles.tagText, { color: colors.primary }]}>{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <Text style={[styles.emailSize, { color: colors.textSecondary }]}>{formatBytes(email.size)}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
-        <View style={{ height: 80 }} />
-      </ScrollView>
+        }
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 80 }]}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        updateCellsBatchingPeriod={50}
+      />
     </View>
   );
 }

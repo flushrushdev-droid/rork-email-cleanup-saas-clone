@@ -45,5 +45,7 @@ export interface InboxViewProps {
   onBulkMarkRead: () => void;
   onBulkMove: () => void;
   onCompose: () => void;
+  onRefresh?: () => Promise<void>;
+  isRefreshing?: boolean;
 }
 

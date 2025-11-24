@@ -38,6 +38,8 @@ export function InboxView({
   onBulkMarkRead,
   onBulkMove,
   onCompose,
+  onRefresh,
+  isRefreshing = false,
 }: InboxViewProps) {
   const { colors } = useTheme();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(false);
@@ -127,6 +129,8 @@ export function InboxView({
           onLoadDraft={onLoadDraft}
           onDeleteDraft={onDeleteDraft}
           insets={insets}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
         />
       )}
 

@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback } from 'react';
-import { Text, View, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useCallback, useState } from 'react';
+import { Text, View, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, Trash2, FolderOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -30,6 +30,7 @@ export default function OverviewScreen() {
   const { trashedEmails } = useEmailState();
   const { handleAsync, error, clearError } = useErrorHandler({ showAlert: false });
   const styles = React.useMemo(() => createOverviewStyles(colors), [colors]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const handleSync = useCallback(async () => {
     if (isDemoMode) {
@@ -40,6 +41,12 @@ export default function OverviewScreen() {
       await syncMailbox();
     }, { showAlert: false });
   }, [isDemoMode, syncMailbox, handleAsync, clearError]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await handleSync();
+    setIsRefreshing(false);
+  }, [handleSync]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -58,7 +65,18 @@ export default function OverviewScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 80 }]} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing || isSyncing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>

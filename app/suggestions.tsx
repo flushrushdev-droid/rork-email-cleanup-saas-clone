@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView } from 'react-native';
+import { Text, View, FlatList, ListRenderItem } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Sparkles, CheckCircle2 } from 'lucide-react-native';
 
@@ -113,8 +113,20 @@ export default function SuggestionsScreen() {
           </Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {suggestions.length === 0 ? (
+        <FlatList
+          data={suggestions}
+          renderItem={({ item: suggestion }) => (
+            <SuggestionCard
+              suggestion={suggestion}
+              isProcessing={processingId === suggestion.id}
+              onViewAffectedEmails={() => handleViewAffectedEmails(suggestion)}
+              onDismiss={() => handleDismiss(suggestion.id)}
+              onApply={() => handleApply(suggestion.id)}
+              colors={colors}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={
             <EmptyState
               icon={CheckCircle2}
               title="All Caught Up!"
@@ -122,21 +134,15 @@ export default function SuggestionsScreen() {
               iconColor={colors.primary}
               style={styles.emptyState}
             />
-          ) : (
-            suggestions.map((suggestion) => (
-              <SuggestionCard
-                key={suggestion.id}
-                suggestion={suggestion}
-                isProcessing={processingId === suggestion.id}
-                onViewAffectedEmails={() => handleViewAffectedEmails(suggestion)}
-                onDismiss={() => handleDismiss(suggestion.id)}
-                onApply={() => handleApply(suggestion.id)}
-                colors={colors}
-              />
-            ))
-          )}
-          <View style={{ height: 100 }} />
-        </ScrollView>
+          }
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          updateCellsBatchingPeriod={50}
+        />
     </View>
   );
 }

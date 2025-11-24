@@ -254,6 +254,11 @@ export function useNotes() {
     }
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    // Reset to demo notes (restore all deleted notes)
+    setNotes([...demoNotes]);
+  }, []);
+
   return {
     notes,
     modalVisible,
@@ -279,6 +284,7 @@ export function useNotes() {
     handleDateCancel,
     handleTimeConfirm,
     handleTimeCancel,
+    handleRefresh,
   };
 }
 
