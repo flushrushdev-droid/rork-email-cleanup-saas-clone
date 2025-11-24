@@ -1,38 +1,17 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
 
 import { mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { createFolderDetailsStyles } from '@/styles/app/folder-details';
+import { categorizeEmail } from '@/utils/emailCategories';
+import { ScreenHeader } from '@/components/common/ScreenHeader';
 import type { Email, EmailCategory, EmailMessage } from '@/constants/types';
 
-const categoryKeywords: Record<EmailCategory, string[]> = {
-  invoices: ['invoice', 'bill', 'payment', 'billing', 'charge'],
-  receipts: ['receipt', 'order confirmation', 'purchase', 'transaction'],
-  travel: ['flight', 'hotel', 'booking', 'reservation', 'trip', 'travel'],
-  hr: ['hr', 'human resources', 'benefits', 'payroll', 'pto', 'time off'],
-  legal: ['legal', 'contract', 'agreement', 'terms', 'policy'],
-  personal: ['personal', 'family', 'friend'],
-  promotions: ['sale', 'discount', 'offer', 'deal', 'promo', 'marketing'],
-  social: ['linkedin', 'facebook', 'twitter', 'instagram', 'notification'],
-  system: ['alert', 'security', 'notification', 'update', 'reminder'],
-};
-
-function categorizeEmail(email: Email): EmailCategory | undefined {
-  const searchText = `${email.subject} ${email.snippet} ${email.from}`.toLowerCase();
-  
-  for (const [category, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(keyword => searchText.includes(keyword))) {
-      return category as EmailCategory;
-    }
-  }
-  
-  return undefined;
-}
 
 export default function FolderDetailsScreen() {
   const params = useLocalSearchParams<{ folderName: string; category?: string; folderColor: string; isCustom?: string }>();
@@ -40,6 +19,7 @@ export default function FolderDetailsScreen() {
   const { isDemoMode } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const styles = React.useMemo(() => createFolderDetailsStyles(colors), [colors]);
 
   const emailsWithCategories = useMemo(() => {
     if (isDemoMode || messages.length === 0) {
@@ -93,19 +73,16 @@ export default function FolderDetailsScreen() {
         }} 
       />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { backgroundColor: params.folderColor || colors.primary, paddingTop: insets.top + 16 }]}>
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            style={styles.backButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <ChevronLeft size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>{params.folderName}</Text>
-            <Text style={styles.headerSubtitle}>{filteredEmails.length} emails</Text>
-          </View>
-        </View>
+        <ScreenHeader
+          title={params.folderName || 'Folder'}
+          subtitle={`${filteredEmails.length} emails`}
+          backgroundColor={params.folderColor || colors.primary}
+          titleColor="#FFFFFF"
+          subtitleColor="#FFFFFF"
+          backButtonColor="#FFFFFF"
+          insets={insets}
+          style={styles.header}
+        />
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {filteredEmails.length === 0 ? (
@@ -163,102 +140,3 @@ export default function FolderDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    marginBottom: 12,
-  },
-  headerContent: {
-    gap: 4,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  emailList: {
-    padding: 16,
-    gap: 12,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    gap: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  emailCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  emailHeader: {
-    marginBottom: 8,
-  },
-  emailMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  emailFrom: {
-    fontSize: 13,
-    fontWeight: '500',
-    flex: 1,
-  },
-  emailDate: {
-    fontSize: 12,
-  },
-  emailSubject: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  emailSnippet: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
-  },
-  emailTags: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  emailTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  emailTagText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-});

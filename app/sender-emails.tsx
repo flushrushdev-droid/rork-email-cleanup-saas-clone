@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Mail, Calendar, Paperclip, Star, Archive, Trash2, MoreHorizontal } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import Colors from '@/constants/colors';
 import { mockRecentEmails, mockSenders, formatBytes, generateMockEmailsForSender } from '@/mocks/emailData';
 import { EmailMessage } from '@/constants/types';
 import { useTheme } from '@/contexts/ThemeContext';
+import { createSenderEmailsStyles } from '@/styles/app/sender-emails';
+import { formatShortRelativeDate } from '@/utils/relativeDateFormat';
 
 export default function SenderEmailsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ senderId?: string; senderEmail?: string; senderName?: string }>();
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const styles = React.useMemo(() => createSenderEmailsStyles(colors), [colors]);
 
   const sender = params.senderId 
     ? mockSenders.find(s => s.id === params.senderId)
@@ -90,19 +92,6 @@ export default function SenderEmailsScreen() {
     setSelectedEmails([]);
   };
 
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -199,7 +188,7 @@ export default function SenderEmailsScreen() {
                 <View style={styles.emailHeader}>
                   <View style={styles.emailMeta}>
                     <Calendar size={14} color={colors.textSecondary} />
-                    <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatDate(email.date)}</Text>
+                    <Text style={[styles.emailDate, { color: colors.textSecondary }]}>{formatShortRelativeDate(email.date)}</Text>
                     {email.hasAttachments && (
                       <>
                         <Paperclip size={14} color={colors.textSecondary} />
@@ -239,201 +228,3 @@ export default function SenderEmailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  senderHeader: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  senderInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
-  },
-  senderAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  senderInitial: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  senderDetails: {
-    flex: 1,
-  },
-  senderName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 4,
-  },
-  senderEmail: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-  bulkActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.light.primary,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 12,
-  },
-  bulkText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  bulkButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  bulkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  bulkButtonDanger: {
-    backgroundColor: Colors.light.danger,
-  },
-  bulkButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.textSecondary,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  emailCard: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  emailCardSelected: {
-    borderWidth: 2,
-    borderColor: Colors.light.primary,
-  },
-  emailHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  emailMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  emailDate: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  emailAttachments: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  emailSubject: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginBottom: 8,
-  },
-  emailSnippet: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  emailFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  emailTags: {
-    flexDirection: 'row',
-    gap: 6,
-    flex: 1,
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: Colors.light.primary + '15',
-  },
-  tagText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.light.primary,
-  },
-  emailSize: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-});

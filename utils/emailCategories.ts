@@ -1,3 +1,15 @@
+import React from 'react';
+import { 
+  AlertCircle, 
+  Receipt, 
+  ShoppingBag, 
+  Plane, 
+  Tag, 
+  Users, 
+  FileText, 
+  Briefcase, 
+  Scale 
+} from 'lucide-react-native';
 import type { EmailCategory, EmailMessage, Email } from '@/constants/types';
 
 export const categoryKeywords: Record<EmailCategory, string[]> = {
@@ -24,14 +36,14 @@ export function categorizeEmail(email: EmailMessage | Email): EmailCategory | un
   return undefined;
 }
 
-export const iconMap: Record<string, any> = {
-  'alert-circle': 'AlertCircle',
-  'receipt': 'Receipt',
-  'shopping-bag': 'ShoppingBag',
-  'plane': 'Plane',
-  'tag': 'Tag',
-  'users': 'Users',
-  'file-text': 'FileText',
-  'briefcase': 'Briefcase',
-  'scale': 'Scale',
+export const folderIconMap: Record<string, React.ComponentType<any>> = {
+  'alert-circle': AlertCircle,
+  'receipt': Receipt,
+  'shopping-bag': ShoppingBag,
+  'plane': Plane,
+  'tag': Tag,
+  'users': Users,
+  'file-text': FileText,
+  'briefcase': Briefcase,
+  'scale': Scale,
 };

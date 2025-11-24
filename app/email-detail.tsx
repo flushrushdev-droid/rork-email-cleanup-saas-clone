@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Check } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -12,6 +12,7 @@ import { mockRecentEmails } from '@/mocks/emailData';
 import { EmailDetailView } from '@/components/mail/EmailDetailView';
 import { categorizeEmail } from '@/utils/emailCategories';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
+import { createEmailDetailStyles } from '@/styles/app/email-detail';
 
 export default function EmailDetailScreen() {
   const params = useLocalSearchParams<{ 
@@ -23,6 +24,7 @@ export default function EmailDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const styles = React.useMemo(() => createEmailDetailStyles(colors), [colors]);
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
   const [pendingArchive, setPendingArchive] = useState<Set<string>>(new Set());
@@ -539,9 +541,4 @@ export default function EmailDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 

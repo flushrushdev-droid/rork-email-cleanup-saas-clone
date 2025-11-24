@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { Sparkles, CheckCircle2, XCircle, Archive, Trash2, FolderOpen } from 'lucide-react-native';
+import { Sparkles, CheckCircle2 } from 'lucide-react-native';
 
 import { useTheme } from '@/contexts/ThemeContext';
-
-type SuggestionType = 'archive' | 'delete' | 'move';
+import { EmptyState } from '@/components/common/EmptyState';
+import { createSuggestionsStyles } from '@/styles/app/suggestions';
+import { SuggestionCard } from '@/components/suggestions/SuggestionCard';
+import type { SuggestionType } from '@/utils/suggestionUtils';
 
 interface Suggestion {
   id: string;
@@ -19,6 +21,7 @@ interface Suggestion {
 
 export default function SuggestionsScreen() {
   const { colors } = useTheme();
+  const styles = React.useMemo(() => createSuggestionsStyles(colors), [colors]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([
     {
       id: '1',
@@ -88,27 +91,7 @@ export default function SuggestionsScreen() {
     });
   };
 
-  const getIcon = (type: SuggestionType) => {
-    switch (type) {
-      case 'archive':
-        return Archive;
-      case 'delete':
-        return Trash2;
-      case 'move':
-        return FolderOpen;
-    }
-  };
-
-  const getColor = (type: SuggestionType) => {
-    switch (type) {
-      case 'archive':
-        return colors.primary;
-      case 'delete':
-        return colors.danger;
-      case 'move':
-        return colors.secondary;
-    }
-  };
+  // getIcon and getColor are now in utils/suggestionUtils.ts
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -132,73 +115,25 @@ export default function SuggestionsScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {suggestions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <CheckCircle2 size={64} color={colors.primary} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>All Caught Up!</Text>
-              <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-                No suggestions at the moment. Check back later for new recommendations.
-              </Text>
-            </View>
+            <EmptyState
+              icon={CheckCircle2}
+              title="All Caught Up!"
+              description="No suggestions at the moment. Check back later for new recommendations."
+              iconColor={colors.primary}
+              style={styles.emptyState}
+            />
           ) : (
-            suggestions.map((suggestion) => {
-              const Icon = getIcon(suggestion.type);
-              const color = getColor(suggestion.type);
-              const isProcessing = processingId === suggestion.id;
-
-              return (
-                <View key={suggestion.id} style={[styles.suggestionCard, { backgroundColor: colors.surface }]}>
-                  <TouchableOpacity
-                    onPress={() => handleViewAffectedEmails(suggestion)}
-                    activeOpacity={0.7}
-                    style={styles.cardTouchable}
-                  >
-                    <View style={styles.suggestionHeader}>
-                      <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-                        <Icon size={24} color={color} />
-                      </View>
-                      <View style={styles.suggestionContent}>
-                        <Text style={[styles.suggestionTitle, { color: colors.text }]}>{suggestion.title}</Text>
-                        <Text style={[styles.suggestionDescription, { color: colors.textSecondary }]}>{suggestion.description}</Text>
-                        <View style={styles.metaRow}>
-                          <View style={[styles.badge, { backgroundColor: colors.primary + '20' }]}>
-                            <Text style={[styles.badgeText, { color: colors.primary }]}>{suggestion.emailCount} emails</Text>
-                          </View>
-                          <Text style={[styles.reason, { color: colors.textSecondary }]}>{suggestion.reason}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.dismissButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                      onPress={() => handleDismiss(suggestion.id)}
-                      disabled={isProcessing}
-                      activeOpacity={0.7}
-                    >
-                      <XCircle size={18} color={colors.textSecondary} />
-                      <Text style={[styles.dismissButtonText, { color: colors.textSecondary }]}>Dismiss</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.applyButton, { backgroundColor: color }]}
-                      onPress={() => handleApply(suggestion.id)}
-                      disabled={isProcessing}
-                      activeOpacity={0.7}
-                    >
-                      {isProcessing ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <CheckCircle2 size={18} color="#FFFFFF" />
-                          <Text style={styles.applyButtonText}>Apply</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })
+            suggestions.map((suggestion) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                isProcessing={processingId === suggestion.id}
+                onViewAffectedEmails={() => handleViewAffectedEmails(suggestion)}
+                onDismiss={() => handleDismiss(suggestion.id)}
+                onApply={() => handleApply(suggestion.id)}
+                colors={colors}
+              />
+            ))
           )}
           <View style={{ height: 100 }} />
         </ScrollView>
@@ -206,136 +141,3 @@ export default function SuggestionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-  },
-  headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: '90%',
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  suggestionCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  cardTouchable: {
-    marginBottom: 12,
-  },
-  suggestionHeader: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  suggestionContent: {
-    flex: 1,
-  },
-  suggestionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  suggestionDescription: {
-    fontSize: 14,
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  reason: {
-    fontSize: 12,
-    fontStyle: 'italic' as const,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6,
-  },
-  dismissButton: {
-    borderWidth: 1,
-  },
-  dismissButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  applyButton: {
-    flex: 1.2,
-  },
-  applyButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  emptyDescription: {
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-});

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { Mail, Shield, Zap, Lock } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,23 +8,28 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { AppText } from '@/components/common/AppText';
 import { rowText } from '@/styles/layout';
 import { Screen } from '@/components/layout/Screen';
+import { AccessibleButton } from '@/components/common/AccessibleButton';
+import { ErrorDisplay } from '@/components/common/ErrorDisplay';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { createLoginStyles } from '@/styles/app/login';
 
 export default function LoginScreen() {
-  const { signIn, signInDemo, isLoading, error, isAuthenticated } = useAuth();
+  const { signIn, signInDemo, isLoading, error: authError, isAuthenticated } = useAuth();
   const { colors } = useTheme();
   useSafeAreaInsets();
   const { height, fontScale } = useWindowDimensions();
   const router = useRouter();
+  const { handleAsync, error, clearError } = useErrorHandler({ showAlert: false });
 
   // Responsive tweaks so the screen fits without needing to scroll on smaller devices
   const effectiveHeight = height / Math.min(fontScale || 1, 1.4);
   const isSmall = effectiveHeight < 760;
+  
   const handleSignIn = async () => {
-    try {
+    clearError();
+    await handleAsync(async () => {
       await signIn();
-    } catch (err) {
-      console.error('Sign in error:', err);
-    }
+    }, { showAlert: false });
   };
 
   useEffect(() => {
@@ -35,15 +40,15 @@ export default function LoginScreen() {
   }, [isAuthenticated, isLoading, router]);
 
   const handleTryDemo = async () => {
-    console.log('Try Demo button pressed');
-    try {
-      console.log('Starting demo mode...');
+    clearError();
+    await handleAsync(async () => {
       await signInDemo();
-      console.log('Demo mode set successfully');
-    } catch (err) {
-      console.error('Demo sign in error:', err);
-    }
+    }, { showAlert: false });
   };
+
+  // Use auth error if available, otherwise use error handler error
+  const displayError = authError || error;
+  const styles = React.useMemo(() => createLoginStyles(colors), [colors]);
 
   return (
     <Screen
@@ -52,14 +57,18 @@ export default function LoginScreen() {
       style={{ paddingHorizontal: isSmall ? 16 : 24 }}
       footer={(
         <>
-          {error && (
-            <View style={styles.errorContainer}>
-              <AppText style={styles.errorText}>{error}</AppText>
-            </View>
+          {displayError && (
+            <ErrorDisplay
+              error={displayError}
+              variant="alert"
+              onDismiss={clearError}
+            />
           )}
 
           <View style={[styles.buttonContainer, { gap: isSmall ? 8 : 10 }]}>
-            <TouchableOpacity
+            <AccessibleButton
+              accessibilityLabel="Continue with Google"
+              accessibilityHint="Signs in to your Google account to access Gmail"
               style={[
                 styles.signInButton,
                 {
@@ -69,23 +78,19 @@ export default function LoginScreen() {
               ]}
               onPress={handleSignIn}
               disabled={isLoading}
-              activeOpacity={0.8}
+              loading={isLoading}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <View style={[styles.googleIcon, { width: isSmall ? 20 : 22, height: isSmall ? 20 : 22, borderRadius: isSmall ? 10 : 11 }]}>
-                    <AppText style={[styles.googleIconText, { fontSize: isSmall ? 14 : 15 }]}>G</AppText>
-                  </View>
-                  <AppText style={[styles.signInText, { fontSize: isSmall ? 15 : 16 }]}>
-                    Continue with Google
-                  </AppText>
-                </>
-              )}
-            </TouchableOpacity>
+              <View style={[styles.googleIcon, { width: isSmall ? 20 : 22, height: isSmall ? 20 : 22, borderRadius: isSmall ? 10 : 11 }]}>
+                <AppText style={[styles.googleIconText, { fontSize: isSmall ? 14 : 15 }]}>G</AppText>
+              </View>
+              <AppText style={[styles.signInText, { fontSize: isSmall ? 15 : 16 }]}>
+                Continue with Google
+              </AppText>
+            </AccessibleButton>
 
-            <TouchableOpacity
+            <AccessibleButton
+              accessibilityLabel="Try Demo"
+              accessibilityHint="Enters demo mode with sample data to explore the app"
               style={[
                 styles.demoButton,
                 {
@@ -96,12 +101,11 @@ export default function LoginScreen() {
               ]}
               onPress={handleTryDemo}
               disabled={isLoading}
-              activeOpacity={0.8}
             >
               <AppText style={[styles.demoButtonText, { color: colors.primary, fontSize: isSmall ? 15 : 16 }]}>
                 Try Demo
               </AppText>
-            </TouchableOpacity>
+            </AccessibleButton>
           </View>
 
           <AppText style={[styles.disclaimer, { color: colors.textSecondary, fontSize: isSmall ? 10 : 11, lineHeight: isSmall ? 13 : 14, paddingHorizontal: isSmall ? 8 : 12, marginTop: isSmall ? 6 : 8 }]}>
@@ -167,149 +171,7 @@ export default function LoginScreen() {
                 </AppText>
               </View>
       </View>
-    </View>
+      </View>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '800',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 17,
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 20,
-  },
-  features: {
-    gap: 20,
-  },
-  feature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureContent: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  featureText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  errorContainer: {
-    backgroundColor: '#FFEBEE',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FFCDD2',
-  },
-  errorText: {
-    color: '#D32F2F',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    gap: 12,
-  },
-  signInButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#4285F4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleIconText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  signInText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  demoButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  demoButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  disclaimer: {
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 16,
-    paddingHorizontal: 20,
-  },
-});

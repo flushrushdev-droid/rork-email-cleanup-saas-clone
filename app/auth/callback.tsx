@@ -1,9 +1,13 @@
 import { useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/contexts/ThemeContext';
+import { createAuthCallbackStyles } from '@/styles/app/auth/callback';
 
 export default function AuthCallback() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createAuthCallbackStyles(colors);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -16,21 +20,7 @@ export default function AuthCallback() {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#007AFF" />
-      <Text style={styles.text}>Completing authentication...</Text>
+      <Text style={[styles.text, { color: colors.textSecondary }]}>Completing authentication...</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FAFAFA',
-    gap: 16,
-  },
-  text: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-});

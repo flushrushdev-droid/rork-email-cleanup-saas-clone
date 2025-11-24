@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { 
@@ -14,42 +14,17 @@ import {
 } from 'lucide-react-native';
 import { useHistory } from '@/contexts/HistoryContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import Colors from '@/constants/colors';
 import type { HistoryEntry, HistoryActionType } from '@/constants/types';
-
-const ACTION_ICONS: Record<HistoryActionType, React.ComponentType<any>> = {
-  email_deleted: Trash2,
-  email_archived: Archive,
-  email_marked_read: Activity,
-  newsletter_unsubscribed: MailX,
-  folder_created: FolderPlus,
-  rule_created: Settings2,
-  sender_blocked: TrendingDown,
-  sender_muted: TrendingDown,
-  bulk_delete: Trash2,
-  bulk_archive: Archive,
-};
-
-
-
-const ACTION_LABELS: Record<HistoryActionType, string> = {
-  email_deleted: 'Deleted',
-  email_archived: 'Archived',
-  email_marked_read: 'Marked Read',
-  newsletter_unsubscribed: 'Unsubscribed',
-  folder_created: 'Created Folder',
-  rule_created: 'Created Rule',
-  sender_blocked: 'Blocked Sender',
-  sender_muted: 'Muted Sender',
-  bulk_delete: 'Bulk Deleted',
-  bulk_archive: 'Bulk Archived',
-};
+import { formatRelativeDate } from '@/utils/relativeDateFormat';
+import { createHistoryStyles } from '@/styles/app/history';
+import { HistoryItemCard, ACTION_LABELS } from '@/components/history/HistoryItemCard';
 
 export default function HistoryScreen() {
   const { entries, getStats, clearHistory } = useHistory();
   const { colors } = useTheme();
   const [filter, setFilter] = useState<HistoryActionType | 'all'>('all');
   const insets = useSafeAreaInsets();
+  const styles = React.useMemo(() => createHistoryStyles(colors), [colors]);
   
   const stats = useMemo(() => getStats(), [getStats]);
 
@@ -58,30 +33,6 @@ export default function HistoryScreen() {
     return entries.filter(e => e.type === filter);
   }, [entries, filter]);
 
-  const formatDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      if (diffHours === 0) {
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        return diffMins === 0 ? 'Just now' : `${diffMins}m ago`;
-      }
-      return `${diffHours}h ago`;
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return `${diffDays}d ago`;
-    } else if (diffDays < 30) {
-      const weeks = Math.floor(diffDays / 7);
-      return `${weeks}w ago`;
-    }
-    
-    return date.toLocaleDateString();
-  };
 
   const getActionColor = (type: HistoryActionType): string => {
     const colorMap: Record<HistoryActionType, keyof typeof colors> = {
@@ -99,29 +50,6 @@ export default function HistoryScreen() {
     return colors[colorMap[type]];
   };
 
-  const renderHistoryItem = (entry: HistoryEntry) => {
-    const Icon = ACTION_ICONS[entry.type];
-    const color = getActionColor(entry.type);
-    const label = ACTION_LABELS[entry.type];
-
-    return (
-      <View key={entry.id} style={[styles.historyItem, { backgroundColor: colors.surface }]}>
-        <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-          <Icon size={20} color={color} />
-        </View>
-        <View style={styles.historyContent}>
-          <Text style={[styles.historyLabel, { color: colors.text }]}>{label}</Text>
-          <Text style={[styles.historyDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-            {entry.description}
-          </Text>
-          {entry.metadata?.count && entry.metadata.count > 1 && (
-            <Text style={[styles.countBadge, { color: colors.primary }]}>{entry.metadata.count} items</Text>
-          )}
-        </View>
-        <Text style={[styles.historyTime, { color: colors.textSecondary }]}>{formatDate(entry.timestamp)}</Text>
-      </View>
-    );
-  };
 
   const handleClearHistory = () => {
     Alert.alert(
@@ -260,7 +188,15 @@ export default function HistoryScreen() {
               </Text>
             </View>
           ) : (
-            filteredEntries.map(renderHistoryItem)
+            filteredEntries.map((entry) => (
+              <HistoryItemCard
+                key={entry.id}
+                entry={entry}
+                getActionColor={getActionColor}
+                formatDate={formatRelativeDate}
+                colors={colors}
+              />
+            ))
           )}
         </View>
 
@@ -269,175 +205,3 @@ export default function HistoryScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-
-  summarySection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 16,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  summaryCard: {
-    flex: 1,
-    minWidth: 150,
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  summaryIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  summaryValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.light.text,
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: 'center',
-  },
-  filterSection: {
-    marginBottom: 24,
-  },
-  filterScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-  },
-  filterChip: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  filterChipActive: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
-  },
-  filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
-  },
-  historySection: {
-    marginBottom: 24,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  historyContent: {
-    flex: 1,
-    gap: 4,
-  },
-  historyLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  historyDescription: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    lineHeight: 18,
-  },
-  countBadge: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.light.primary,
-    marginTop: 2,
-  },
-  historyTime: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-  },
-  clearHistoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 20,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.danger + '30',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  clearHistoryText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.light.danger,
-  },
-});

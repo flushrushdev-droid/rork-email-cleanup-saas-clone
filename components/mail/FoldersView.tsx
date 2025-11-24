@@ -1,22 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { FolderOpen, Plus, ChevronRight, AlertCircle, Receipt, ShoppingBag, Plane, Tag, Users, FileEdit } from 'lucide-react-native';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { FolderOpen, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailCategory } from '@/constants/types';
-
-const iconMap: Record<string, any> = {
-  'alert-circle': AlertCircle,
-  'receipt': Receipt,
-  'shopping-bag': ShoppingBag,
-  'plane': Plane,
-  'tag': Tag,
-  'users': Users,
-  'file-text': FileEdit,
-  'briefcase': FileEdit,
-  'scale': FileEdit,
-};
+import { FolderCard } from './folders/FolderCard';
+import { createFoldersStyles } from './folders/styles';
 
 interface SmartFolder {
   id: string;
@@ -41,6 +31,7 @@ export function FoldersView({
   onCreateFolder 
 }: FoldersViewProps) {
   const { colors } = useTheme();
+  const styles = createFoldersStyles(colors);
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -79,37 +70,23 @@ export function FoldersView({
           </View>
         ) : (
           <View style={styles.foldersGrid}>
-            {smartFolders.map((folder) => {
-              const IconComponent = iconMap[folder.icon];
-              const Icon = IconComponent || FolderOpen;
-              
-              return (
-                <TouchableOpacity 
-                  key={folder.id} 
-                  testID={`folder-${folder.id}`} 
-                  style={[styles.folderCard, { backgroundColor: colors.surface }]} 
-                  onPress={() => {
-                    router.push({
-                      pathname: '/folder-details',
-                      params: {
-                        folderName: folder.name,
-                        category: folder.category || '',
-                        folderColor: folder.color,
-                      },
-                    });
-                  }}
-                >
-                  <View style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}>
-                    <Icon size={28} color={folder.color} />
-                  </View>
-                  <View style={styles.folderContent}>
-                    <Text style={[styles.folderName, { color: colors.text }]}>{folder.name}</Text>
-                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{folder.count} emails</Text>
-                  </View>
-                  <ChevronRight size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-              );
-            })}
+            {smartFolders.map((folder) => (
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                onPress={() => {
+                  router.push({
+                    pathname: '/folder-details',
+                    params: {
+                      folderName: folder.name,
+                      category: folder.category || '',
+                      folderColor: folder.color,
+                    },
+                  });
+                }}
+                colors={colors}
+              />
+            ))}
           </View>
         )}
       </ScrollView>
@@ -117,105 +94,4 @@ export function FoldersView({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    marginTop: 2,
-  },
-  emailList: {
-    flex: 1,
-  },
-  demoBadge: {
-    backgroundColor: '#FFF4E5',
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFE0B2',
-  },
-  demoText: {
-    fontSize: 14,
-    color: '#FF9500',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  createFolderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-  },
-  createFolderButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    marginTop: 4,
-  },
-  foldersGrid: {
-    paddingHorizontal: 16,
-    gap: 12,
-    marginBottom: 24,
-  },
-  folderCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  folderIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  folderContent: {
-    flex: 1,
-  },
-  folderName: {
-    fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  folderCount: {
-    fontSize: 14,
-  },
-});
+// Styles are now in components/mail/folders/styles.ts

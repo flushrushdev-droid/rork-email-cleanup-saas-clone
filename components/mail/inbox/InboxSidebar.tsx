@@ -1,0 +1,186 @@
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { X, Inbox, FolderOpen, Plus } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { FilterType, SmartFolder } from './types';
+import { sidebarStyles } from './styles/sidebarStyles';
+import { iconMap } from './constants';
+
+interface InboxSidebarProps {
+  isVisible: boolean;
+  onClose: () => void;
+  activeFilter: FilterType;
+  onFilterChange: (filter: FilterType) => void;
+  smartFolders: SmartFolder[];
+  customFolders: Array<{ id: string; name: string; color: string; count: number }>;
+  onCreateFolder: () => void;
+  insets: { top: number; bottom: number; left: number; right: number };
+  sidebarSlideAnim: Animated.Value;
+}
+
+export function InboxSidebar({
+  isVisible,
+  onClose,
+  activeFilter,
+  onFilterChange,
+  smartFolders,
+  customFolders,
+  onCreateFolder,
+  insets,
+  sidebarSlideAnim,
+}: InboxSidebarProps) {
+  const { colors } = useTheme();
+
+  const handleFilterChange = (filter: FilterType) => {
+    onFilterChange(filter);
+    onClose();
+  };
+
+  const handleFolderPress = (folder: { name: string; category?: string; color: string; isCustom?: boolean }) => {
+    router.push({
+      pathname: '/folder-details',
+      params: {
+        folderName: folder.name,
+        category: folder.category || '',
+        folderColor: folder.color,
+        ...(folder.isCustom ? { isCustom: '1' } : {}),
+      },
+    });
+    onClose();
+  };
+
+  return (
+    <>
+      <Animated.View style={[
+        sidebarStyles.sidebar,
+        { backgroundColor: colors.background, left: sidebarSlideAnim, paddingTop: insets.top }
+      ]}>
+        <View style={[sidebarStyles.sidebarHeader, { borderBottomColor: colors.border }]}>
+          <Text style={[sidebarStyles.sidebarTitle, { color: colors.text }]}>Filters & Folders</Text>
+          <TouchableOpacity onPress={onClose}>
+            <X size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={sidebarStyles.sidebarContent} showsVerticalScrollIndicator={false}>
+          {/* Mail Filters Section */}
+          <View style={sidebarStyles.sidebarSection}>
+            <View style={sidebarStyles.sectionHeader}>
+              <Inbox size={20} color={colors.primary} />
+              <Text style={[sidebarStyles.sectionTitle, { color: colors.text }]}>Mail</Text>
+            </View>
+            
+            {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'archived', 'trash'] as const).map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                testID={`sidebar-filter-${filter}`}
+                style={[
+                  sidebarStyles.sidebarItem,
+                  { backgroundColor: activeFilter === filter ? colors.primary + '15' : 'transparent' }
+                ]}
+                onPress={() => handleFilterChange(filter)}
+              >
+                <Text style={[
+                  sidebarStyles.sidebarItemText,
+                  { color: activeFilter === filter ? colors.primary : colors.text }
+                ]}>
+                  {filter === 'drafts-ai' ? 'Drafts By AI' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                </Text>
+                {activeFilter === filter && (
+                  <View style={[sidebarStyles.activeIndicator, { backgroundColor: colors.primary }]} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* My Folders (custom) Section */}
+          {customFolders.length > 0 && (
+            <View style={sidebarStyles.sidebarSection}>
+              <View style={sidebarStyles.sectionHeader}>
+                <FolderOpen size={20} color={colors.secondary} />
+                <Text style={[sidebarStyles.sectionTitle, { color: colors.text }]}>My Folders</Text>
+              </View>
+              {customFolders.map((folder) => (
+                <TouchableOpacity
+                  key={folder.id}
+                  testID={`sidebar-folder-custom-${folder.id}`}
+                  style={sidebarStyles.sidebarItem}
+                  onPress={() => handleFolderPress({ ...folder, isCustom: true })}
+                >
+                  <View style={sidebarStyles.folderItemContent}>
+                    <View style={[sidebarStyles.folderIcon, { backgroundColor: (folder.color || colors.primary) + '20' }]}>
+                      <FolderOpen size={16} color={folder.color || colors.primary} />
+                    </View>
+                    <Text style={[sidebarStyles.sidebarItemText, { color: colors.text }]}>{folder.name}</Text>
+                  </View>
+                  <View style={[sidebarStyles.folderBadge, { backgroundColor: folder.color || colors.primary }]}>
+                    <Text style={sidebarStyles.folderBadgeText}>{folder.count ?? 0}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Smart Folders Section */}
+          {smartFolders.length > 0 && (
+            <View style={sidebarStyles.sidebarSection}>
+              <View style={sidebarStyles.sectionHeader}>
+                <FolderOpen size={20} color={colors.secondary} />
+                <Text style={[sidebarStyles.sectionTitle, { color: colors.text }]}>Folders</Text>
+              </View>
+
+              {smartFolders.map((folder) => {
+                const Icon = iconMap[folder.icon] || FolderOpen;
+                return (
+                  <TouchableOpacity
+                    key={folder.id}
+                    testID={`sidebar-folder-${folder.id}`}
+                    style={sidebarStyles.sidebarItem}
+                    onPress={() => handleFolderPress(folder)}
+                  >
+                    <View style={sidebarStyles.folderItemContent}>
+                      <View style={[sidebarStyles.folderIcon, { backgroundColor: folder.color + '20' }]}>
+                        <Icon size={16} color={folder.color} />
+                      </View>
+                      <Text style={[sidebarStyles.sidebarItemText, { color: colors.text }]}>{folder.name}</Text>
+                    </View>
+                    <View style={[sidebarStyles.folderBadge, { backgroundColor: folder.color }]}>
+                      <Text style={sidebarStyles.folderBadgeText}>{folder.count}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <TouchableOpacity
+                testID="sidebar-create-folder"
+                style={[sidebarStyles.sidebarItem, { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 16 }]}
+                onPress={() => {
+                  onCreateFolder();
+                  onClose();
+                }}
+              >
+                <View style={sidebarStyles.folderItemContent}>
+                  <View style={[sidebarStyles.folderIcon, { backgroundColor: colors.primary + '20' }]}>
+                    <Plus size={16} color={colors.primary} />
+                  </View>
+                  <Text style={[sidebarStyles.sidebarItemText, { color: colors.primary }]}>Create Folder</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </Animated.View>
+
+      {/* Overlay */}
+      {isVisible && (
+        <TouchableOpacity
+          style={sidebarStyles.sidebarOverlay}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+      )}
+    </>
+  );
+}
+

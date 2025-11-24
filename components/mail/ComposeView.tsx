@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { X, Send, Paperclip, Save, Sparkles, Trash2 } from 'lucide-react-native';
+import { Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { X, Send, Paperclip, Save, Sparkles } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import * as DocumentPicker from 'expo-document-picker';
+import { AttachmentList } from './compose/AttachmentList';
+import { ComposeFormField } from './compose/ComposeFormField';
+import { createComposeStyles } from './compose/styles';
 
 interface ComposeViewProps {
   insets: { top: number; bottom: number };
@@ -44,13 +47,7 @@ export function ComposeView({
 }: ComposeViewProps) {
   const { colors } = useTheme();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-
-  const formatFileSize = (bytes: number | null): string => {
-    if (!bytes) return 'Unknown size';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  const styles = createComposeStyles(colors);
 
   const handleAttachFile = async () => {
     try {
@@ -108,60 +105,46 @@ export function ComposeView({
       </View>
 
       <ScrollView style={styles.composeForm} keyboardShouldPersistTaps="handled">
-        <View style={styles.composeField}>
-          <Text style={[styles.composeLabel, { color: colors.textSecondary }]}>To</Text>
-          <TextInput
-            style={[styles.composeInput, { color: colors.text }]}
-            placeholder="recipient@example.com"
-            value={composeTo}
-            onChangeText={onChangeComposeTo}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor={colors.textSecondary}
-          />
-        </View>
+        <ComposeFormField
+          label="To"
+          value={composeTo}
+          onChangeText={onChangeComposeTo}
+          placeholder="recipient@example.com"
+          keyboardType="email-address"
+          colors={colors}
+        />
 
         <View style={[styles.composeDivider, { backgroundColor: colors.border }]} />
 
-        <View style={styles.composeField}>
-          <Text style={[styles.composeLabel, { color: colors.textSecondary }]}>Cc</Text>
-          <TextInput
-            style={[styles.composeInput, { color: colors.text }]}
-            placeholder="cc@example.com"
-            value={composeCc}
-            onChangeText={onChangeComposeCc}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor={colors.textSecondary}
-          />
-        </View>
+        <ComposeFormField
+          label="Cc"
+          value={composeCc}
+          onChangeText={onChangeComposeCc}
+          placeholder="cc@example.com"
+          keyboardType="email-address"
+          colors={colors}
+        />
 
         <View style={[styles.composeDivider, { backgroundColor: colors.border }]} />
 
-        <View style={styles.composeField}>
-          <Text style={[styles.composeLabel, { color: colors.textSecondary }]}>Subject</Text>
-          <TextInput
-            style={[styles.composeInput, { color: colors.text }]}
-            placeholder="Email subject"
-            value={composeSubject}
-            onChangeText={onChangeComposeSubject}
-            placeholderTextColor={colors.textSecondary}
-          />
-        </View>
+        <ComposeFormField
+          label="Subject"
+          value={composeSubject}
+          onChangeText={onChangeComposeSubject}
+          placeholder="Email subject"
+          colors={colors}
+        />
 
         <View style={[styles.composeDivider, { backgroundColor: colors.border }]} />
 
-        <View style={[styles.composeField, styles.composeBodyField]}>
-          <TextInput
-            style={[styles.composeInput, styles.composeBodyInput, { color: colors.text }]}
-            placeholder="Compose your message..."
-            value={composeBody}
-            onChangeText={onChangeComposeBody}
-            multiline
-            textAlignVertical="top"
-            placeholderTextColor={colors.textSecondary}
-          />
-        </View>
+        <ComposeFormField
+          label=""
+          value={composeBody}
+          onChangeText={onChangeComposeBody}
+          placeholder="Compose your message..."
+          multiline
+          colors={colors}
+        />
 
         <TouchableOpacity 
           style={[styles.attachButton, { borderColor: colors.border }]}
@@ -171,37 +154,11 @@ export function ComposeView({
           <Text style={[styles.attachButtonText, { color: colors.primary }]}>Attach file</Text>
         </TouchableOpacity>
 
-        {attachments.length > 0 && (
-          <View style={styles.attachmentsContainer}>
-            {attachments.map((attachment, index) => (
-              <View 
-                key={index} 
-                style={[styles.attachmentItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              >
-                <View style={styles.attachmentInfo}>
-                  <Paperclip size={16} color={colors.primary} />
-                  <View style={styles.attachmentDetails}>
-                    <Text 
-                      style={[styles.attachmentName, { color: colors.text }]} 
-                      numberOfLines={1}
-                    >
-                      {attachment.name}
-                    </Text>
-                    <Text style={[styles.attachmentSize, { color: colors.textSecondary }]}>
-                      {formatFileSize(attachment.size)}
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() => handleRemoveAttachment(index)}
-                  style={styles.removeAttachmentButton}
-                >
-                  <Trash2 size={16} color={colors.error || '#EF4444'} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
+        <AttachmentList
+          attachments={attachments}
+          onRemove={handleRemoveAttachment}
+          colors={colors}
+        />
 
         <TouchableOpacity 
           style={[styles.aiButton, { borderColor: colors.border }]}
@@ -215,122 +172,4 @@ export function ComposeView({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  composeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  composeTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  composeHeaderActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  headerActionButton: {
-    padding: 4,
-  },
-  composeForm: {
-    flex: 1,
-  },
-  composeField: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  composeBodyField: {
-    flex: 1,
-    minHeight: 200,
-  },
-  composeLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  composeInput: {
-    fontSize: 16,
-    paddingVertical: 0,
-  },
-  composeBodyInput: {
-    flex: 1,
-    paddingTop: 0,
-  },
-  composeDivider: {
-    height: 1,
-    marginHorizontal: 16,
-  },
-  attachButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-  },
-  attachButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  aiButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-  },
-  aiButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  attachmentsContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    gap: 8,
-  },
-  attachmentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  attachmentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  attachmentDetails: {
-    flex: 1,
-    gap: 2,
-  },
-  attachmentName: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  attachmentSize: {
-    fontSize: 12,
-  },
-  removeAttachmentButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
-});
+// Styles are now in components/mail/compose/styles.ts
