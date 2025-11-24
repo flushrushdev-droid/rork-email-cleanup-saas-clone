@@ -60,3 +60,11 @@ coverage/
 # Native build folders (generated, don't commit)
 android/
 ios/
+
+# Backup folders and archive files (never commit backups)
+backup/
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z

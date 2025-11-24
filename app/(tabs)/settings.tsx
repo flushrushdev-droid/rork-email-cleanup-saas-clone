@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Moon, History, Lightbulb } from 'lucide-react-native';
+import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Moon, History, Lightbulb, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
