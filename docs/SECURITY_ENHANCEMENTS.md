@@ -204,7 +204,7 @@ export function validateSecureUrl(url: string): string {
 
 ---
 
-### 5. **Content Security Policy (Web Platform)** ⏭️ NEXT
+### 5. **Content Security Policy (Web Platform)** ⏭️ NEXT TASK
 **Current State:** No CSP headers configured
 **Risk:** Medium - XSS attacks, unauthorized script execution
 
@@ -213,19 +213,40 @@ export function validateSecureUrl(url: string): string {
 - Configure CSP for React Native Web
 - Restrict inline scripts and external resources
 - **Important:** Must account for:
-  - Local development (localhost:8081) - allow localhost connections
-  - Rork development environment - allow Rork domains
-  - Future production (Vercel/Render/Supabase) - allow production domains
+  - **Local development** (`localhost:8081`) - allow localhost connections
+  - **Rork development environment** (`https://rork.com`) - allow Rork domains
+  - **Future production** (Vercel/Render/Supabase) - allow production domains dynamically
 
 **Files to Update:**
 - `app/_layout.tsx` - Add CSP meta tag for web with environment-aware configuration
 
 **Implementation Notes:**
-- Use `AppConfig.env` to determine which domains to allow
-- For development: Allow localhost and Rork domains
-- For production: Only allow production domains and Google APIs
+- Use `AppConfig.env` and `AppConfig.api.baseUrl` to determine which domains to allow
+- For **development**: Allow `localhost`, `127.0.0.1`, and Rork domains (`https://rork.com`)
+- For **production**: Only allow production domains (from `AppConfig.api.baseUrl`) and Google APIs
 - Must allow `'unsafe-inline'` and `'unsafe-eval'` for React/Expo (unavoidable for now)
-- Allow Google APIs for OAuth and Gmail integration
+- Allow Google APIs (`https://*.googleapis.com`, `https://*.google.com`) for OAuth and Gmail integration
+- Use `AppConfig.redirectBaseUrl` to determine allowed connect-src domains
+
+**Example CSP for Development:**
+```
+default-src 'self'; 
+script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+style-src 'self' 'unsafe-inline'; 
+img-src 'self' data: https:; 
+font-src 'self' data:; 
+connect-src 'self' http://localhost:8081 https://rork.com https://*.googleapis.com https://*.google.com;
+```
+
+**Example CSP for Production:**
+```
+default-src 'self'; 
+script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+style-src 'self' 'unsafe-inline'; 
+img-src 'self' data: https:; 
+font-src 'self' data:; 
+connect-src 'self' https://your-app.vercel.app https://*.googleapis.com https://*.google.com;
+```
 
 **Priority:** 🟡 High - Should be done before production (web only)
 
@@ -374,10 +395,26 @@ export const rateLimiter = new RateLimiter();
 5. **Rate limiting** (#6) - Can be added to API wrapper
 
 ### After Refactoring:
-6. **CSP configuration** (#5) - Web-specific
+6. **CSP configuration** (#5) ⏭️ NEXT - Web-specific, environment-aware (local dev, Rork, production)
 7. **Token expiration** (#7) - Enhance existing logic
 8. **Session timeout** (#9) - Add to auth context
 9. **Error sanitization** (#8) - Enhance error handling
+
+---
+
+## 📝 Progress Summary
+
+### ✅ Completed Today:
+1. **Secure token storage** (#1) - Migrated to SecureStore
+2. **Deep link validation** (#2) - Added validation utilities and applied to all deep links
+3. **Input sanitization** (#3) - Enhanced validation utilities
+4. **HTTPS enforcement** (#4) - Added production validation for all API calls
+5. **Toast crash fix** - Fixed Android crash in EnhancedToast component (gesture handler conflict)
+
+### ⏭️ Next Session:
+- **Content Security Policy** (#5) - Environment-aware CSP for web platform
+  - Must support: local development (localhost), Rork (rork.com), and future production domains
+  - Use `AppConfig.env` and `AppConfig.api.baseUrl` for dynamic configuration
 
 ---
 
