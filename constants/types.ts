@@ -1,3 +1,36 @@
+// Branded types for IDs to prevent mixing different ID types
+export type EmailId = string & { readonly __brand: 'EmailId' };
+export type FolderId = string & { readonly __brand: 'FolderId' };
+export type SenderId = string & { readonly __brand: 'SenderId' };
+export type RuleId = string & { readonly __brand: 'RuleId' };
+export type HistoryId = string & { readonly __brand: 'HistoryId' };
+export type ThreadId = string & { readonly __brand: 'ThreadId' };
+
+// Helper functions to create branded IDs
+export function createEmailId(id: string): EmailId {
+  return id as EmailId;
+}
+
+export function createFolderId(id: string): FolderId {
+  return id as FolderId;
+}
+
+export function createSenderId(id: string): SenderId {
+  return id as SenderId;
+}
+
+export function createRuleId(id: string): RuleId {
+  return id as RuleId;
+}
+
+export function createHistoryId(id: string): HistoryId {
+  return id as HistoryId;
+}
+
+export function createThreadId(id: string): ThreadId {
+  return id as ThreadId;
+}
+
 export interface InboxHealth {
   score: number;
   trend: 'up' | 'down';

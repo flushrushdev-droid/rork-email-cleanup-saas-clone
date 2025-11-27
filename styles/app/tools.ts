@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createToolsStyles(colors: any) {
+export function createToolsStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

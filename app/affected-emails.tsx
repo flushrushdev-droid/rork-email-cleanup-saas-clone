@@ -7,15 +7,23 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { createAffectedEmailsStyles } from '@/styles/app/affected-emails';
 import { getSuggestionIcon, getSuggestionColor } from '@/utils/suggestionUtils';
 import type { SuggestionType } from '@/utils/suggestionUtils';
+import { safeJsonParse } from '@/utils/security';
 
 export default function AffectedEmailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { colors } = useTheme();
   const title = params.title as string;
-  const emails = JSON.parse(params.emails as string) as string[];
+  // Safely parse JSON with validation
+  const emails = safeJsonParse(params.emails as string, [] as string[]);
   const count = params.count as string;
   const type = params.type as SuggestionType;
+  
+  // Validate that emails is an array
+  if (!Array.isArray(emails)) {
+    router.back();
+    return null;
+  }
 
   const Icon = getSuggestionIcon(type);
   const color = getSuggestionColor(type, colors);

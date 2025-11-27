@@ -1,3 +1,52 @@
+export type ThemeColors = {
+  primary: string;
+  primaryDark: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  info: string;
+  background: string;
+  surface: string;
+  surfaceSecondary: string;
+  text: string;
+  textSecondary: string;
+  textTertiary: string;
+  border: string;
+  divider: string;
+  tint: string;
+  tabIconDefault: string;
+  tabIconSelected: string;
+  chart: {
+    blue: string;
+    purple: string;
+    pink: string;
+    orange: string;
+    yellow: string;
+    green: string;
+    teal: string;
+    indigo: string;
+    red: string;
+  };
+  status: {
+    actionRequired: string;
+    waiting: string;
+    fyi: string;
+    lowValue: string;
+  };
+  category: {
+    invoices: string;
+    receipts: string;
+    travel: string;
+    hr: string;
+    legal: string;
+    personal: string;
+    promotions: string;
+    social: string;
+    system: string;
+  };
+};
+
 const lightColors = {
   primary: '#007AFF',
   primaryDark: '#0051D5',

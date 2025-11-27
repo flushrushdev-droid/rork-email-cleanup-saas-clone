@@ -60,4 +60,63 @@ export function getEmailValidationError(email: string, fieldName: string = 'Emai
   return null;
 }
 
+/**
+ * Sanitize search query to prevent XSS
+ */
+export function sanitizeSearchQuery(query: string): string {
+  if (!query || typeof query !== 'string') return '';
+  return query
+    .trim()
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .slice(0, 200); // Limit length
+}
+
+/**
+ * Sanitize folder name
+ */
+export function sanitizeFolderName(name: string): string {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .trim()
+    .replace(/[<>]/g, '')
+    .replace(/[^\w\s-]/g, '') // Only allow alphanumeric, spaces, dashes, underscores
+    .slice(0, 50);
+}
+
+/**
+ * Sanitize email subject for display
+ */
+export function sanitizeEmailSubject(subject: string): string {
+  if (!subject || typeof subject !== 'string') return '';
+  return subject
+    .replace(/[<>]/g, '')
+    .slice(0, 500); // Limit length
+}
+
+/**
+ * Validate rule condition value
+ */
+export function isValidRuleConditionValue(value: string): boolean {
+  if (!value || typeof value !== 'string') return false;
+  // Prevent script injection
+  if (/<script|javascript:|on\w+=/gi.test(value)) return false;
+  // Limit length
+  if (value.length > 1000) return false;
+  return true;
+}
+
+/**
+ * Sanitize rule condition value
+ */
+export function sanitizeRuleConditionValue(value: string): string {
+  if (!value || typeof value !== 'string') return '';
+  return value
+    .trim()
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
+    .slice(0, 1000);
+}
 

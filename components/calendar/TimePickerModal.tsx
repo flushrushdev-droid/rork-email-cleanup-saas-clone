@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Modal, TouchableOpacity, TextInput, Pressable } from 'react-native';
 import { AppText } from '@/components/common/AppText';
+import type { ThemeColors } from '@/constants/colors';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { createCalendarStyles } from './styles/calendarStyles';
 
@@ -11,7 +12,7 @@ interface TimePickerModalProps {
   onCancel: () => void;
   title: string;
   insets: EdgeInsets;
-  colors: any;
+  colors: ThemeColors;
 }
 
 export function TimePickerModal({

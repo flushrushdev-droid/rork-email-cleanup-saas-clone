@@ -34,7 +34,14 @@ export default function SendersScreen() {
         label: 'Delete',
         style: 'destructive',
         onPress: () => {
-          showSuccess(`Emails from ${senderEmail} moved to trash`);
+          try {
+            // Small delay to ensure the warning toast is dismissed first
+            setTimeout(() => {
+              showSuccess(`Emails from ${senderEmail} moved to trash`);
+            }, 200);
+          } catch (error) {
+            console.error('Error deleting emails:', error);
+          }
         },
       },
       duration: 0,
@@ -47,7 +54,14 @@ export default function SendersScreen() {
         label: 'Delete Forever',
         style: 'destructive',
         onPress: () => {
-          showSuccess(`All emails from ${senderEmail} permanently deleted`);
+          try {
+            // Small delay to ensure the error toast is dismissed first
+            setTimeout(() => {
+              showSuccess(`All emails from ${senderEmail} permanently deleted`);
+            }, 200);
+          } catch (error) {
+            console.error('Error permanently deleting emails:', error);
+          }
         },
       },
       duration: 0,
@@ -79,7 +93,14 @@ export default function SendersScreen() {
         label: 'Block',
         style: 'destructive',
         onPress: () => {
-          showSuccess(`${senderEmail} has been blocked`);
+          try {
+            // Small delay to ensure the warning toast is dismissed first
+            setTimeout(() => {
+              showSuccess(`${senderEmail} has been blocked`);
+            }, 200);
+          } catch (error) {
+            console.error('Error blocking sender:', error);
+          }
         },
       },
       duration: 0,

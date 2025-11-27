@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createMailStyles(colors: any) {
+export function createMailStyles(colors: ThemeColors) {
   return StyleSheet.create({
     safeArea: {
       flex: 1,

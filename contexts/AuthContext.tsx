@@ -1,28 +1,42 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 // import * as Crypto from 'expo-crypto'; // Unused for now
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import type { AuthTokens, User } from '@/constants/types';
 import { createScopedLogger } from '@/utils/logger';
+import { AppConfig, getRedirectUri, validateSecureUrl } from '@/config/env';
+import { isValidOAuthCode } from '@/utils/security';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = '663983319983-0bi4j8a26tqf0ef9emcphp2srdbprli9.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = AppConfig.google.clientId;
 
-function getRedirectUri() {
+/**
+ * Get redirect URI based on platform:
+ * - Web: Uses configured redirect base URL (auto-detects localhost or production)
+ * - Android/iOS: Uses web-based redirect URI (Google doesn't accept exp:// or custom schemes)
+ *   The web callback page will redirect back to the app using deep linking
+ */
+function getPlatformRedirectUri(): string {
   if (Platform.OS === 'web') {
-    const url = typeof window !== 'undefined' ? window.location.origin : 'https://rork.com';
-    return `${url}/auth/callback`;
+    // For web, auto-detect the current origin
+    return getRedirectUri();
   }
-  return AuthSession.makeRedirectUri({
-    scheme: 'rork-app',
-  });
+  
+  // For native platforms (Android & iOS), use web-based redirect URI
+  // This works because:
+  // 1. Google accepts web URIs (https://rork.com/auth/callback or http://localhost:8081/auth/callback)
+  // 2. The web callback page will detect mobile and redirect back to app via deep link
+  // 3. The app will receive the deep link and process the OAuth code
+  return `${AppConfig.redirectBaseUrl}/auth/callback`;
 }
 
-const REDIRECT_URI = getRedirectUri();
+const REDIRECT_URI = getPlatformRedirectUri();
 
 // Initialize scoped logger for auth context
 const authLogger = createScopedLogger('Auth');
@@ -35,14 +49,15 @@ authLogger.debug('OAuth configuration', {
 });
 
 const STORAGE_KEYS = {
-  TOKENS: '@auth_tokens',
-  USER: '@auth_user',
+  TOKENS: 'auth_tokens', // Used with SecureStore (no @ prefix needed)
+  USER: '@auth_user', // Used with AsyncStorage (non-sensitive)
+  DEMO_MODE: '@demo_mode', // Used with AsyncStorage (non-sensitive)
 };
 
 const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+  authorizationEndpoint: AppConfig.google.oauth.authorizationEndpoint,
+  tokenEndpoint: AppConfig.google.oauth.tokenEndpoint,
+  revocationEndpoint: AppConfig.google.oauth.revocationEndpoint,
 };
 
 
@@ -56,7 +71,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
-      clientId: GOOGLE_CLIENT_ID,
+      clientId: GOOGLE_CLIENT_ID || '',
       scopes: [
         'openid',
         'profile',
@@ -81,9 +96,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Track if we've processed a deep link to avoid duplicate processing
+  const deepLinkProcessedRef = useRef(false);
+
   useEffect(() => {
     if (!isDemoMode && response?.type === 'success') {
       const { code } = response.params;
+      // Validate OAuth code before processing
+      if (!code || !isValidOAuthCode(code)) {
+        setError('Invalid authorization code');
+        setIsLoading(false);
+        return;
+      }
       exchangeCodeForTokens(code, request?.codeVerifier);
     } else if (!isDemoMode && response?.type === 'error') {
       setError(response.error?.message || 'Authentication failed');
@@ -92,12 +116,58 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response, isDemoMode]);
 
+  // Handle deep links from web callback redirect (for native apps using web redirect URI)
+  useEffect(() => {
+    if (Platform.OS === 'web' || isDemoMode) return;
+
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+      
+      // Check if this is an OAuth callback deep link
+      if (url.includes('/auth/callback')) {
+        try {
+          const parsedUrl = Linking.parse(url);
+          const code = parsedUrl.queryParams?.code as string | undefined;
+          const error = parsedUrl.queryParams?.error as string | undefined;
+          
+          if (code && !deepLinkProcessedRef.current) {
+            deepLinkProcessedRef.current = true;
+            authLogger.debug('Received OAuth code via deep link', { code: code.substring(0, 10) + '...' });
+            // Use the code_verifier from the original request if available
+            await exchangeCodeForTokens(code, request?.codeVerifier);
+          } else if (error) {
+            authLogger.error('OAuth error from deep link', { error });
+            setError(error);
+            setIsLoading(false);
+          }
+        } catch (err) {
+          authLogger.error('Error processing deep link', err);
+        }
+      }
+    };
+
+    // Listen for deep links
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened via deep link (initial URL)
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemoMode, request]);
+
   const loadStoredAuth = async () => {
     try {
-      const [storedTokens, storedUser, storedDemoMode] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.TOKENS),
+      // Load non-sensitive data from AsyncStorage
+      const [storedUser, storedDemoMode] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.USER),
-        AsyncStorage.getItem('@demo_mode'),
+        AsyncStorage.getItem(STORAGE_KEYS.DEMO_MODE),
       ]);
 
       if (storedDemoMode === 'true') {
@@ -111,6 +181,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         setIsLoading(false);
         return;
       }
+
+      // Load sensitive tokens from SecureStore
+      const storedTokens = await SecureStore.getItemAsync(STORAGE_KEYS.TOKENS);
 
       if (storedTokens && storedUser) {
         const parsedTokens: AuthTokens = JSON.parse(storedTokens);
@@ -137,18 +210,29 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(true);
       setError(null);
 
-      const params = new URLSearchParams({
-        code,
-        client_id: GOOGLE_CLIENT_ID,
-        redirect_uri: REDIRECT_URI,
-        grant_type: 'authorization_code',
-      });
+      const params = new URLSearchParams();
+      params.append('code', code);
+      if (GOOGLE_CLIENT_ID) {
+        params.append('client_id', GOOGLE_CLIENT_ID);
+      }
+      params.append('redirect_uri', REDIRECT_URI);
+      params.append('grant_type', 'authorization_code');
 
+      // For web OAuth, Google requires client_secret even with PKCE
+      // For native apps (Android/iOS), PKCE alone is sufficient
+      if (Platform.OS === 'web' && AppConfig.google.clientSecret) {
+        params.append('client_secret', AppConfig.google.clientSecret);
+      }
+
+      // Add PKCE code_verifier if available (for additional security)
       if (codeVerifier) {
         params.append('code_verifier', codeVerifier);
       }
 
-      const response = await fetch(discovery.tokenEndpoint, {
+      // Validate token endpoint is HTTPS in production
+      const validatedTokenEndpoint = validateSecureUrl(discovery.tokenEndpoint);
+      
+      const response = await fetch(validatedTokenEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -172,7 +256,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       await fetchUserInfo(newTokens.accessToken);
       setTokens(newTokens);
-      await AsyncStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      // Store tokens securely in SecureStore
+      await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
     } catch (err) {
       authLogger.error('Error exchanging code for tokens', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
@@ -213,13 +298,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const refreshAccessToken = async (refreshToken: string) => {
     try {
-      const params = new URLSearchParams({
-        refresh_token: refreshToken,
-        client_id: GOOGLE_CLIENT_ID,
-        grant_type: 'refresh_token',
-      });
+      const params = new URLSearchParams();
+      params.append('refresh_token', refreshToken);
+      if (GOOGLE_CLIENT_ID) {
+        params.append('client_id', GOOGLE_CLIENT_ID);
+      }
+      params.append('grant_type', 'refresh_token');
 
-      const response = await fetch(discovery.tokenEndpoint, {
+      // Validate token endpoint is HTTPS in production
+      const validatedTokenEndpoint = validateSecureUrl(discovery.tokenEndpoint);
+      
+      const response = await fetch(validatedTokenEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -240,7 +329,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       };
 
       setTokens(newTokens);
-      await AsyncStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      // Store tokens securely in SecureStore
+      await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
       
       return newTokens.accessToken;
     } catch (err) {
@@ -268,7 +358,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(true);
       setError(null);
       
-      await AsyncStorage.setItem('@demo_mode', 'true');
+      await AsyncStorage.setItem(STORAGE_KEYS.DEMO_MODE, 'true');
       
       setIsDemoMode(true);
       setUser({
@@ -307,7 +397,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     setUser(null);
     setTokens(null);
     setIsDemoMode(false);
-    await AsyncStorage.multiRemove([STORAGE_KEYS.TOKENS, STORAGE_KEYS.USER, '@demo_mode']);
+    // Remove tokens from SecureStore
+    await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKENS).catch(() => {
+      // Ignore errors if item doesn't exist
+    });
+    // Remove non-sensitive data from AsyncStorage
+    await AsyncStorage.multiRemove([STORAGE_KEYS.USER, STORAGE_KEYS.DEMO_MODE]);
   };
 
   const getValidAccessToken = async (): Promise<string | null> => {

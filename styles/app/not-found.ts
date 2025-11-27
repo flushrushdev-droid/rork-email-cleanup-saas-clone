@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createNotFoundStyles(colors: any) {
+export function createNotFoundStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

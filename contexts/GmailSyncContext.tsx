@@ -5,8 +5,11 @@ import { useAuth } from './AuthContext';
 import type { GmailMessage, GmailProfile, Email, Sender } from '@/constants/types';
 import { APIError, AuthError, NetworkError, normalizeError } from '@/utils/errorHandling';
 import { createScopedLogger } from '@/utils/logger';
+import { AppConfig, validateSecureUrl } from '@/config/env';
+import { getStaleTime, getCacheTTL, CACHE_KEYS } from '@/lib/queryCache';
 
-const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
+// Validate Gmail API base URL is HTTPS in production
+const GMAIL_API_BASE = validateSecureUrl(AppConfig.gmail.apiBase);
 const gmailLogger = createScopedLogger('GmailSync');
 
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
@@ -22,7 +25,11 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         throw new AuthError('No valid access token. Please sign in again.');
       }
 
-      const response = await fetch(`${GMAIL_API_BASE}${endpoint}`, {
+      // Construct full URL and validate it's secure in production
+      const fullUrl = `${GMAIL_API_BASE}${endpoint}`;
+      const validatedUrl = validateSecureUrl(fullUrl);
+
+      const response = await fetch(validatedUrl, {
         ...options,
         headers: {
           ...options.headers,
@@ -71,15 +78,17 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   };
 
   const profileQuery = useQuery({
-    queryKey: ['gmail', 'profile'],
+    queryKey: CACHE_KEYS.GMAIL.PROFILE,
     queryFn: async (): Promise<GmailProfile> => {
       return makeGmailRequest('/profile');
     },
     enabled: false,
+    staleTime: getStaleTime(CACHE_KEYS.GMAIL.PROFILE),
+    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.PROFILE),
   });
 
   const messagesQuery = useQuery({
-    queryKey: ['gmail', 'messages'],
+    queryKey: CACHE_KEYS.GMAIL.MESSAGES,
     queryFn: async (): Promise<Email[]> => {
       const listResponse = await makeGmailRequest(
         '/messages?maxResults=100&q=in:inbox'
@@ -123,6 +132,8 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       return messages;
     },
     enabled: false,
+    staleTime: getStaleTime(CACHE_KEYS.GMAIL.MESSAGES),
+    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES),
   });
 
   const syncMutation = useMutation({
@@ -130,16 +141,18 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       gmailLogger.info('Starting Gmail sync');
       
       const profile = await queryClient.fetchQuery({
-        queryKey: ['gmail', 'profile'],
+        queryKey: CACHE_KEYS.GMAIL.PROFILE,
         queryFn: async (): Promise<GmailProfile> => {
           return makeGmailRequest('/profile');
         },
+        staleTime: getStaleTime(CACHE_KEYS.GMAIL.PROFILE),
+        gcTime: getCacheTTL(CACHE_KEYS.GMAIL.PROFILE),
       });
 
       gmailLogger.debug('Profile fetched', undefined, { emailAddress: profile.emailAddress });
 
       const messages = await queryClient.fetchQuery({
-        queryKey: ['gmail', 'messages'],
+        queryKey: CACHE_KEYS.GMAIL.MESSAGES,
         queryFn: async (): Promise<Email[]> => {
           const listResponse = await makeGmailRequest(
             '/messages?maxResults=100&q=in:inbox'
@@ -231,10 +244,14 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         canUnsubscribe: sender.isMarketing || sender.isNewsletter,
       }));
 
-      queryClient.setQueryData(['gmail', 'senders'], senders);
+      queryClient.setQueryData(CACHE_KEYS.GMAIL.SENDERS, senders);
 
       // Update last synced time
       setLastSyncedAt(new Date());
+
+      // Invalidate related caches to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.STATS.ALL });
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.SUGGESTIONS.ALL });
 
       return { profile, messages, senders };
     },
@@ -251,11 +268,13 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   };
 
   const sendersQuery = useQuery<Sender[]>({
-    queryKey: ['gmail', 'senders'],
+    queryKey: CACHE_KEYS.GMAIL.SENDERS,
     queryFn: async () => {
       return [];
     },
     enabled: false,
+    staleTime: getStaleTime(CACHE_KEYS.GMAIL.SENDERS),
+    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.SENDERS),
   });
 
   const markAsReadMutation = useMutation({
@@ -267,8 +286,12 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         }),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gmail', 'messages'] });
+    onSuccess: (_, messageId) => {
+      // Invalidate messages list and specific message cache
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.GMAIL.MESSAGES });
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.GMAIL.MESSAGE(messageId) });
+      // Also invalidate stats since unread count changed
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.STATS.ALL });
     },
   });
 
@@ -281,8 +304,12 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         }),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gmail', 'messages'] });
+    onSuccess: (_, messageId) => {
+      // Invalidate messages list and specific message cache
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.GMAIL.MESSAGES });
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.GMAIL.MESSAGE(messageId) });
+      // Also invalidate stats since inbox count changed
+      queryClient.invalidateQueries({ queryKey: CACHE_KEYS.STATS.ALL });
     },
   });
 

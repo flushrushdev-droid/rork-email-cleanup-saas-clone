@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Animated, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, TouchableOpacity, Dimensions, InteractionManager } from 'react-native';
 import { AppText } from './AppText';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react-native';
@@ -103,7 +103,8 @@ export function EnhancedToast({ toast, onDismiss, index, position = 'top' }: Enh
           }),
         ]).start();
       }
-    });
+    })
+    .shouldCancelWhenOutside(true);
 
   const getIcon = () => {
     const iconProps = { size: 20, color: colors.surface };
@@ -138,86 +139,130 @@ export function EnhancedToast({ toast, onDismiss, index, position = 'top' }: Enh
   const verticalOffset = index * (60 + 8); // Toast height + gap
 
   return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          top: position === 'top' ? insets.top + 16 + verticalOffset : undefined,
+          bottom: position === 'bottom' ? insets.bottom + 16 + verticalOffset : undefined,
+          opacity,
+          transform: [
+            { translateX },
+            { translateY },
+            { scale },
+          ],
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      <View
         style={[
-          styles.container,
-          {
-            top: position === 'top' ? insets.top + 16 + verticalOffset : undefined,
-            bottom: position === 'bottom' ? insets.bottom + 16 + verticalOffset : undefined,
-            opacity,
-            transform: [
-              { translateX },
-              { translateY },
-              { scale },
-            ],
-          },
+          styles.toast,
+          { backgroundColor: getBackgroundColor() },
         ]}
-        pointerEvents="box-none"
+        accessible={true}
+        accessibilityRole="alert"
+        accessibilityLabel={`${toast.type} notification: ${toast.message}`}
       >
-        <View
-          style={[
-            styles.toast,
-            { backgroundColor: getBackgroundColor() },
-          ]}
-          accessible={true}
-          accessibilityRole="alert"
-          accessibilityLabel={`${toast.type} notification: ${toast.message}`}
-        >
+        <GestureDetector gesture={panGesture}>
           <View style={styles.content}>
             {getIcon()}
             <AppText style={[styles.message, { color: colors.surface }]} numberOfLines={3} dynamicTypeStyle="body">
               {String(toast.message || '')}
             </AppText>
           </View>
+        </GestureDetector>
 
-          <View style={styles.actions}>
+        <View style={styles.actions}>
             {toast.onUndo && (
               <TouchableOpacity
-                onPress={() => {
-                  toast.onUndo?.();
+                onPress={(e) => {
+                  // Prevent gesture handler from interfering
+                  e.stopPropagation();
+                  
+                  // Capture undo handler before dismissing
+                  const undoHandler = toast.onUndo;
+                  
+                  // Dismiss toast FIRST to avoid state update conflicts
                   dismissToast();
+                  
+                  // Then call the undo handler after toast is dismissed
+                  setTimeout(() => {
+                    try {
+                      if (undoHandler) {
+                        undoHandler();
+                      }
+                    } catch (error) {
+                      console.error('Error in toast undo handler:', error);
+                    }
+                  }, 300);
                 }}
                 style={styles.actionButton}
                 accessible={true}
                 accessibilityRole="button"
                 accessibilityLabel="Undo action"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
               >
                 <AppText style={[styles.actionText, { color: colors.surface }]} dynamicTypeStyle="caption">Undo</AppText>
               </TouchableOpacity>
             )}
 
-            {toast.action && (
-              <TouchableOpacity
-                onPress={() => {
-                  toast.action?.onPress();
-                  if (!toast.action?.onPress) {
+            {toast.action && (() => {
+              // Capture the action handler and properties before rendering to avoid stale references
+              const actionHandler = toast.action.onPress;
+              const actionLabel = toast.action.label;
+              const actionStyle = toast.action.style;
+              
+              return (
+                <TouchableOpacity
+                  key={`action-${toast.id}`}
+                  onPress={(e) => {
+                    // Prevent gesture handler from interfering
+                    e.stopPropagation();
+                    
+                    // Capture handler in closure to ensure we have the right reference
+                    const handler = actionHandler;
+                    
+                    // Dismiss toast FIRST to avoid state update conflicts
                     dismissToast();
-                  }
-                }}
-                style={styles.actionButton}
-                accessible={true}
-                accessibilityRole="button"
-                accessibilityLabel={toast.action.label}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <AppText
-                  style={[
-                    styles.actionText,
-                    {
-                      color: toast.action.style === 'destructive' 
-                        ? colors.danger 
-                        : colors.surface,
-                      fontWeight: '600',
-                    },
-                  ]}
-                  dynamicTypeStyle="caption"
+                    
+                    // Then call the action handler after toast is dismissed
+                    // Use a longer delay to ensure toast is fully unmounted on Android
+                    setTimeout(() => {
+                      try {
+                        if (handler) {
+                          handler();
+                        }
+                      } catch (error) {
+                        console.error('Error in toast action handler:', error);
+                      }
+                    }, 300);
+                  }}
+                  style={styles.actionButton}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={actionLabel}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
                 >
-                  {toast.action.label}
-                </AppText>
-              </TouchableOpacity>
-            )}
+                  <AppText
+                    style={[
+                      styles.actionText,
+                      {
+                        color: actionStyle === 'destructive' 
+                          ? colors.danger 
+                          : colors.surface,
+                        fontWeight: '600',
+                      },
+                    ]}
+                    dynamicTypeStyle="caption"
+                  >
+                    {actionLabel}
+                  </AppText>
+                </TouchableOpacity>
+              );
+            })()}
 
             <TouchableOpacity
               onPress={() => dismissToast()}
@@ -232,7 +277,6 @@ export function EnhancedToast({ toast, onDismiss, index, position = 'top' }: Enh
           </View>
         </View>
       </Animated.View>
-    </GestureDetector>
   );
 }
 

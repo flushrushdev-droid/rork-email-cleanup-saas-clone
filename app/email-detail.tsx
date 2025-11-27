@@ -17,6 +17,7 @@ import { createEmailDetailStyles } from '@/styles/app/email-detail';
 import { createScopedLogger } from '@/utils/logger';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { isValidEmailId } from '@/utils/security';
 
 const emailDetailLogger = createScopedLogger('EmailDetail');
 
@@ -27,11 +28,26 @@ export default function EmailDetailScreen() {
     statType?: string;
     showDeleteToast?: string; // ID of email that was just deleted (to show toast)
   }>();
+  
+  // Validate emailId parameter
+  if (!params.emailId || !isValidEmailId(params.emailId)) {
+    const router = useRouter();
+    router.replace('/');
+    return null;
+  }
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = React.useMemo(() => createEmailDetailStyles(colors), [colors]);
   const { isDemoMode } = useAuth();
+  
+  // Validate emailId parameter (after hooks)
+  if (!params.emailId || !isValidEmailId(params.emailId)) {
+    React.useEffect(() => {
+      router.replace('/');
+    }, [router]);
+    return null;
+  }
   const { messages, markAsRead, archiveMessage } = useGmailSync();
   const { handleAsync } = useErrorHandler({ showAlert: true });
   const { showError: showErrorToast } = useEnhancedToast();

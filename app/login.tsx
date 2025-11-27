@@ -75,7 +75,7 @@ export default function LoginScreen() {
               style={[
                 styles.signInButton,
                 {
-                  backgroundColor: colors.primary,
+                  backgroundColor: '#4285F4',
                   paddingVertical: isSmall ? 12 : 14,
                 },
               ]}
@@ -83,9 +83,6 @@ export default function LoginScreen() {
               disabled={isLoading}
               loading={isLoading}
             >
-              <View style={[styles.googleIcon, { width: isSmall ? 20 : 22, height: isSmall ? 20 : 22, borderRadius: isSmall ? 10 : 11 }]}>
-                <AppText style={[styles.googleIconText, { fontSize: isSmall ? 14 : 15 }]}>G</AppText>
-              </View>
               <AppText style={[styles.signInText, { fontSize: isSmall ? 15 : 16 }]}>
                 Continue with Google
               </AppText>

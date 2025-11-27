@@ -6,6 +6,7 @@ import { EdgeInsets } from 'react-native-safe-area-context';
 import { DatePickerModal } from './DatePickerModal';
 import { TimePickerModal } from './TimePickerModal';
 import { createCalendarStyles } from './styles/calendarStyles';
+import type { ThemeColors } from '@/constants/colors';
 
 interface NoteEditModalProps {
   visible: boolean;
@@ -21,7 +22,7 @@ interface NoteEditModalProps {
   setShowDatePicker: (show: boolean) => void;
   showTimePicker: boolean;
   setShowTimePicker: (show: boolean) => void;
-  colors: any;
+  colors: ThemeColors;
   insets: EdgeInsets;
 }
 

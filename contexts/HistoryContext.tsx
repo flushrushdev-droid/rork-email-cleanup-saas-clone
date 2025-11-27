@@ -68,10 +68,19 @@ export const [HistoryProvider, useHistory] = createContextHook(() => {
 
   const clearHistory = useCallback(async () => {
     try {
-      setEntries([]);
-      await AsyncStorage.removeItem(STORAGE_KEY);
+      // Use a function form of setState to ensure we're working with the latest state
+      // This helps prevent race conditions
+      setEntries((prevEntries) => {
+        // Clear storage asynchronously, but update state immediately
+        AsyncStorage.removeItem(STORAGE_KEY).catch((error) => {
+          historyLogger.error('Error removing history from storage', error);
+        });
+        return [];
+      });
     } catch (error) {
       historyLogger.error('Error clearing history', error);
+      // Even if there's an error, try to clear the state
+      setEntries([]);
     }
   }, []);
 

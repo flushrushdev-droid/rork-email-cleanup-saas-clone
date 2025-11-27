@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createSettingsStyles(colors: any) {
+export function createSettingsStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

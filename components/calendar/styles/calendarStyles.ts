@@ -1,10 +1,16 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
+import Colors from '@/constants/colors';
+import { hexToRgba } from '@/utils/colorUtils';
 
 /**
  * Creates calendar styles based on theme colors
  * Styles are organized by component: sidebar, grid, modal, picker, feedback
+ * All colors are theme-aware for proper dark mode support
  */
-export function createCalendarStyles(colors: any) {
+export function createCalendarStyles(colors: ThemeColors) {
+  // Helper to determine if we're in dark mode based on background color
+  const isDarkMode = colors.background === Colors.dark.background;
   return StyleSheet.create({
     // Sidebar styles
     calendarButton: {
@@ -63,10 +69,16 @@ export function createCalendarStyles(colors: any) {
       gap: 12,
     },
     feedbackBannerSuccess: {
-      backgroundColor: '#E9F6EE',
+      // Light green background for success - blend success color with surface
+      backgroundColor: isDarkMode 
+        ? hexToRgba(colors.success, 0.15) // 15% opacity success in dark mode
+        : hexToRgba(colors.success, 0.1), // 10% opacity success in light mode
     },
     feedbackBannerError: {
-      backgroundColor: '#FDECEF',
+      // Light red background for error - blend danger color with surface
+      backgroundColor: isDarkMode
+        ? hexToRgba(colors.danger, 0.15) // 15% opacity danger in dark mode
+        : hexToRgba(colors.danger, 0.1), // 10% opacity danger in light mode
     },
     feedbackIndicator: {
       width: 10,
@@ -164,7 +176,7 @@ export function createCalendarStyles(colors: any) {
       fontWeight: '700',
     },
     selectedDayText: {
-      color: '#FFFFFF',
+      color: '#FFFFFF', // White text on selected day (primary background)
       fontWeight: '700',
     },
     selectedDateInfo: {
@@ -223,7 +235,7 @@ export function createCalendarStyles(colors: any) {
     newMeetingButtonText: {
       fontSize: 14,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: colors.text, // Use theme text color (will be white on primary background)
     },
     eventsList: {
       flex: 1,
@@ -292,7 +304,7 @@ export function createCalendarStyles(colors: any) {
     addEventButtonText: {
       fontSize: 14,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: '#FFFFFF', // White text on primary background (works in both themes)
     },
     dateDisplay: {
       flexDirection: 'row',
@@ -382,7 +394,7 @@ export function createCalendarStyles(colors: any) {
       color: colors.text,
     },
     meetingTypeTextActive: {
-      color: '#FFFFFF',
+      color: '#FFFFFF', // White text on primary background
       fontWeight: '600',
     },
     createMeetingButton: {
@@ -399,14 +411,14 @@ export function createCalendarStyles(colors: any) {
       marginTop: 8,
     },
     createMeetingButtonDisabled: {
-      backgroundColor: '#CCCCCC',
+      backgroundColor: colors.textTertiary, // Use theme tertiary color for disabled state
       shadowOpacity: 0,
       elevation: 0,
     },
     createMeetingButtonText: {
       fontSize: 17,
       fontWeight: '700',
-      color: '#FFFFFF',
+      color: '#FFFFFF', // White text on primary background
       letterSpacing: 0.3,
     },
 
@@ -487,7 +499,7 @@ export function createCalendarStyles(colors: any) {
     confirmDeleteText: {
       fontSize: 15,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: '#FFFFFF', // White text on danger background
     },
 
     // Date/Time picker styles
@@ -620,7 +632,7 @@ export function createCalendarStyles(colors: any) {
       color: colors.text,
     },
     ampmTextActive: {
-      color: '#FFFFFF',
+      color: '#FFFFFF', // White text on primary background
     },
     pickerCenterOverlay: {
       flex: 1,

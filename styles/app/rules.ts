@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createRulesStyles(colors: any) {
+export function createRulesStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -228,7 +229,7 @@ export function createRulesStyles(colors: any) {
   });
 }
 
-export function createRuleFormStyles(colors: any) {
+export function createRuleFormStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

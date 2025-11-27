@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createLoginStyles(colors: any) {
+export function createLoginStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -93,25 +94,11 @@ export function createLoginStyles(colors: any) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 12,
-      shadowColor: '#007AFF',
+      shadowColor: '#4285F4',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 12,
       elevation: 5,
-    },
-    googleIcon: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#4285F4',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    googleIconText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '700',
     },
     signInText: {
       fontSize: 17,

@@ -5,6 +5,7 @@ import { Trash2 } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import type { CalendarEvent } from '@/hooks/useCalendar';
 import { createCalendarStyles } from './styles/calendarStyles';
+import type { ThemeColors } from '@/constants/colors';
 
 interface DeleteMeetingModalProps {
   visible: boolean;
@@ -12,7 +13,7 @@ interface DeleteMeetingModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   insets: EdgeInsets;
-  colors: any;
+  colors: ThemeColors;
 }
 
 export function DeleteMeetingModal({

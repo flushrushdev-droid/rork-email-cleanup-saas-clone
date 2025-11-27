@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createAIStyles(colors: any) {
+export function createAIStyles(colors: ThemeColors) {
   return StyleSheet.create({
     outerContainer: {
       flex: 1,

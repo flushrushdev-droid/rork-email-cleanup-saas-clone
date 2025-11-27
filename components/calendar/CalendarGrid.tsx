@@ -5,13 +5,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { generateCalendarWeeks, isToday, isSelected, monthNames, dayNames } from './utils/calendarUtils';
 import { createCalendarStyles } from './styles/calendarStyles';
 import type { CalendarEvent } from '@/hooks/useCalendar';
+import type { ThemeColors } from '@/constants/colors';
 
 interface CalendarGridProps {
   selectedDate: Date;
   onDayPress: (day: number | null) => void;
   goToPreviousMonth: () => void;
   goToNextMonth: () => void;
-  colors: any;
+  colors: ThemeColors;
   events?: CalendarEvent[];
   showEventIndicators?: boolean;
   showSelectedDateInfo?: boolean;

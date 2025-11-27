@@ -122,7 +122,7 @@ export default function CalendarScreen() {
   };
 
   // Note editor handlers
-  const handleOpenNoteEditor = async (event: any) => {
+  const handleOpenNoteEditor = async (event: { date: Date; title?: string; content?: string }) => {
     await noteEditor.openInlineNoteEditor(event);
   };
 

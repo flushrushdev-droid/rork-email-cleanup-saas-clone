@@ -4,6 +4,7 @@ import { AppText } from '@/components/common/AppText';
 import { X, Calendar, Clock, Video, MapPin } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { createCalendarStyles } from './styles/calendarStyles';
+import type { ThemeColors } from '@/constants/colors';
 
 interface MeetingModalProps {
   visible: boolean;
@@ -26,7 +27,7 @@ interface MeetingModalProps {
   onOpenEndTimePicker: () => void;
   onCreate: () => void;
   insets: EdgeInsets;
-  colors: any;
+  colors: ThemeColors;
 }
 
 export function MeetingModal({

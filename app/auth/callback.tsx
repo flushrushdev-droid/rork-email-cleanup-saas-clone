@@ -1,26 +1,118 @@
-import { useEffect } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator, Platform, Linking } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createAuthCallbackStyles } from '@/styles/app/auth/callback';
+import { AppConfig } from '@/config/env';
+import { isValidOAuthCode, isValidOAuthState } from '@/utils/security';
 
 export default function AuthCallback() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { colors } = useTheme();
   const styles = createAuthCallbackStyles(colors);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/');
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [router]);
+    // Check if we're in a web browser (either desktop web or mobile browser)
+    const isWebBrowser = Platform.OS === 'web' || (typeof window !== 'undefined' && typeof document !== 'undefined');
+    
+    if (isWebBrowser) {
+      // We're in a web browser - check if we need to redirect to app
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      
+      // Detect if we're in a mobile browser (user agent check)
+      const isMobileBrowser = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      );
+      
+      if (code && isMobileBrowser) {
+        // Validate OAuth code before processing
+        if (!isValidOAuthCode(code)) {
+          router.replace('/login?error=invalid_code');
+          return;
+        }
+        
+        // Mobile browser: redirect to app via deep link
+        setIsRedirecting(true);
+        const appScheme = AppConfig.appScheme;
+        const state = urlParams.get('state') || '';
+        
+        // Validate state parameter if present
+        if (state && !isValidOAuthState(state)) {
+          router.replace('/login?error=invalid_state');
+          return;
+        }
+        
+        const deepLink = `${appScheme}://auth/callback?code=${encodeURIComponent(code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`;
+        
+        // Try to open the app via deep link
+        window.location.href = deepLink;
+        
+        // Fallback: If deep link doesn't work, show instructions
+        setTimeout(() => {
+          alert('Please return to the app to complete authentication');
+        }, 1000);
+      } else if (code) {
+        // Validate OAuth code before processing
+        if (!isValidOAuthCode(code)) {
+          router.replace('/login?error=invalid_code');
+          return;
+        }
+        // Desktop web: AuthContext will handle via expo-auth-session
+        // Just redirect to home after a short delay
+        const timer = setTimeout(() => {
+          router.replace('/');
+        }, 2000);
+        return () => clearTimeout(timer);
+      } else if (error && isMobileBrowser) {
+        // Mobile browser with error: redirect to app
+        const appScheme = AppConfig.appScheme;
+        const deepLink = `${appScheme}://login?error=${encodeURIComponent(error)}${errorDescription ? `&error_description=${encodeURIComponent(errorDescription)}` : ''}`;
+        window.location.href = deepLink;
+      } else if (error) {
+        // Desktop web with error: just redirect to login
+        router.replace('/login');
+      } else {
+        // No code or error: just redirect to home
+        const timer = setTimeout(() => {
+          router.replace('/');
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      // Native app: If we got here via deep link, validate parameters
+      if (params.code) {
+        // Validate OAuth code before processing
+        if (!isValidOAuthCode(params.code as string)) {
+          router.replace('/login?error=invalid_code');
+          return;
+        }
+        
+        // Validate state parameter if present
+        if (params.state && !isValidOAuthState(params.state as string)) {
+          router.replace('/login?error=invalid_state');
+          return;
+        }
+        
+        // AuthContext will handle the code, just show loading and redirect to home
+        const timer = setTimeout(() => {
+          router.replace('/');
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [params, router]);
 
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#007AFF" />
-      <Text style={[styles.text, { color: colors.textSecondary }]}>Completing authentication...</Text>
+      <Text style={[styles.text, { color: colors.textSecondary }]}>
+        {isRedirecting ? 'Redirecting to app...' : 'Completing authentication...'}
+      </Text>
     </View>
   );
 }

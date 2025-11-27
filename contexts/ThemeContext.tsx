@@ -132,7 +132,12 @@ export const [ThemeProvider, useTheme] = createContextHook(() => {
     }
   }, [systemColorScheme]);
 
-  const colors = useMemo(() => theme === 'light' ? Colors.light : Colors.dark, [theme]);
+  const colors = useMemo(() => {
+    // Smooth transition: return colors based on current theme
+    // Note: For React Native, we rely on the component re-render for color changes
+    // For web, CSS transitions can be added via style props
+    return theme === 'light' ? Colors.light : Colors.dark;
+  }, [theme]);
 
   return useMemo(() => ({
     theme,

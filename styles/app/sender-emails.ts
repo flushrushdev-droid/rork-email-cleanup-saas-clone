@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createSenderEmailsStyles(colors: any) {
+export function createSenderEmailsStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

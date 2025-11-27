@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
+import type { ThemeColors } from '@/constants/colors';
 
-export function createAuthCallbackStyles(colors: any) {
+export function createAuthCallbackStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

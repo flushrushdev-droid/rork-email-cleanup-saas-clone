@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -30,9 +30,27 @@ export default function HistoryScreen() {
   const styles = React.useMemo(() => createHistoryStyles(colors), [colors]);
   const { showWarning } = useEnhancedToast();
   
-  const stats = useMemo(() => getStats(), [getStats]);
+  const stats = useMemo(() => {
+    try {
+      return getStats();
+    } catch (error) {
+      console.error('Error calculating stats:', error);
+      // Return default stats if calculation fails
+      return {
+        totalActions: 0,
+        last30DaysCount: 0,
+        last7DaysCount: 0,
+        deletedEmails: 0,
+        archivedEmails: 0,
+        unsubscribedCount: 0,
+        foldersCreated: 0,
+        rulesCreated: 0,
+      };
+    }
+  }, [getStats]);
 
   const filteredEntries = useMemo(() => {
+    if (!entries || entries.length === 0) return [];
     if (filter === 'all') return entries;
     return entries.filter(e => e.type === filter);
   }, [entries, filter]);
@@ -60,7 +78,21 @@ export default function HistoryScreen() {
       action: {
         label: 'Clear',
         style: 'destructive',
-        onPress: clearHistory,
+        onPress: () => {
+          // Use a longer delay to ensure toast animation completes and component unmounts
+          // This is a workaround for Android crashes when state updates during toast dismissal
+          setTimeout(() => {
+            InteractionManager.runAfterInteractions(() => {
+              setTimeout(() => {
+                try {
+                  clearHistory();
+                } catch (error) {
+                  console.error('Error clearing history:', error);
+                }
+              }, 50);
+            });
+          }, 400);
+        },
       },
       duration: 0,
     });

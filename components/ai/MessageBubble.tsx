@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { Sparkles } from 'lucide-react-native';
 import { createAIStyles } from '@/styles/app/ai';
+import type { ThemeColors } from '@/constants/colors';
 
 interface MessageBubbleProps {
   part: {
@@ -12,7 +13,7 @@ interface MessageBubbleProps {
     toolName?: string;
   };
   role: 'user' | 'assistant';
-  colors: any;
+  colors: ThemeColors;
 }
 
 export function MessageBubble({ part, role, colors }: MessageBubbleProps) {

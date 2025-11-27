@@ -4,7 +4,9 @@ import { StyleSheet } from 'react-native';
  * Creates calendar screen styles based on theme colors
  * Styles are organized by section: container, header, events, modals, pickers
  */
-export function createCalendarScreenStyles(colors: any) {
+import type { ThemeColors } from '@/constants/colors';
+
+export function createCalendarScreenStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       flex: 1,

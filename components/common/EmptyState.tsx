@@ -74,7 +74,9 @@ export function EmptyState({
   );
 }
 
-function createStyles(colors: any) {
+import type { ThemeColors } from '@/constants/colors';
+
+function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       alignItems: 'center',

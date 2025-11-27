@@ -17,13 +17,21 @@ import { OfflineIndicator } from '@/components/common/OfflineIndicator';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { createScopedLogger } from '@/utils/logger';
+import { logConfig } from '@/config/env';
+import { queryClientConfig } from '@/lib/queryCache';
+import { useIOSShortcuts } from '@/hooks/useIOSShortcuts';
+import { useAndroidIntents } from '@/hooks/useAndroidIntents';
 
 const appLogger = createScopedLogger('App');
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+// Log configuration on app startup (development only)
+logConfig();
+
+// Create QueryClient with optimized cache configuration
+const queryClient = new QueryClient(queryClientConfig);
 
 function RootLayoutNav() {
   const { colors } = useTheme();
@@ -40,6 +48,7 @@ function RootLayoutNav() {
           color: colors.text,
         },
         // Prevent white flash during transitions
+        // Smooth theme transitions are handled by React re-renders
         contentStyle: {
           backgroundColor: colors.background,
         },
@@ -48,6 +57,7 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="storybook" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
     </Stack>
   );
 }
@@ -64,6 +74,10 @@ function GestureHandlerWrapper({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const { isLoading: isThemeLoading } = useTheme();
+  
+  // Initialize platform-specific intent/shortcut handlers
+  useIOSShortcuts();
+  useAndroidIntents();
 
   useEffect(() => {
     // Wait for theme to load before hiding splash screen to prevent flash

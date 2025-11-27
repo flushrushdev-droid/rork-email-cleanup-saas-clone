@@ -2,13 +2,14 @@ import React, { useRef, useEffect } from 'react';
 import { View, Modal, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { createCalendarStyles } from './styles/calendarStyles';
+import type { ThemeColors } from '@/constants/colors';
 
 interface DatePickerModalProps {
   visible: boolean;
   selectedDate: Date;
   onConfirm: (date: Date) => void;
   onCancel: () => void;
-  colors: any;
+  colors: ThemeColors;
 }
 
 export function DatePickerModal({

@@ -15,14 +15,90 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.email-cleanup-saas-e0pgo27u"
+      "bundleIdentifier": "app.rork.email-cleanup-saas-e0pgo27u",
+      "infoPlist": {
+        "NSUserActivityTypes": [
+          "INShowInboxIntent",
+          "INSendMessageIntent"
+        ],
+        "NSUserActivityDomain": "app.rork.email-cleanup-saas",
+        "NSSupportsLiveActivities": true
+      },
+      "associatedDomains": [
+        "applinks:rork.com"
+      ],
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.email_cleanup_saas_e0pgo27u"
+      "package": "app.rork.email_cleanup_saas_e0pgo27u",
+      "intentFilters": [
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": {
+            "mimeType": "text/plain"
+          }
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": {
+            "mimeType": "image/*"
+          }
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": {
+            "mimeType": "*/*"
+          }
+        },
+        {
+          "action": "android.intent.action.VIEW",
+          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "data": {
+            "scheme": "rork-app"
+          }
+        }
+      ],
+      "shortcuts": [
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "shortcutId": "unread",
+          "shortcutLabel": "Unread Emails",
+          "shortcutLongLabel": "View unread emails",
+          "intent": {
+            "action": "android.intent.action.VIEW",
+            "data": "rork-app://mail?filter=unread"
+          }
+        },
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "shortcutId": "inbox",
+          "shortcutLabel": "Inbox",
+          "shortcutLongLabel": "Open inbox",
+          "intent": {
+            "action": "android.intent.action.VIEW",
+            "data": "rork-app://mail"
+          }
+        },
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "shortcutId": "sync",
+          "shortcutLabel": "Sync Emails",
+          "shortcutLongLabel": "Sync your email inbox",
+          "intent": {
+            "action": "android.intent.action.VIEW",
+            "data": "rork-app://mail?action=sync"
+          }
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
