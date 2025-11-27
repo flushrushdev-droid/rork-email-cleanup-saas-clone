@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Sparkles, Send, Loader } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRorkAgent, createRorkTool } from '@/lib/rork-sdk';
@@ -9,6 +10,12 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { createAIStyles } from '@/styles/app/ai';
 import { MessageBubble } from '@/components/ai/MessageBubble';
 import { TypingIndicator } from '@/components/ai/TypingIndicator';
+import { createScopedLogger } from '@/utils/logger';
+import { triggerButtonHaptic } from '@/utils/haptics';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+
+const aiLogger = createScopedLogger('AI Assistant');
 
 export default function AIAssistantScreen() {
   const insets = useSafeAreaInsets();
@@ -16,6 +23,8 @@ export default function AIAssistantScreen() {
   const styles = React.useMemo(() => createAIStyles(colors), [colors]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const { handleAsync } = useErrorHandler({ showAlert: true });
+  const { showError: showErrorToast } = useEnhancedToast();
 
   const { messages, sendMessage } = useRorkAgent({
     tools: {
@@ -27,7 +36,7 @@ export default function AIAssistantScreen() {
           reason: z.string().describe('Reason for this priority'),
         }),
         execute(input) {
-          console.log('Prioritized email:', input);
+          aiLogger.debug('Prioritized email', input);
           return 'Email prioritized successfully';
         },
       }),
@@ -39,7 +48,7 @@ export default function AIAssistantScreen() {
           action: z.string().describe('What action to take'),
         }),
         execute(input) {
-          console.log('Created rule:', input);
+          aiLogger.debug('Created rule', input);
           return 'Rule created successfully';
         },
       }),
@@ -49,17 +58,24 @@ export default function AIAssistantScreen() {
   const handleSend = async () => {
     if (!input.trim()) return;
     
+    await triggerButtonHaptic();
+    
     const userMessage = input.trim();
     setInput('');
     setIsTyping(true);
     
-    try {
-      await sendMessage(userMessage);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    } finally {
-      setIsTyping(false);
-    }
+    const result = await handleAsync(async () => {
+      return await sendMessage(userMessage);
+    }, {
+      showAlert: true,
+      onError: (error) => {
+        showErrorToast('Failed to send message. Please try again.');
+        // Restore input on error so user doesn't lose their message
+        setInput(userMessage);
+      },
+    });
+    
+    setIsTyping(false);
   };
 
   const suggestions = [
@@ -79,9 +95,9 @@ export default function AIAssistantScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.titleContainer}>
           <Sparkles size={28} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>AI Assistant</Text>
+          <AppText style={[styles.title, { color: colors.text }]} dynamicTypeStyle="title1">AI Assistant</AppText>
         </View>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Your intelligent email helper</Text>
+        <AppText style={[styles.subtitle, { color: colors.textSecondary }]} dynamicTypeStyle="body">Your intelligent email helper</AppText>
       </View>
 
       <View style={styles.contentContainer}>
@@ -91,21 +107,21 @@ export default function AIAssistantScreen() {
               <View style={[styles.welcomeIcon, { backgroundColor: colors.primary + '15' }]}>
                 <Sparkles size={48} color={colors.primary} />
               </View>
-              <Text style={[styles.welcomeTitle, { color: colors.text }]}>Welcome to your AI Assistant</Text>
-              <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
+              <AppText style={[styles.welcomeTitle, { color: colors.text }]} dynamicTypeStyle="headline">Welcome to your AI Assistant</AppText>
+              <AppText style={[styles.welcomeText, { color: colors.textSecondary }]} dynamicTypeStyle="body">
                 I can help you manage your emails, create rules, prioritize messages, and save time.
-              </Text>
+              </AppText>
             </View>
 
             <View style={styles.suggestionsContainer}>
-              <Text style={[styles.suggestionsTitle, { color: colors.text }]}>Try asking:</Text>
+              <AppText style={[styles.suggestionsTitle, { color: colors.text }]} dynamicTypeStyle="headline">Try asking:</AppText>
               {suggestions.map((suggestion, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[styles.suggestionCard, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}
                   onPress={() => setInput(suggestion)}
                 >
-                  <Text style={[styles.suggestionText, { color: colors.text }]}>{suggestion}</Text>
+                  <AppText style={[styles.suggestionText, { color: colors.text }]} dynamicTypeStyle="body">{suggestion}</AppText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -143,19 +159,27 @@ export default function AIAssistantScreen() {
             value={input}
             onChangeText={setInput}
             placeholderTextColor={colors.textSecondary}
+            accessible={true}
+            accessibilityLabel="AI Assistant input"
+            accessibilityHint="Enter your question or request for the AI assistant"
             multiline
             maxLength={500}
           />
           <TouchableOpacity 
             testID="ai-send"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={isTyping ? 'AI is typing' : 'Send message'}
+            accessibilityHint="Double tap to send your message to the AI assistant"
+            accessibilityState={{ disabled: !input.trim() || isTyping, busy: isTyping }}
             style={[styles.sendButton, { backgroundColor: colors.primary }, !input.trim() && styles.sendButtonDisabled]}
             onPress={handleSend}
             disabled={!input.trim() || isTyping}
           >
             {isTyping ? (
-              <Loader size={20} color="#FFFFFF" />
+              <Loader size={20} color={colors.surface} />
             ) : (
-              <Send size={20} color="#FFFFFF" />
+              <Send size={20} color={colors.surface} />
             )}
           </TouchableOpacity>
         </View>

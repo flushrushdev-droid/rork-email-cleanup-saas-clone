@@ -48,7 +48,7 @@ export function UnsubscribeModal({ visible, email, onConfirm, onCancel, colors }
               style={[styles.modalButton, { backgroundColor: colors.danger }]}
               onPress={onConfirm}
             >
-              <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Unsubscribe</Text>
+              <Text style={[styles.modalButtonText, { color: colors.surface }]}>Unsubscribe</Text>
             </TouchableOpacity>
           </View>
         </View>

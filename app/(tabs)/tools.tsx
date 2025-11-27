@@ -13,13 +13,13 @@ export default function ToolsScreen() {
   const { colors } = useTheme();
   const styles = React.useMemo(() => createToolsStyles(colors), [colors]);
 
-  const tools = [
+  const tools = React.useMemo(() => [
     {
       id: 'calendar',
       title: 'Calendar',
       description: 'Schedule and manage your meetings',
       icon: Calendar,
-      color: '#5856D6',
+      color: colors.secondary,
       route: '/calendar' as const,
     },
     {
@@ -27,7 +27,7 @@ export default function ToolsScreen() {
       title: 'Notes',
       description: 'Quick notes and reminders for emails',
       icon: FileText,
-      color: '#34C759',
+      color: colors.success,
       route: '/notes' as const,
     },
     {
@@ -35,7 +35,7 @@ export default function ToolsScreen() {
       title: 'Suggestions',
       description: 'Smart recommendations for your inbox',
       icon: Sparkles,
-      color: '#FFA500',
+      color: colors.warning,
       route: '/suggestions' as const,
     },
     {
@@ -43,7 +43,7 @@ export default function ToolsScreen() {
       title: 'Automation Rules',
       description: 'Create smart email workflows',
       icon: Shield,
-      color: '#34C759',
+      color: colors.success,
       route: '/rules' as const,
     },
     {
@@ -51,7 +51,7 @@ export default function ToolsScreen() {
       title: 'Unsubscribe Manager',
       description: 'Manage newsletter subscriptions',
       icon: MailX,
-      color: '#FF3B30',
+      color: colors.danger,
       route: '/unsubscribe' as const,
     },
     {
@@ -59,7 +59,7 @@ export default function ToolsScreen() {
       title: 'Top Senders',
       description: 'Manage and analyze your top email senders',
       icon: Users,
-      color: '#007AFF',
+      color: colors.primary,
       route: '/senders' as const,
     },
     {
@@ -67,16 +67,29 @@ export default function ToolsScreen() {
       title: 'Blocked Senders',
       description: 'Manage and unblock blocked senders',
       icon: UserX,
-      color: '#FF3B30',
+      color: colors.danger,
       route: '/blocked-senders' as const,
     },
-  ];
+  ], [colors]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Tools</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your inbox efficiently</Text>
+        <Text 
+          style={[styles.title, { color: colors.text }]}
+          accessible={true}
+          accessibilityRole="header"
+          accessibilityLabel="Tools"
+        >
+          Tools
+        </Text>
+        <Text 
+          style={[styles.subtitle, { color: colors.textSecondary }]}
+          accessible={true}
+          accessibilityRole="text"
+        >
+          Manage your inbox efficiently
+        </Text>
       </View>
 
       <FlatList
@@ -86,6 +99,10 @@ export default function ToolsScreen() {
           return (
             <TouchableOpacity
               testID={`tool-${tool.id}`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={tool.title}
+              accessibilityHint={tool.description + '. Double tap to open.'}
               style={[styles.toolCard, { backgroundColor: colors.surface }]}
               onPress={() => {
                 if ('route' in tool) {
@@ -94,12 +111,29 @@ export default function ToolsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconContainer, { backgroundColor: tool.color + '20' }]}>
+              <View 
+                style={[styles.iconContainer, { backgroundColor: tool.color + '20' }]}
+                accessible={true}
+                accessibilityRole="image"
+                accessibilityLabel={`${tool.title} icon`}
+              >
                 <Icon size={28} color={tool.color} />
               </View>
               <View style={styles.toolContent}>
-                <Text style={[styles.toolTitle, { color: colors.text }]}>{tool.title}</Text>
-                <Text style={[styles.toolDescription, { color: colors.textSecondary }]}>{tool.description}</Text>
+                <Text 
+                  style={[styles.toolTitle, { color: colors.text }]}
+                  accessible={true}
+                  accessibilityRole="text"
+                >
+                  {tool.title}
+                </Text>
+                <Text 
+                  style={[styles.toolDescription, { color: colors.textSecondary }]}
+                  accessible={true}
+                  accessibilityRole="text"
+                >
+                  {tool.description}
+                </Text>
               </View>
               <ChevronRight size={20} color={colors.textSecondary} />
             </TouchableOpacity>

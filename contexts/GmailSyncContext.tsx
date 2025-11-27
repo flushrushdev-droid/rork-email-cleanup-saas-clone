@@ -1,16 +1,19 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import type { GmailMessage, GmailProfile, Email, Sender } from '@/constants/types';
 import { APIError, AuthError, NetworkError, normalizeError } from '@/utils/errorHandling';
+import { createScopedLogger } from '@/utils/logger';
 
 const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
+const gmailLogger = createScopedLogger('GmailSync');
 
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const { getValidAccessToken } = useAuth();
   const queryClient = useQueryClient();
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const makeGmailRequest = async (endpoint: string, options: RequestInit = {}) => {
     try {
@@ -124,7 +127,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
   const syncMutation = useMutation({
     mutationFn: async () => {
-      console.log('Starting Gmail sync...');
+      gmailLogger.info('Starting Gmail sync');
       
       const profile = await queryClient.fetchQuery({
         queryKey: ['gmail', 'profile'],
@@ -133,7 +136,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         },
       });
 
-      console.log('Profile fetched:', profile.emailAddress);
+      gmailLogger.debug('Profile fetched', undefined, { emailAddress: profile.emailAddress });
 
       const messages = await queryClient.fetchQuery({
         queryKey: ['gmail', 'messages'],
@@ -181,7 +184,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         },
       });
 
-      console.log(`Synced ${messages.length} messages`);
+      gmailLogger.info(`Synced ${messages.length} messages`);
 
       const senderMap = new Map<string, Sender>();
       
@@ -229,6 +232,9 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       }));
 
       queryClient.setQueryData(['gmail', 'senders'], senders);
+
+      // Update last synced time
+      setLastSyncedAt(new Date());
 
       return { profile, messages, senders };
     },
@@ -280,19 +286,36 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     },
   });
 
-  const syncMailbox = async () => {
+  const syncMailbox = useCallback(async () => {
     return syncMutation.mutateAsync();
-  };
+  }, [syncMutation.mutateAsync]);
 
-  return {
+  // Memoize stable values (data) separately from frequently changing values (sync state)
+  const dataValue = useMemo(() => ({
     profile: profileQuery.data,
     messages: messagesQuery.data || [],
     senders: sendersQuery.data || [],
+  }), [profileQuery.data, messagesQuery.data, sendersQuery.data]);
+
+  // Memoize sync state (changes frequently during sync)
+  const syncState = useMemo(() => ({
     isSyncing: syncMutation.isPending,
     syncProgress,
     syncError: syncMutation.error?.message,
+    lastSyncedAt,
+  }), [syncMutation.isPending, syncProgress, syncMutation.error?.message, lastSyncedAt]);
+
+  // Memoize actions (stable references)
+  const actions = useMemo(() => ({
     syncMailbox,
     markAsRead: markAsReadMutation.mutateAsync,
     archiveMessage: archiveMessageMutation.mutateAsync,
-  };
+  }), [syncMailbox, markAsReadMutation.mutateAsync, archiveMessageMutation.mutateAsync]);
+
+  // Combine into final context value with stable structure
+  return useMemo(() => ({
+    ...dataValue,
+    ...syncState,
+    ...actions,
+  }), [dataValue, syncState, actions]);
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { AIModal } from '@/components/mail/AIModal';
 import { ComposeView } from '@/components/mail/ComposeView';
@@ -12,11 +13,15 @@ import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
 import { UndoToast } from '@/components/common/UndoToast';
 import { useMailScreen } from '@/hooks/useMailScreen';
 import { createMailStyles } from '@/styles/app/mail';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export default function MailScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createMailStyles(colors), [colors]);
+  const { showInfo } = useEnhancedToast();
   
   const {
     currentView,
@@ -99,9 +104,12 @@ export default function MailScreen() {
           onStarEmail={handleStar}
           onLoadDraft={handleLoadDraft}
           onDeleteDraft={handleDeleteDraft}
+          onArchive={handleArchive}
+          onDelete={handleDelete}
           onCreateFolder={() => setIsModalVisible(true)}
           onRefresh={handleRefresh}
           isRefreshing={isSyncing}
+          isLoading={isSyncing && filteredEmails.length === 0 && !isDemoMode}
           selectionMode={selectionMode}
           selectedEmails={selectedEmails}
           onToggleSelection={handleToggleSelection}
@@ -168,7 +176,11 @@ export default function MailScreen() {
           onChangeComposeCc={setComposeCc}
           onChangeComposeSubject={setComposeSubject}
           onChangeComposeBody={setComposeBody}
-          onClose={() => setCurrentView('inbox')}
+          onClose={() => {
+            setCurrentView('inbox');
+            // Clear compose params from URL to prevent re-triggering
+            router.setParams({ compose: undefined, emailId: params.emailId || undefined });
+          }}
           onSend={handleSend}
           onSaveDraft={handleSaveDraft}
           onOpenAIModal={() => setIsAIModalVisible(true)}
@@ -179,7 +191,7 @@ export default function MailScreen() {
         visible={isAIModalVisible}
         onClose={() => setIsAIModalVisible(false)}
         onGenerate={(format, tone, length, prompt) => {
-          Alert.alert('AI Generation', `Generating ${format} email with ${tone} tone, ${length} length...`);
+          showInfo(`Generating ${format} email with ${tone} tone, ${length} length...`, { duration: 2000 });
         }}
         insets={insets}
       />

@@ -137,8 +137,21 @@ export function CalendarSidebar(props: CalendarRenderProps) {
     <>
       <Animated.View style={[styles.calendarSidebar, { right: calendarSlideAnim }]}>
         <View style={[styles.calendarHeader, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.calendarTitle}>Calendar</Text>
-          <TouchableOpacity onPress={toggleCalendar}>
+          <Text 
+            style={styles.calendarTitle}
+            accessible={true}
+            accessibilityRole="header"
+            accessibilityLabel="Calendar"
+          >
+            Calendar
+          </Text>
+          <TouchableOpacity 
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Close calendar"
+            accessibilityHint="Double tap to close the calendar sidebar"
+            onPress={toggleCalendar}
+          >
             <X size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -169,7 +182,10 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                 onPress={clearFeedback}
                 style={styles.feedbackDismiss}
                 testID="dismiss-calendar-feedback"
+                accessible={true}
                 accessibilityRole="button"
+                accessibilityLabel="Dismiss feedback"
+                accessibilityHint="Double tap to dismiss this feedback message"
               >
                 <X size={16} color={feedback.type === 'success' ? colors.success : colors.danger} />
               </TouchableOpacity>
@@ -186,9 +202,20 @@ export function CalendarSidebar(props: CalendarRenderProps) {
           
           <View style={styles.calendarEvents}>
             <View style={styles.eventsHeader}>
-              <Text style={styles.eventsTitle}>Events</Text>
+              <Text 
+                style={styles.eventsTitle}
+                accessible={true}
+                accessibilityRole="header"
+                accessibilityLabel="Events"
+              >
+                Events
+              </Text>
               <TouchableOpacity 
                 style={styles.newMeetingButton}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="New event"
+                accessibilityHint="Double tap to create a new calendar event"
                 onPress={() => setIsNewMeetingModalVisible(true)}
               >
                 <Plus size={18} color="#FFFFFF" />
@@ -206,6 +233,10 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                   <Text style={styles.emptyEventsText}>No events for this day</Text>
                   <TouchableOpacity 
                     style={styles.addEventButton}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add Event"
+                    accessibilityHint="Double tap to create a new calendar event for this day"
                     onPress={() => setIsNewMeetingModalVisible(true)}
                   >
                     <Text style={styles.addEventButtonText}>Add Event</Text>
@@ -224,6 +255,10 @@ export function CalendarSidebar(props: CalendarRenderProps) {
                       </View>
                       <Text style={styles.eventTime}>{event.time}</Text>
                       <TouchableOpacity
+                        accessible={true}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete event ${event.title}`}
+                        accessibilityHint="Double tap to delete this calendar event"
                         onPress={() => handleDeleteEvent(event.id)}
                         style={styles.deleteEventButton}
                       >

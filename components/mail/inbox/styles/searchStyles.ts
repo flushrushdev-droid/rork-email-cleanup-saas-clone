@@ -147,5 +147,39 @@ export const searchStyles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  emptyState: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  suggestionsSection: {
+    paddingTop: 16,
+  },
+  suggestionsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  suggestionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 15,
+  },
 });
 

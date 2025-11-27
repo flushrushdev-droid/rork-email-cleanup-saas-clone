@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Sparkles } from 'lucide-react-native';
 import { createAIStyles } from '@/styles/app/ai';
 
@@ -27,14 +28,15 @@ export function MessageBubble({ part, role, colors }: MessageBubbleProps) {
             : { ...styles.assistantBubble, backgroundColor: colors.surface },
         ]}
       >
-        <Text
+        <AppText
           style={[
             styles.messageText,
             role === 'user' ? styles.userText : { color: colors.text },
           ]}
+          dynamicTypeStyle="body"
         >
           {part.text}
-        </Text>
+        </AppText>
       </View>
     );
   }
@@ -43,13 +45,13 @@ export function MessageBubble({ part, role, colors }: MessageBubbleProps) {
     return (
       <View style={[styles.toolBubble, { backgroundColor: colors.secondary + '15' }]}>
         <Sparkles size={16} color={colors.secondary} />
-        <Text style={[styles.toolText, { color: colors.secondary }]}>
+        <AppText style={[styles.toolText, { color: colors.secondary }]} dynamicTypeStyle="caption">
           {part.state === 'input-streaming' || part.state === 'input-available'
             ? `Calling ${part.toolName}...`
             : part.state === 'output-available'
             ? `Completed ${part.toolName}`
             : `Error in ${part.toolName}`}
-        </Text>
+        </AppText>
       </View>
     );
   }

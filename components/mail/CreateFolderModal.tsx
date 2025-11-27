@@ -1,12 +1,30 @@
 import React from 'react';
 import { View, Text, Modal, StyleSheet, ScrollView, Keyboard, Platform, KeyboardAvoidingView } from 'react-native';
 import { X } from 'lucide-react-native';
+import { z } from 'zod';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AccessibleButton } from '@/components/common/AccessibleButton';
 import { AccessibleTextInput } from '@/components/common/AccessibleTextInput';
 import { ErrorDisplay } from '@/components/common/ErrorDisplay';
+import { AnimatedModal } from '@/components/common/AnimatedModal';
 import { ValidationError } from '@/utils/errorHandling';
+import { useFormValidation } from '@/hooks/useFormValidation';
+
+// Validation schema for folder creation
+const folderSchema = z.object({
+  folderName: z
+    .string()
+    .min(1, 'Folder name is required')
+    .max(50, 'Folder name must be 50 characters or less')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Folder name can only contain letters, numbers, spaces, hyphens, and underscores'),
+  folderRule: z
+    .string()
+    .min(10, 'Please provide a more detailed rule (at least 10 characters)')
+    .max(500, 'Folder rule must be 500 characters or less'),
+});
+
+type FolderFormValues = z.infer<typeof folderSchema>;
 
 type CreateFolderModalProps = {
   visible: boolean;
@@ -37,9 +55,26 @@ export function CreateFolderModal({
   // @ts-ignore
   const Container: any = typeof KeyboardAvoidingView !== 'undefined' ? KeyboardAvoidingView : View;
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
-  const [error, setError] = React.useState<ValidationError | null>(null);
   const nameInputRef = React.useRef<any>(null);
   const ruleInputRef = React.useRef<any>(null);
+
+  // Form validation hook
+  const {
+    values,
+    setFieldValue,
+    setValues: setFormValues,
+    errors,
+    formError,
+    setFormError,
+    validateForm,
+    reset,
+  } = useFormValidation<FolderFormValues>(folderSchema, {
+    initialValues: {
+      folderName: '',
+      folderRule: '',
+    },
+    mode: 'onChange',
+  });
 
   // iOS: Lift the bottom sheet while keyboard is visible
   React.useEffect(() => {
@@ -58,52 +93,65 @@ export function CreateFolderModal({
     };
   }, [insets.bottom]);
 
-  // Clear error when modal opens/closes
-  React.useEffect(() => {
-    if (!visible) {
-      setError(null);
-    }
-  }, [visible]);
+  // Track if modal was just opened to initialize values
+  const isInitialMount = React.useRef(true);
+  const prevVisible = React.useRef(visible);
 
-  // Clear error when user starts typing
+  // Reset form when modal closes
   React.useEffect(() => {
-    if (folderName.trim() && folderRule.trim() && error) {
-      setError(null);
+    if (!visible && prevVisible.current) {
+      // Modal just closed
+      reset();
+      setFormError(null);
+      isInitialMount.current = true;
     }
-  }, [folderName, folderRule, error]);
+    prevVisible.current = visible;
+  }, [visible, reset]);
+
+  // Initialize form values from props when modal opens (only once)
+  React.useEffect(() => {
+    if (visible && isInitialMount.current) {
+      // Use setValues to set multiple values at once without triggering validation
+      setFormValues({
+        folderName: folderName || '',
+        folderRule: folderRule || '',
+      });
+      isInitialMount.current = false;
+    }
+  }, [visible, setFormValues]); // Only depend on visible to avoid loops
 
   const handleCreate = () => {
-    if (!folderName.trim()) {
-      setError(new ValidationError('Folder name is required', 'folderName'));
-      nameInputRef.current?.focus();
+    if (!validateForm()) {
+      // Focus on first error field
+      if (errors.folderName) {
+        nameInputRef.current?.focus();
+      } else if (errors.folderRule) {
+        ruleInputRef.current?.focus();
+      }
       return;
     }
-    if (!folderRule.trim()) {
-      setError(new ValidationError('Folder rule is required', 'folderRule'));
-      ruleInputRef.current?.focus();
-      return;
-    }
-    setError(null);
+    
+    setFormError(null);
     onCreate();
   };
 
   // No programmatic scrolling; we rely on KeyboardAvoidingView to lift content.
   return (
-    <Modal
+    <AnimatedModal
       visible={visible}
-      transparent
+      onClose={() => !isCreating && onClose()}
       animationType="slide"
+      position="bottom"
       presentationStyle="overFullScreen"
-      onRequestClose={() => !isCreating && onClose()}
+      onBackdropPress={!isCreating}
     >
-      <Container behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-        <View
-          style={[
-            styles.modalContent,
-            { paddingBottom: insets.bottom + 16, paddingTop: insets.top + 12, backgroundColor: colors.surface },
-            Platform.OS === 'ios' && (Container === View) ? { transform: [{ translateY: -keyboardOffset }] } : null,
-          ]}
-        >
+      <View
+        style={[
+          styles.modalContent,
+          { paddingBottom: insets.bottom + 16, paddingTop: insets.top + 12, backgroundColor: colors.surface },
+          Platform.OS === 'ios' && (Container === View) ? { transform: [{ translateY: -keyboardOffset }] } : null,
+        ]}
+      >
           <View style={styles.modalHeader}>
             <Text 
               style={[styles.modalTitle, { color: colors.text }]}
@@ -142,13 +190,16 @@ export function CreateFolderModal({
             accessibilityLabel="Folder name"
             accessibilityHint="Enter a name for your new folder, for example Important Clients"
             placeholder="e.g., Important Clients"
-            value={folderName}
-            onChangeText={onFolderNameChange}
+            value={values.folderName}
+            onChangeText={(text) => {
+              setFieldValue('folderName', text);
+              onFolderNameChange(text); // Update parent directly
+            }}
             editable={!isCreating}
             returnKeyType="next"
             onSubmitEditing={() => ruleInputRef.current?.focus()}
-            error={error?.field === 'folderName'}
-            errorMessage={error?.field === 'folderName' ? error.message : undefined}
+            error={!!errors.folderName}
+            errorMessage={errors.folderName}
             label="Folder Name"
           />
 
@@ -157,13 +208,16 @@ export function CreateFolderModal({
             accessibilityLabel="Folder rule"
             accessibilityHint="Describe the rule in plain English. Our AI will understand it. For example, emails from clients about project updates or invoices"
             placeholder="e.g., Emails from clients about project updates or invoices"
-            value={folderRule}
-            onChangeText={onFolderRuleChange}
+            value={values.folderRule}
+            onChangeText={(text) => {
+              setFieldValue('folderRule', text);
+              onFolderRuleChange(text); // Update parent directly
+            }}
             multiline
             numberOfLines={4}
             editable={!isCreating}
-            error={error?.field === 'folderRule'}
-            errorMessage={error?.field === 'folderRule' ? error.message : undefined}
+            error={!!errors.folderRule}
+            errorMessage={errors.folderRule}
             label="Folder Rule"
             style={styles.textArea}
           />
@@ -175,11 +229,11 @@ export function CreateFolderModal({
             Describe the rule in plain English. Our AI will understand it!
           </Text>
 
-            {error && error.field === undefined && (
+            {formError && !errors.folderName && !errors.folderRule && (
               <ErrorDisplay
-                error={error}
+                error={new ValidationError(formError)}
                 variant="inline"
-                onDismiss={() => setError(null)}
+                onDismiss={() => setFormError(null)}
               />
             )}
 
@@ -206,8 +260,7 @@ export function CreateFolderModal({
           </View>
           </ScrollView>
         </View>
-      </Container>
-    </Modal>
+    </AnimatedModal>
   );
 }
 

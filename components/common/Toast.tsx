@@ -59,7 +59,7 @@ export function Toast({ toast, onDismiss, position = 'top' }: ToastProps) {
   if (!toast) return null;
 
   const getIcon = () => {
-    const iconProps = { size: 20, color: '#FFFFFF' };
+    const iconProps = { size: 20, color: colors.surface };
     switch (toast.type) {
       case 'success':
         return <CheckCircle {...iconProps} />;
@@ -76,14 +76,14 @@ export function Toast({ toast, onDismiss, position = 'top' }: ToastProps) {
   const getBackgroundColor = () => {
     switch (toast.type) {
       case 'success':
-        return colors.success || '#34C759';
+        return colors.success;
       case 'error':
-        return colors.danger || '#FF3B30';
+        return colors.danger;
       case 'warning':
-        return colors.warning || '#FF9500';
+        return colors.warning;
       case 'info':
       default:
-        return colors.primary || '#007AFF';
+        return colors.primary;
     }
   };
 
@@ -110,7 +110,7 @@ export function Toast({ toast, onDismiss, position = 'top' }: ToastProps) {
         accessibilityLabel={`${toast.type} notification: ${toast.message}`}
       >
         {getIcon()}
-        <Text style={styles.message} numberOfLines={2}>
+        <Text style={[styles.message, { color: colors.surface }]} numberOfLines={2}>
           {toast.message}
         </Text>
         <TouchableOpacity
@@ -119,7 +119,7 @@ export function Toast({ toast, onDismiss, position = 'top' }: ToastProps) {
           accessibilityRole="button"
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <X size={16} color="#FFFFFF" />
+          <X size={16} color={colors.surface} />
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -147,7 +147,6 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },

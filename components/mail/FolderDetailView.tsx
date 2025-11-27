@@ -41,9 +41,9 @@ export function FolderDetailView({
         title={selectedFolder.name}
         subtitle={`${filteredEmails.length} emails`}
         backgroundColor={selectedFolder.color}
-        titleColor="#FFFFFF"
-        subtitleColor="rgba(255,255,255,0.9)"
-        backButtonColor="#FFFFFF"
+        titleColor={colors.surface}
+        subtitleColor={colors.surface + 'E6'}
+        backButtonColor={colors.surface}
         onBack={onBack}
         insets={insets}
       />
@@ -57,9 +57,9 @@ export function FolderDetailView({
           <EmptyState
             icon={Mail}
             title="No emails found"
-            description=""
+            description="This folder doesn't contain any emails yet"
             iconSize={48}
-            colors={colors}
+            style={styles.emptyState}
           />
         ) : (
           filteredEmails.map((email: EmailMessage) => {

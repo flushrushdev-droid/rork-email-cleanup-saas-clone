@@ -15,10 +15,12 @@ import { DatePickerModal } from '@/components/calendar/DatePickerModal';
 import { TimePickerModal } from '@/components/calendar/TimePickerModal';
 import { NoteCard } from '@/components/notes/NoteCard';
 import { NoteEditorModal } from '@/components/notes/NoteEditorModal';
+import { EmptyState } from '@/components/common/EmptyState';
 import { createNotesStyles } from '@/styles/app/notes';
 import { useNotes, type Note } from '@/hooks/useNotes';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { triggerButtonHaptic } from '@/utils/haptics';
 
 export default function NotesScreen() {
   const { colors } = useTheme();
@@ -54,6 +56,8 @@ export default function NotesScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const onRefresh = React.useCallback(async () => {
+    const { triggerRefreshHaptic } = await import('@/utils/haptics');
+    await triggerRefreshHaptic();
     setIsRefreshing(true);
     await handleRefresh();
     setIsRefreshing(false);
@@ -77,7 +81,14 @@ export default function NotesScreen() {
   const listHeaderComponent = React.useMemo(() => (
     <TouchableOpacity 
       style={[styles.addNoteButton, { backgroundColor: colors.surface, borderColor: colors.primary + '30' }]}
-      onPress={openCreateModal}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel="Create New Note"
+      accessibilityHint="Double tap to create a new note"
+      onPress={async () => {
+        await triggerButtonHaptic();
+        openCreateModal();
+      }}
       activeOpacity={0.7}
       testID="add-note-button"
     >
@@ -86,14 +97,14 @@ export default function NotesScreen() {
   ), [styles.addNoteButton, styles.addNoteText, colors, openCreateModal]);
 
   const listEmptyComponent = React.useMemo(() => (
-    <View style={styles.emptyState}>
-      <FileText size={64} color={colors.textSecondary} />
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>No Notes Yet</Text>
-      <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-        Tap the + button to create your first note
-      </Text>
-    </View>
-  ), [styles.emptyState, styles.emptyTitle, styles.emptyDescription, colors]);
+    <EmptyState
+      icon={FileText}
+      title="No Notes Yet"
+      description="Tap the + button to create your first note"
+      iconSize={64}
+      style={styles.emptyState}
+    />
+  ), [colors]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

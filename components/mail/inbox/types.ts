@@ -34,6 +34,8 @@ export interface InboxViewProps {
   onStarEmail: (emailId: string) => void;
   onLoadDraft: (draft: Draft) => void;
   onDeleteDraft: (draftId: string) => void;
+  onArchive?: (email: EmailMessage) => void;
+  onDelete?: (email: EmailMessage) => void;
   onCreateFolder: () => void;
   selectionMode: boolean;
   selectedEmails: Set<string>;
@@ -47,5 +49,6 @@ export interface InboxViewProps {
   onCompose: () => void;
   onRefresh?: () => Promise<void>;
   isRefreshing?: boolean;
+  isLoading?: boolean;
 }
 

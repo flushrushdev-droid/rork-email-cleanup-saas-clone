@@ -37,8 +37,8 @@ export function LargeFilesView({
           onPress={() => onEmailPress(email.id)}
           activeOpacity={0.7}
         >
-          <View style={[styles.fileIconContainer, { backgroundColor: '#5856D6' + '20' }]}>
-            <HardDrive size={20} color="#5856D6" />
+          <View style={[styles.fileIconContainer, { backgroundColor: colors.secondary + '20' }]}>
+            <HardDrive size={20} color={colors.secondary} />
           </View>
           <View style={styles.fileContent}>
             <Text style={[styles.fileSubject, { color: colors.text }]} numberOfLines={1}>
@@ -48,7 +48,7 @@ export function LargeFilesView({
               {email.from}
             </Text>
             <View style={styles.fileMetadata}>
-              <Text style={[styles.fileSize, { color: '#5856D6' }]}>
+              <Text style={[styles.fileSize, { color: colors.secondary }]}>
                 {('size' in email
                   ? (email.size / (1024 * 1024)).toFixed(2)
                   : 'sizeBytes' in email

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import type {
   RuleCondition,
@@ -9,6 +8,7 @@ import type {
   RuleActionType,
   Rule,
 } from '@/constants/types';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 type DropdownState = {
   visible: boolean;
@@ -59,6 +59,7 @@ export function useRuleForm({
     index: -1,
   });
   const [toast, setToast] = useState<{ message: string } | null>(null);
+  const { showError } = useEnhancedToast();
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -165,7 +166,7 @@ export function useRuleForm({
   const handleSave = useCallback(() => {
     // Validate rule name
     if (!ruleName.trim()) {
-      Alert.alert('Error', 'Please enter a rule name');
+      showError('Please enter a rule name');
       return;
     }
 
@@ -184,7 +185,7 @@ export function useRuleForm({
     });
 
     if (hasEmptyConditions) {
-      Alert.alert('Error', 'Please fill in all condition values');
+      showError('Please fill in all condition values');
       return;
     }
 
@@ -194,7 +195,7 @@ export function useRuleForm({
       return !validOperators.includes(c.operator);
     });
     if (hasInvalidOperators) {
-      Alert.alert('Error', 'Please select valid operators for each field');
+      showError('Please select valid operators for each field');
       return;
     }
 
@@ -202,7 +203,7 @@ export function useRuleForm({
     const actionsNeedingValue = actions.filter((a) => a.type === 'label' || a.type === 'tag');
     const hasEmptyActions = actionsNeedingValue.some((a) => !a.value || !a.value.trim());
     if (hasEmptyActions) {
-      Alert.alert('Error', 'Please fill in all action values');
+      showError('Please fill in all action values');
       return;
     }
 
@@ -233,7 +234,7 @@ export function useRuleForm({
         },
       });
     }, 1500);
-  }, [ruleName, conditions, actions, ruleToEdit, isEditMode, getValidOperators]);
+  }, [ruleName, conditions, actions, ruleToEdit, isEditMode, getValidOperators, showError]);
 
   // Auto-hide toast after 3 seconds
   useEffect(() => {

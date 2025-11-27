@@ -1,6 +1,13 @@
 import React from 'react';
 import { Platform, Text, TextProps } from 'react-native';
 import { getTextAccessibilityProps, type AccessibilityRole } from '@/utils/accessibility';
+import { 
+	getMaxFontSizeMultiplier, 
+	type MaxFontSizeMultiplierKey,
+	getLineHeight,
+	type FontSizeKey,
+	getScaledFontSize,
+} from '@/utils/typography';
 
 export interface AppTextProps extends TextProps {
 	/**
@@ -15,13 +22,47 @@ export interface AppTextProps extends TextProps {
 	 * Accessibility hint to provide additional context
 	 */
 	accessibilityHint?: string;
+	/**
+	 * Maximum font size multiplier for this text element
+	 * Controls how much the font can scale with Dynamic Type
+	 * Can be a predefined type or a custom number
+	 */
+	maxFontSizeMultiplier?: MaxFontSizeMultiplierKey | number;
+	/**
+	 * Whether to allow font scaling (default: true)
+	 * Set to false only for UI elements that must maintain exact size (logos, icons)
+	 */
+	allowFontScaling?: boolean;
+	/**
+	 * Dynamic Type style category (iOS)
+	 * Maps to iOS UIFontTextStyle categories for better Dynamic Type support
+	 */
+	dynamicTypeStyle?: FontSizeKey;
 }
 
+/**
+ * AppText - Enhanced Text component with full Dynamic Type support
+ * 
+ * Features:
+ * - iOS Dynamic Type support with configurable max scaling
+ * - Android font scaling via allowFontScaling
+ * - Automatic line height calculation for readability
+ * - Accessibility built-in
+ * 
+ * @example
+ * <AppText dynamicTypeStyle="body" maxFontSizeMultiplier="body">
+ *   This text will scale with user's accessibility settings
+ * </AppText>
+ */
 export function AppText({ 
 	accessibilityLabel, 
 	accessibilityRole, 
 	accessibilityHint,
 	children,
+	maxFontSizeMultiplier = 'default',
+	allowFontScaling = true,
+	dynamicTypeStyle,
+	style,
 	...props 
 }: AppTextProps) {
 	// If accessibilityLabel is provided, use it; otherwise use children as label
@@ -38,15 +79,36 @@ export function AppText({
 		accessibilityProps.accessibilityHint = accessibilityHint;
 	}
 
+	// Determine max font size multiplier
+	const maxMultiplier = typeof maxFontSizeMultiplier === 'string'
+		? getMaxFontSizeMultiplier(maxFontSizeMultiplier)
+		: maxFontSizeMultiplier;
+
+	// Extract fontSize from style if provided
+	const styleObj = Array.isArray(style) ? Object.assign({}, ...style) : (style || {});
+	const fontSize = (styleObj as any)?.fontSize as number | undefined;
+
+	// Calculate line height - use provided lineHeight or calculate from fontSize
+	const baseFontSize = fontSize || (dynamicTypeStyle ? getScaledFontSize(dynamicTypeStyle) : 16);
+	const lineHeightMultiplier = fontSize && (styleObj as any)?.lineHeight ? undefined : 
+		(dynamicTypeStyle === 'title1' || dynamicTypeStyle === 'title2' || dynamicTypeStyle === 'title3' || dynamicTypeStyle === 'largeTitle' ? 1.2 : 1.4);
+	
+	const defaultLineHeight = lineHeightMultiplier ? getLineHeight(baseFontSize, lineHeightMultiplier) : undefined;
+
+	// Apply dynamic type style if specified
+	const dynamicStyle = dynamicTypeStyle && !fontSize ? {
+		fontSize: getScaledFontSize(dynamicTypeStyle),
+	} : {};
+
 	return (
 		<Text
-			allowFontScaling
-			maxFontSizeMultiplier={1.25}
+			allowFontScaling={allowFontScaling}
+			maxFontSizeMultiplier={maxMultiplier}
 			{...(Platform.OS === 'android' ? { includeFontPadding: false, textBreakStrategy: 'simple' as any } : {})}
-			// Keep a reasonable default lineHeight to avoid glyph clipping; allow overrides via props.style
 			style={[
-				{ lineHeight: 1.25 * ((props.style as any)?.fontSize ?? 16) },
-				props.style,
+				defaultLineHeight && { lineHeight: defaultLineHeight },
+				dynamicStyle,
+				style,
 			]}
 			{...accessibilityProps}
 			{...props}

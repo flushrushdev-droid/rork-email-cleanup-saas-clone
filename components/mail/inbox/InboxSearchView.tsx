@@ -1,14 +1,18 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Search, X } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage } from '@/constants/types';
 import { searchStyles } from './styles/searchStyles';
 import { emailListStyles } from './styles/emailListStyles';
 import { SearchHistory } from './search/SearchHistory';
+import { SearchSuggestions } from './search/SearchSuggestions';
+import { SearchResultHighlight } from './search/SearchResultHighlight';
 import { ActiveFilters } from './search/ActiveFilters';
 import { getFilteredSearchResults } from './utils/searchUtils';
 import { getInitial } from './utils/avatarUtils';
+import { EmptyState } from '@/components/common/EmptyState';
 
 interface InboxSearchViewProps {
   searchQuery: string;
@@ -69,15 +73,30 @@ export function InboxSearchView({
     !appliedAttachmentFilter && 
     !appliedContactFilter;
 
-  const showResults = searchQuery.length > 0 || 
+  // Show suggestions when typing and no filters, but only if we don't have results yet
+  const showSuggestions = searchQuery.length >= 2 && 
+    results.length === 0 && 
+    !appliedLabelFilter && 
+    !appliedAttachmentFilter && 
+    !appliedContactFilter;
+
+  // Show results when we have a query or filters applied and results exist
+  const showResults = (searchQuery.length > 0 || 
     appliedLabelFilter || 
     appliedAttachmentFilter || 
-    appliedContactFilter;
+    appliedContactFilter) && (results.length > 0 || !showSuggestions);
 
   return (
     <View style={[searchStyles.searchView, { backgroundColor: colors.background }]}>
       <View style={[searchStyles.searchHeader, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={handleClose} style={searchStyles.backButton}>
+        <TouchableOpacity 
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Close search"
+          accessibilityHint="Double tap to close search and return to inbox"
+          onPress={handleClose} 
+          style={searchStyles.backButton}
+        >
           <X size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={[searchStyles.searchInputContainer, { backgroundColor: colors.surface }]}>
@@ -88,10 +107,19 @@ export function InboxSearchView({
             value={searchQuery}
             onChangeText={onSearchChange}
             placeholderTextColor={colors.textSecondary}
+            accessible={true}
+            accessibilityLabel="Search emails"
+            accessibilityHint="Enter search terms to find emails by subject, sender, or content"
             autoFocus
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => onSearchChange('')}>
+            <TouchableOpacity 
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              accessibilityHint="Double tap to clear the search query"
+              onPress={() => onSearchChange('')}
+            >
               <X size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
@@ -101,37 +129,62 @@ export function InboxSearchView({
       <ScrollView style={searchStyles.searchContent} showsVerticalScrollIndicator={false}>
         <View style={searchStyles.filterRow}>
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Filter by labels"
+            accessibilityHint="Double tap to filter search results by labels"
             style={[searchStyles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onActiveFilterModalChange('labels')}
           >
-            <Text style={[searchStyles.filterButtonText, { color: colors.text }]}>Labels</Text>
-            <Text style={[searchStyles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+            <AppText style={[searchStyles.filterButtonText, { color: colors.text }]} dynamicTypeStyle="body">Labels</AppText>
+            <AppText style={[searchStyles.filterArrow, { color: colors.textSecondary }]} dynamicTypeStyle="caption">▼</AppText>
           </TouchableOpacity>
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Filter by sender"
+            accessibilityHint="Double tap to filter search results by sender"
             style={[searchStyles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onActiveFilterModalChange('from')}
           >
-            <Text style={[searchStyles.filterButtonText, { color: colors.text }]}>From</Text>
-            <Text style={[searchStyles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+            <AppText style={[searchStyles.filterButtonText, { color: colors.text }]} dynamicTypeStyle="body">From</AppText>
+            <AppText style={[searchStyles.filterArrow, { color: colors.textSecondary }]} dynamicTypeStyle="caption">▼</AppText>
           </TouchableOpacity>
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Filter by recipient"
+            accessibilityHint="Double tap to filter search results by recipient"
             style={[searchStyles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onActiveFilterModalChange('to')}
           >
-            <Text style={[searchStyles.filterButtonText, { color: colors.text }]}>To</Text>
-            <Text style={[searchStyles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+            <AppText style={[searchStyles.filterButtonText, { color: colors.text }]} dynamicTypeStyle="body">To</AppText>
+            <AppText style={[searchStyles.filterArrow, { color: colors.textSecondary }]} dynamicTypeStyle="caption">▼</AppText>
           </TouchableOpacity>
           <TouchableOpacity
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Filter by attachments"
+            accessibilityHint="Double tap to filter search results by attachments"
             style={[searchStyles.filterButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={() => onActiveFilterModalChange('attachment')}
           >
-            <Text style={[searchStyles.filterButtonText, { color: colors.text }]}>Attachment</Text>
-            <Text style={[searchStyles.filterArrow, { color: colors.textSecondary }]}>▼</Text>
+            <AppText style={[searchStyles.filterButtonText, { color: colors.text }]} dynamicTypeStyle="body">Attachment</AppText>
+            <AppText style={[searchStyles.filterArrow, { color: colors.textSecondary }]} dynamicTypeStyle="caption">▼</AppText>
           </TouchableOpacity>
         </View>
 
         {showHistory && (
           <SearchHistory history={searchHistory} onSelect={onSearchChange} />
+        )}
+
+        {showSuggestions && (
+          <SearchSuggestions
+            query={searchQuery}
+            searchHistory={searchHistory}
+            emails={filteredEmails}
+            onSelect={onSearchChange}
+          />
         )}
 
         {showResults && (
@@ -144,10 +197,20 @@ export function InboxSearchView({
               onClearAttachment={onClearAttachmentFilter}
               onClearContact={onClearContactFilter}
             />
-            <Text style={[searchStyles.resultsTitle, { color: colors.text }]}>
-              {results.length} results
-            </Text>
-            {results.slice(0, 50).map((email) => {
+            {results.length === 0 ? (
+              <EmptyState
+                icon={Search}
+                title="No search results"
+                description="Try adjusting your search terms or filters"
+                iconSize={48}
+                style={searchStyles.emptyState}
+              />
+            ) : (
+              <>
+                <AppText style={[searchStyles.resultsTitle, { color: colors.text }]} dynamicTypeStyle="headline">
+                  {results.length} results
+                </AppText>
+                {results.slice(0, 50).map((email) => {
               const senderName = email.from.split('<')[0].trim() || email.from;
               const senderInitial = getInitial(senderName);
               const senderColor = `hsl(${senderInitial.charCodeAt(0) * 137.5 % 360}, 70%, 50%)`;
@@ -155,26 +218,44 @@ export function InboxSearchView({
               return (
                 <TouchableOpacity
                   key={email.id}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Email from ${email.from.split('<')[0].trim() || email.from}, subject: ${email.subject || 'No subject'}`}
+                  accessibilityHint="Double tap to view this email"
                   style={[searchStyles.searchResultItem, { borderBottomColor: colors.border }]}
                   onPress={() => handleEmailPress(email)}
                 >
                   <View style={[emailListStyles.senderAvatar, { backgroundColor: senderColor }]}>
-                    <Text style={emailListStyles.senderInitial}>{senderInitial}</Text>
+                    <AppText style={emailListStyles.senderInitial} dynamicTypeStyle="body">{senderInitial}</AppText>
                   </View>
                   <View style={searchStyles.searchResultContent}>
-                    <Text style={[searchStyles.searchResultSubject, { color: colors.text }]} numberOfLines={1}>
-                      {email.subject}
-                    </Text>
-                    <Text style={[searchStyles.searchResultFrom, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {email.from}
-                    </Text>
-                    <Text style={[searchStyles.searchResultSnippet, { color: colors.textSecondary }]} numberOfLines={2}>
-                      {email.snippet}
-                    </Text>
+                    <SearchResultHighlight
+                      text={email.subject || 'No subject'}
+                      searchQuery={searchQuery}
+                      style={[searchStyles.searchResultSubject, { color: colors.text }]}
+                      highlightStyle={{ backgroundColor: colors.primary + '30', fontWeight: '600' as const }}
+                      numberOfLines={1}
+                    />
+                    <SearchResultHighlight
+                      text={email.from}
+                      searchQuery={searchQuery}
+                      style={[searchStyles.searchResultFrom, { color: colors.textSecondary }]}
+                      highlightStyle={{ backgroundColor: colors.primary + '30', fontWeight: '600' as const }}
+                      numberOfLines={1}
+                    />
+                    <SearchResultHighlight
+                      text={email.snippet}
+                      searchQuery={searchQuery}
+                      style={[searchStyles.searchResultSnippet, { color: colors.textSecondary }]}
+                      highlightStyle={{ backgroundColor: colors.primary + '30', fontWeight: '600' as const }}
+                      numberOfLines={2}
+                    />
                   </View>
                 </TouchableOpacity>
               );
             })}
+              </>
+            )}
           </View>
         )}
       </ScrollView>

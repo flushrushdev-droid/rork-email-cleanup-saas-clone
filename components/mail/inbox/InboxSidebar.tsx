@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { X, Inbox, FolderOpen, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -57,7 +58,7 @@ export function InboxSidebar({
         { backgroundColor: colors.background, left: sidebarSlideAnim, paddingTop: insets.top }
       ]}>
         <View style={[sidebarStyles.sidebarHeader, { borderBottomColor: colors.border }]}>
-          <Text style={[sidebarStyles.sidebarTitle, { color: colors.text }]}>Filters & Folders</Text>
+          <AppText style={[sidebarStyles.sidebarTitle, { color: colors.text }]} dynamicTypeStyle="title2">Filters & Folders</AppText>
           <TouchableOpacity onPress={onClose}>
             <X size={24} color={colors.text} />
           </TouchableOpacity>
@@ -68,7 +69,7 @@ export function InboxSidebar({
           <View style={sidebarStyles.sidebarSection}>
             <View style={sidebarStyles.sectionHeader}>
               <Inbox size={20} color={colors.primary} />
-              <Text style={[sidebarStyles.sectionTitle, { color: colors.text }]}>Mail</Text>
+              <AppText style={[sidebarStyles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Mail</AppText>
             </View>
             
             {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'archived', 'trash'] as const).map((filter) => (
@@ -81,12 +82,12 @@ export function InboxSidebar({
                 ]}
                 onPress={() => handleFilterChange(filter)}
               >
-                <Text style={[
+                <AppText style={[
                   sidebarStyles.sidebarItemText,
                   { color: activeFilter === filter ? colors.primary : colors.text }
-                ]}>
+                ]} dynamicTypeStyle="body">
                   {filter === 'drafts-ai' ? 'Drafts By AI' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </Text>
+                </AppText>
                 {activeFilter === filter && (
                   <View style={[sidebarStyles.activeIndicator, { backgroundColor: colors.primary }]} />
                 )}
@@ -99,7 +100,7 @@ export function InboxSidebar({
             <View style={sidebarStyles.sidebarSection}>
               <View style={sidebarStyles.sectionHeader}>
                 <FolderOpen size={20} color={colors.secondary} />
-                <Text style={[sidebarStyles.sectionTitle, { color: colors.text }]}>My Folders</Text>
+                <AppText style={[sidebarStyles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">My Folders</AppText>
               </View>
               {customFolders.map((folder) => (
                 <TouchableOpacity
@@ -112,10 +113,10 @@ export function InboxSidebar({
                     <View style={[sidebarStyles.folderIcon, { backgroundColor: (folder.color || colors.primary) + '20' }]}>
                       <FolderOpen size={16} color={folder.color || colors.primary} />
                     </View>
-                    <Text style={[sidebarStyles.sidebarItemText, { color: colors.text }]}>{folder.name}</Text>
+                    <AppText style={[sidebarStyles.sidebarItemText, { color: colors.text }]} dynamicTypeStyle="body">{folder.name}</AppText>
                   </View>
                   <View style={[sidebarStyles.folderBadge, { backgroundColor: folder.color || colors.primary }]}>
-                    <Text style={sidebarStyles.folderBadgeText}>{folder.count ?? 0}</Text>
+                    <AppText style={sidebarStyles.folderBadgeText} dynamicTypeStyle="caption">{folder.count ?? 0}</AppText>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -127,7 +128,7 @@ export function InboxSidebar({
             <View style={sidebarStyles.sidebarSection}>
               <View style={sidebarStyles.sectionHeader}>
                 <FolderOpen size={20} color={colors.secondary} />
-                <Text style={[sidebarStyles.sectionTitle, { color: colors.text }]}>Folders</Text>
+                <AppText style={[sidebarStyles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Folders</AppText>
               </View>
 
               {smartFolders.map((folder) => {
@@ -143,10 +144,10 @@ export function InboxSidebar({
                       <View style={[sidebarStyles.folderIcon, { backgroundColor: folder.color + '20' }]}>
                         <Icon size={16} color={folder.color} />
                       </View>
-                      <Text style={[sidebarStyles.sidebarItemText, { color: colors.text }]}>{folder.name}</Text>
+                      <AppText style={[sidebarStyles.sidebarItemText, { color: colors.text }]} dynamicTypeStyle="body">{folder.name}</AppText>
                     </View>
                     <View style={[sidebarStyles.folderBadge, { backgroundColor: folder.color }]}>
-                      <Text style={sidebarStyles.folderBadgeText}>{folder.count}</Text>
+                      <AppText style={sidebarStyles.folderBadgeText} dynamicTypeStyle="caption">{folder.count}</AppText>
                     </View>
                   </TouchableOpacity>
                 );
@@ -164,7 +165,7 @@ export function InboxSidebar({
                   <View style={[sidebarStyles.folderIcon, { backgroundColor: colors.primary + '20' }]}>
                     <Plus size={16} color={colors.primary} />
                   </View>
-                  <Text style={[sidebarStyles.sidebarItemText, { color: colors.primary }]}>Create Folder</Text>
+                  <AppText style={[sidebarStyles.sidebarItemText, { color: colors.primary }]} dynamicTypeStyle="body">Create Folder</AppText>
                 </View>
               </TouchableOpacity>
             </View>

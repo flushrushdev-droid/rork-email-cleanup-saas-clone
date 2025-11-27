@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, FlatList, TouchableOpacity, Alert, ListRenderItem } from 'react-native';
+import { Text, View, FlatList, TouchableOpacity, ListRenderItem } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Mail, Calendar, Paperclip, Star, Archive, Trash2, MoreHorizontal } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,7 @@ import { EmailMessage } from '@/constants/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createSenderEmailsStyles } from '@/styles/app/sender-emails';
 import { formatShortRelativeDate } from '@/utils/relativeDateFormat';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export default function SenderEmailsScreen() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function SenderEmailsScreen() {
   const params = useLocalSearchParams<{ senderId?: string; senderEmail?: string; senderName?: string }>();
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const styles = React.useMemo(() => createSenderEmailsStyles(colors), [colors]);
+  const { showSuccess, showWarning } = useEnhancedToast();
 
   const sender = params.senderId 
     ? mockSenders.find(s => s.id === params.senderId)
@@ -70,25 +72,21 @@ export default function SenderEmailsScreen() {
   };
 
   const handleBulkDelete = () => {
-    Alert.alert(
-      'Delete Emails',
-      `Delete ${selectedEmails.length} email(s)?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', `${selectedEmails.length} email(s) deleted`);
-            setSelectedEmails([]);
-          },
+    showWarning(`Delete ${selectedEmails.length} email(s)?`, {
+      action: {
+        label: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          showSuccess(`${selectedEmails.length} email(s) deleted`);
+          setSelectedEmails([]);
         },
-      ]
-    );
+      },
+      duration: 0,
+    });
   };
 
   const handleBulkArchive = () => {
-    Alert.alert('Success', `${selectedEmails.length} email(s) archived`);
+    showSuccess(`${selectedEmails.length} email(s) archived`);
     setSelectedEmails([]);
   };
 
@@ -136,9 +134,20 @@ export default function SenderEmailsScreen() {
 
       {selectedEmails.length > 0 && (
         <View style={[styles.bulkActions, { backgroundColor: colors.primary }]}>
-          <Text style={styles.bulkText}>{selectedEmails.length} selected</Text>
+          <Text 
+            style={styles.bulkText}
+            accessible={true}
+            accessibilityRole="text"
+            accessibilityLabel={`${selectedEmails.length} emails selected`}
+          >
+            {selectedEmails.length} selected
+          </Text>
           <View style={styles.bulkButtons}>
             <TouchableOpacity 
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Archive ${selectedEmails.length} selected emails`}
+              accessibilityHint="Double tap to archive all selected emails"
               style={styles.bulkButton} 
               onPress={handleBulkArchive}
             >
@@ -146,6 +155,10 @@ export default function SenderEmailsScreen() {
               <Text style={styles.bulkButtonText}>Archive</Text>
             </TouchableOpacity>
             <TouchableOpacity 
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${selectedEmails.length} selected emails`}
+              accessibilityHint="Double tap to delete all selected emails"
               style={[styles.bulkButton, { backgroundColor: colors.danger }]} 
               onPress={handleBulkDelete}
             >
@@ -164,6 +177,11 @@ export default function SenderEmailsScreen() {
           return (
             <TouchableOpacity
               testID={`email-card-${email.id}`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Email from ${email.from}, subject: ${email.subject || 'No subject'}${email.isStarred ? ', starred' : ''}${email.hasAttachments ? `, ${email.attachmentCount} attachments` : ''}`}
+              accessibilityHint={isSelected ? 'Double tap to deselect' : 'Double tap to select'}
+              accessibilityState={{ selected: isSelected }}
               style={[
                 styles.emailCard,
                 { backgroundColor: colors.surface },

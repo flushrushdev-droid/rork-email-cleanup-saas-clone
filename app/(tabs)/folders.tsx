@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { router } from 'expo-router';
 import { FolderOpen, Plus, ChevronRight, X } from 'lucide-react-native';
 
@@ -12,12 +13,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
 import { createFoldersStyles } from '@/styles/app/folders';
 import { categorizeEmail, folderIconMap } from '@/utils/emailCategories';
+import { createScopedLogger } from '@/utils/logger';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { EmptyState } from '@/components/common/EmptyState';
+
+const foldersLogger = createScopedLogger('Folders');
 
 
 export default function FoldersScreen() {
   const { colors } = useTheme();
   const { messages } = useGmailSync();
   const { isDemoMode } = useAuth();
+  const { showSuccess, showError, showWarning, showInfo } = useEnhancedToast();
+  const { handleAsync } = useErrorHandler({ showAlert: true });
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
@@ -70,7 +79,7 @@ export default function FoldersScreen() {
         id: '1',
         name: 'Action Required',
         icon: 'alert-circle',
-        color: '#FF3B30',
+        color: colors.status.actionRequired,
         query: 'priority:action',
         count: actionRequiredEmails.length,
       },
@@ -78,7 +87,7 @@ export default function FoldersScreen() {
         id: '2',
         name: 'Invoices',
         icon: 'receipt',
-        color: '#FF9500',
+        color: colors.category.invoices,
         query: 'category:invoices',
         count: categoryCounts.get('invoices') || 0,
         category: 'invoices' as EmailCategory,
@@ -87,7 +96,7 @@ export default function FoldersScreen() {
         id: '3',
         name: 'Receipts',
         icon: 'shopping-bag',
-        color: '#34C759',
+        color: colors.category.receipts,
         query: 'category:receipts',
         count: categoryCounts.get('receipts') || 0,
         category: 'receipts' as EmailCategory,
@@ -96,7 +105,7 @@ export default function FoldersScreen() {
         id: '4',
         name: 'Travel',
         icon: 'plane',
-        color: '#5AC8FA',
+        color: colors.category.travel,
         query: 'category:travel',
         count: categoryCounts.get('travel') || 0,
         category: 'travel' as EmailCategory,
@@ -105,7 +114,7 @@ export default function FoldersScreen() {
         id: '5',
         name: 'Promotions',
         icon: 'tag',
-        color: '#FFCC00',
+        color: colors.category.promotions,
         query: 'category:promotions',
         count: categoryCounts.get('promotions') || 0,
         category: 'promotions' as EmailCategory,
@@ -114,7 +123,7 @@ export default function FoldersScreen() {
         id: '6',
         name: 'Social',
         icon: 'users',
-        color: '#FF6482',
+        color: colors.category.social,
         query: 'category:social',
         count: categoryCounts.get('social') || 0,
         category: 'social' as EmailCategory,
@@ -123,7 +132,7 @@ export default function FoldersScreen() {
         id: '7',
         name: 'HR',
         icon: 'briefcase',
-        color: '#5856D6',
+        color: colors.category.hr,
         query: 'category:hr',
         count: categoryCounts.get('hr') || 0,
         category: 'hr' as EmailCategory,
@@ -132,7 +141,7 @@ export default function FoldersScreen() {
         id: '8',
         name: 'Legal',
         icon: 'scale',
-        color: '#FF2D55',
+        color: colors.category.legal,
         query: 'category:legal',
         count: categoryCounts.get('legal') || 0,
         category: 'legal' as EmailCategory,
@@ -141,13 +150,13 @@ export default function FoldersScreen() {
         id: '9',
         name: 'System',
         icon: 'alert-circle',
-        color: '#8E8E93',
+        color: colors.category.system,
         query: 'category:system',
         count: categoryCounts.get('system') || 0,
         category: 'system' as EmailCategory,
       },
     ].filter(folder => folder.count > 0);
-  }, [messages, emailsWithCategories, isDemoMode]);
+  }, [messages, emailsWithCategories, isDemoMode, colors]);
 
   const recentEmails = useMemo(() => {
     return emailsWithCategories
@@ -158,33 +167,35 @@ export default function FoldersScreen() {
 
   const handleCreateFolder = async () => {
     if (!folderName.trim() || !folderRule.trim()) {
-      Alert.alert('Missing Information', 'Please enter both folder name and rule');
+      showWarning('Please enter both folder name and rule');
       return;
     }
 
     setIsCreating(true);
-
-    try {
+    
+    await handleAsync(async () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      console.log('Creating folder:', { folderName, folderRule });
+      foldersLogger.debug('Creating folder', undefined, { folderName, folderRule });
       
       // Add to custom list (no persistence for demo mode)
       const newFolder = { id: Date.now().toString(), name: folderName.trim(), color: colors.primary, count: 0 };
       const updatedFolders = [newFolder, ...customFolders];
       setCustomFolders(updatedFolders);
       
-      Alert.alert('Success', `Folder "${folderName}" created successfully!`);
+      showSuccess(`Folder "${folderName}" created successfully!`);
       
       setIsModalVisible(false);
       setFolderName('');
       setFolderRule('');
-    } catch (error) {
-      console.error('Error creating folder:', error);
-      Alert.alert('Error', 'Failed to create folder. Please try again.');
-    } finally {
-      setIsCreating(false);
-    }
+    }, {
+      showAlert: true,
+      onError: (error) => {
+        showError('Failed to create folder. Please try again.');
+      },
+    });
+    
+    setIsCreating(false);
   };
 
   const styles = React.useMemo(() => createFoldersStyles(colors), [colors]);
@@ -192,11 +203,11 @@ export default function FoldersScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Smart Folders</Text>
-        <Text style={styles.subtitle}>AI-organized email categories</Text>
+        <AppText style={styles.title} dynamicTypeStyle="title1">Smart Folders</AppText>
+        <AppText style={styles.subtitle} dynamicTypeStyle="body">AI-organized email categories</AppText>
         {isDemoMode && (
           <View style={styles.demoBadge}>
-            <Text style={styles.demoText}>Demo Mode - Sample Data</Text>
+            <AppText style={styles.demoText} dynamicTypeStyle="caption">Demo Mode - Sample Data</AppText>
           </View>
         )}
       </View>
@@ -204,7 +215,7 @@ export default function FoldersScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity testID="create-folder" style={[styles.createButton, { backgroundColor: colors.surface, borderColor: colors.primary }]} onPress={() => setIsModalVisible(true)}>
           <Plus size={20} color={colors.primary} />
-          <Text style={[styles.createButtonText, { color: colors.primary }]}>Create Custom Folder</Text>
+          <AppText style={[styles.createButtonText, { color: colors.primary }]} dynamicTypeStyle="headline">Create Custom Folder</AppText>
         </TouchableOpacity>
 
         {smartFolders.length === 0 && customFolders.length === 0 ? (
@@ -223,7 +234,11 @@ export default function FoldersScreen() {
               return (
                 <TouchableOpacity 
                   key={folder.id} 
-                  testID={`folder-${folder.id}`} 
+                  testID={`folder-${folder.id}`}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${folder.name}, ${folder.count} emails`}
+                  accessibilityHint="Double tap to view emails in this folder"
                   style={styles.folderCard} 
                   onPress={() => {
                     router.push({
@@ -237,12 +252,29 @@ export default function FoldersScreen() {
                     });
                   }}
                 >
-                  <View style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}>
+                  <View 
+                    style={[styles.folderIcon, { backgroundColor: folder.color + '20' }]}
+                    accessible={true}
+                    accessibilityRole="image"
+                    accessibilityLabel={`${folder.name} folder icon`}
+                  >
                     {folder.isCustom ? <FolderOpen size={28} color={folder.color || colors.primary} /> : <Icon size={28} color={folder.color} />}
                   </View>
                   <View style={styles.folderContent}>
-                    <Text style={[styles.folderName, { color: colors.text }]}>{folder.name}</Text>
-                    <Text style={[styles.folderCount, { color: colors.textSecondary }]}>{folder.count} emails</Text>
+                    <AppText 
+                      style={[styles.folderName, { color: colors.text }]}
+                      accessibilityRole="text"
+                      dynamicTypeStyle="body"
+                    >
+                      {folder.name}
+                    </AppText>
+                    <AppText 
+                      style={[styles.folderCount, { color: colors.textSecondary }]}
+                      accessibilityRole="text"
+                      dynamicTypeStyle="caption"
+                    >
+                      {folder.count} emails
+                    </AppText>
                   </View>
                   <ChevronRight size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -254,9 +286,16 @@ export default function FoldersScreen() {
         {recentEmails.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Emails</Text>
-              <TouchableOpacity testID="view-all-recent" onPress={() => Alert.alert('Recent Emails', 'Showing all recent emails')}>
-                <Text style={styles.seeAll}>View All</Text>
+              <AppText style={styles.sectionTitle} dynamicTypeStyle="headline">Recent Emails</AppText>
+              <TouchableOpacity 
+                testID="view-all-recent"
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="View All"
+                accessibilityHint="Double tap to view all recent emails"
+                onPress={() => showInfo('Showing all recent emails')}
+              >
+                <AppText style={styles.seeAll} dynamicTypeStyle="caption">View All</AppText>
               </TouchableOpacity>
             </View>
 
@@ -264,30 +303,68 @@ export default function FoldersScreen() {
               const categoryColor = email.category ? colors.category[email.category] : colors.primary;
               
               return (
-                <TouchableOpacity key={email.id} style={[styles.emailCard, { borderLeftColor: categoryColor, backgroundColor: colors.surface }]} onPress={() => Alert.alert('Email', email.subject)}>
+                <TouchableOpacity 
+                  key={email.id} 
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Email from ${email.from}, subject: ${email.subject || 'No subject'}`}
+                  accessibilityHint="Double tap to view this email"
+                  style={[styles.emailCard, { borderLeftColor: categoryColor, backgroundColor: colors.surface }]} 
+                  onPress={() => {
+                    router.push({
+                      pathname: '/email-detail',
+                      params: { emailId: email.id },
+                    });
+                  }}
+                >
                   <View style={styles.emailHeader}>
                     <View style={styles.emailMeta}>
-                      <Text style={[styles.emailFrom, { color: colors.text }]} numberOfLines={1}>{email.from}</Text>
-                      <Text style={[styles.emailDate, { color: colors.textSecondary }]}>
+                      <AppText 
+                        style={[styles.emailFrom, { color: colors.text }]} 
+                        numberOfLines={1}
+                        accessibilityRole="text"
+                        dynamicTypeStyle="body"
+                      >
+                        {email.from}
+                      </AppText>
+                      <AppText 
+                        style={[styles.emailDate, { color: colors.textSecondary }]}
+                        accessibilityRole="text"
+                        dynamicTypeStyle="caption"
+                      >
                         {new Date(email.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </Text>
+                      </AppText>
                     </View>
                   </View>
-                  <Text style={[styles.emailSubject, { color: colors.text }]} numberOfLines={1}>{email.subject}</Text>
-                  <Text style={[styles.emailSnippet, { color: colors.textSecondary }]} numberOfLines={2}>{email.snippet}</Text>
+                  <AppText 
+                    style={[styles.emailSubject, { color: colors.text }]} 
+                    numberOfLines={1}
+                    accessibilityRole="text"
+                    dynamicTypeStyle="body"
+                  >
+                    {email.subject}
+                  </AppText>
+                  <AppText 
+                    style={[styles.emailSnippet, { color: colors.textSecondary }]} 
+                    numberOfLines={2}
+                    accessibilityRole="text"
+                    dynamicTypeStyle="caption"
+                  >
+                    {email.snippet}
+                  </AppText>
                   <View style={styles.emailTags}>
                     {email.category && (
                       <View style={[styles.emailTag, { backgroundColor: categoryColor + '20' }]}>
-                        <Text style={[styles.emailTagText, { color: categoryColor }]}>
+                        <AppText style={[styles.emailTagText, { color: categoryColor }]} dynamicTypeStyle="caption">
                           {email.category}
-                        </Text>
+                        </AppText>
                       </View>
                     )}
                     {email.priority && email.priority !== 'low' && (
                       <View style={[styles.emailTag, { backgroundColor: colors.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] + '20' }]}>
-                        <Text style={[styles.emailTagText, { color: colors.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] }] }>
+                        <AppText style={[styles.emailTagText, { color: colors.status[email.priority === 'action' ? 'actionRequired' : email.priority === 'later' ? 'waiting' : 'fyi'] }] } dynamicTypeStyle="caption">
                           {email.priority}
-                        </Text>
+                        </AppText>
                       </View>
                     )}
                   </View>

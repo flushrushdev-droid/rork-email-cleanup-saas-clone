@@ -10,8 +10,15 @@ import { HistoryProvider } from '@/contexts/HistoryContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { CalendarProvider } from '@/contexts/CalendarContext';
 import { EmailStateProvider } from '@/contexts/EmailStateContext';
+import { ToastProvider } from '@/contexts/ToastContext';
+import { NetworkProvider } from '@/contexts/NetworkContext';
+import { ToastContainer } from '@/components/common/ToastContainer';
+import { OfflineIndicator } from '@/components/common/OfflineIndicator';
 import { trpc, trpcClient } from '@/lib/trpc';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { createScopedLogger } from '@/utils/logger';
+
+const appLogger = createScopedLogger('App');
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -55,35 +62,57 @@ function GestureHandlerWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+function AppContent() {
+  const { isLoading: isThemeLoading } = useTheme();
 
+  useEffect(() => {
+    // Wait for theme to load before hiding splash screen to prevent flash
+    if (!isThemeLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isThemeLoading]);
+
+  // Don't render app content until theme is loaded (prevents flash)
+  if (isThemeLoading) {
+    return null;
+  }
+
+  return (
+    <NetworkProvider>
+      <AuthProvider>
+        <GmailSyncProvider>
+          <HistoryProvider>
+            <ToastProvider>
+              <GestureHandlerWrapper>
+                <ErrorBoundary
+                  onError={(error, errorInfo) => {
+                    appLogger.error('App error caught by ErrorBoundary', error, { errorInfo });
+                  }}
+                >
+                  <StatusBar style="auto" />
+                  <OfflineIndicator />
+                  <CalendarProvider>
+                    <EmailStateProvider>
+                      <RootLayoutNav />
+                      <ToastContainer position="top" />
+                    </EmailStateProvider>
+                  </CalendarProvider>
+                </ErrorBoundary>
+              </GestureHandlerWrapper>
+            </ToastProvider>
+          </HistoryProvider>
+        </GmailSyncProvider>
+      </AuthProvider>
+    </NetworkProvider>
+  );
+}
+
+export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <GmailSyncProvider>
-              <HistoryProvider>
-                <GestureHandlerWrapper>
-                  <ErrorBoundary
-                    onError={(error, errorInfo) => {
-                      console.error('App error caught by ErrorBoundary:', error, errorInfo);
-                    }}
-                  >
-                    <StatusBar style="auto" />
-                    <CalendarProvider>
-                      <EmailStateProvider>
-                        <RootLayoutNav />
-                      </EmailStateProvider>
-                    </CalendarProvider>
-                  </ErrorBoundary>
-                </GestureHandlerWrapper>
-              </HistoryProvider>
-            </GmailSyncProvider>
-          </AuthProvider>
+          <AppContent />
         </ThemeProvider>
       </trpc.Provider>
     </QueryClientProvider>

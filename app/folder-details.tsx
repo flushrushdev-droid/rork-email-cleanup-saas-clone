@@ -10,6 +10,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { createFolderDetailsStyles } from '@/styles/app/folder-details';
 import { categorizeEmail } from '@/utils/emailCategories';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
+import { EmptyState } from '@/components/common/EmptyState';
+import { FolderOpen } from 'lucide-react-native';
 import type { Email, EmailCategory, EmailMessage } from '@/constants/types';
 
 
@@ -126,10 +128,13 @@ export default function FolderDetailsScreen() {
           }}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No emails</Text>
-              <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>This folder is empty</Text>
-            </View>
+            <EmptyState
+              icon={FolderOpen}
+              title="No emails"
+              description="This folder is empty"
+              iconSize={64}
+              style={styles.emptyState}
+            />
           }
           contentContainerStyle={[{ paddingBottom: 40 }]}
           showsVerticalScrollIndicator={false}

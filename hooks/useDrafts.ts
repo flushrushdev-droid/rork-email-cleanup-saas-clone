@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export type Draft = {
   id: string;
@@ -12,10 +12,11 @@ export type Draft = {
 
 export function useDrafts() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const { showSuccess, showError, showWarning } = useEnhancedToast();
 
   const saveDraft = (to: string, cc: string, subject: string, body: string): boolean => {
     if (!to && !subject && !body) {
-      Alert.alert('Error', 'Draft is empty');
+      showError('Draft is empty');
       return false;
     }
 
@@ -29,7 +30,7 @@ export function useDrafts() {
     };
 
     setDrafts(prev => [newDraft, ...prev]);
-    Alert.alert('Success', 'Draft saved successfully');
+    showSuccess('Draft saved successfully');
     return true;
   };
 
@@ -39,18 +40,14 @@ export function useDrafts() {
   };
 
   const deleteDraft = (draftId: string) => {
-    Alert.alert(
-      'Delete Draft',
-      'Are you sure you want to delete this draft?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => setDrafts(prev => prev.filter(d => d.id !== draftId)),
-        },
-      ]
-    );
+    showWarning('Are you sure you want to delete this draft?', {
+      action: {
+        label: 'Delete',
+        style: 'destructive',
+        onPress: () => setDrafts(prev => prev.filter(d => d.id !== draftId)),
+      },
+      duration: 0,
+    });
   };
 
   return {

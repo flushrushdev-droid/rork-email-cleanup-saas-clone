@@ -26,7 +26,6 @@ export function NoteCard({ note, onEdit, onDelete, formatDate, colors }: NoteCar
         </Text>
         <Pressable
           onPress={() => {
-            console.log('Delete button pressed for note:', note.id);
             onDelete(note.id);
           }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

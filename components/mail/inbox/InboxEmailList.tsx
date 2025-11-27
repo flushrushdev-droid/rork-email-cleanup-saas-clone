@@ -5,8 +5,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 import type { EmailMessage } from '@/constants/types';
 import type { Draft, FilterType } from './types';
 import { emailListStyles } from './styles/emailListStyles';
-import { InboxEmailItem } from './InboxEmailItem';
+import { SwipeableEmailItem } from './SwipeableEmailItem';
 import { InboxDraftItem } from './InboxDraftItem';
+import { EmailSkeleton } from '@/components/common/EmailSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
 
 interface InboxEmailListProps {
   filteredEmails: EmailMessage[];
@@ -19,48 +21,55 @@ interface InboxEmailListProps {
   onToggleSelection: (emailId: string) => void;
   onLoadDraft: (draft: Draft) => void;
   onDeleteDraft: (draftId: string) => void;
+  onArchive?: (email: EmailMessage) => void;
+  onDelete?: (email: EmailMessage) => void;
   insets: { top: number; bottom: number; left: number; right: number };
   onRefresh?: () => Promise<void>;
   isRefreshing?: boolean;
 }
 
-// Empty state components
+// Empty state components using EmptyState component
 const DraftsEmptyState = React.memo<{ activeFilter: FilterType; colors: any }>(({ activeFilter, colors }) => (
-  <View style={emailListStyles.emptyState}>
-    <FileEdit size={48} color={colors.textSecondary} />
-    <Text style={[emailListStyles.emptyText, { color: colors.textSecondary }]}>
-      {activeFilter === 'drafts-ai' ? 'No AI drafts' : 'No drafts'}
-    </Text>
-    <Text style={[emailListStyles.emptySubtext, { color: colors.textSecondary }]}>
-      {activeFilter === 'drafts-ai' ? 'Use AI to generate email drafts' : 'Start composing to save drafts'}
-    </Text>
-  </View>
+  <EmptyState
+    icon={FileEdit}
+    title={activeFilter === 'drafts-ai' ? 'No AI drafts' : 'No drafts'}
+    description={activeFilter === 'drafts-ai' ? 'Use AI to generate email drafts' : 'Start composing to save drafts'}
+    iconSize={48}
+    style={emailListStyles.emptyState}
+  />
 ));
 DraftsEmptyState.displayName = 'DraftsEmptyState';
 
 const SentEmptyState = React.memo<{ colors: any }>(({ colors }) => (
-  <View style={emailListStyles.emptyState}>
-    <Send size={48} color={colors.textSecondary} />
-    <Text style={[emailListStyles.emptyText, { color: colors.textSecondary }]}>No sent emails</Text>
-    <Text style={[emailListStyles.emptySubtext, { color: colors.textSecondary }]}>Your sent messages will appear here</Text>
-  </View>
+  <EmptyState
+    icon={Send}
+    title="No sent emails"
+    description="Your sent messages will appear here"
+    iconSize={48}
+    style={emailListStyles.emptyState}
+  />
 ));
 SentEmptyState.displayName = 'SentEmptyState';
 
 const TrashEmptyState = React.memo<{ colors: any }>(({ colors }) => (
-  <View style={emailListStyles.emptyState}>
-    <Trash2 size={48} color={colors.textSecondary} />
-    <Text style={[emailListStyles.emptyText, { color: colors.textSecondary }]}>Trash is empty</Text>
-    <Text style={[emailListStyles.emptySubtext, { color: colors.textSecondary }]}>Deleted emails will appear here</Text>
-  </View>
+  <EmptyState
+    icon={Trash2}
+    title="Trash is empty"
+    description="Deleted emails will appear here"
+    iconSize={48}
+    style={emailListStyles.emptyState}
+  />
 ));
 TrashEmptyState.displayName = 'TrashEmptyState';
 
 const NoEmailsEmptyState = React.memo<{ colors: any }>(({ colors }) => (
-  <View style={emailListStyles.emptyState}>
-    <Mail size={48} color={colors.textSecondary} />
-    <Text style={[emailListStyles.emptyText, { color: colors.textSecondary }]}>No emails found</Text>
-  </View>
+  <EmptyState
+    icon={Mail}
+    title="No emails found"
+    description=""
+    iconSize={48}
+    style={emailListStyles.emptyState}
+  />
 ));
 NoEmailsEmptyState.displayName = 'NoEmailsEmptyState';
 
@@ -75,9 +84,12 @@ export function InboxEmailList({
   onToggleSelection,
   onLoadDraft,
   onDeleteDraft,
+  onArchive,
+  onDelete,
   insets,
   onRefresh,
   isRefreshing = false,
+  isLoading = false,
 }: InboxEmailListProps) {
   const { colors } = useTheme();
   
@@ -102,7 +114,7 @@ export function InboxEmailList({
   ), [activeFilter, onLoadDraft, onDeleteDraft]);
 
   const renderEmailItem: ListRenderItem<EmailMessage> = React.useCallback(({ item: email }) => (
-    <InboxEmailItem
+    <SwipeableEmailItem
       email={email}
       isSelected={selectedEmails.has(email.id)}
       selectionMode={selectionMode}
@@ -115,8 +127,10 @@ export function InboxEmailList({
       }}
       onStarPress={() => onStarEmail(email.id)}
       onToggleSelection={() => onToggleSelection(email.id)}
+      onArchive={onArchive}
+      onDelete={onDelete}
     />
-  ), [selectionMode, selectedEmails, onEmailPress, onStarEmail, onToggleSelection]);
+  ), [selectionMode, selectedEmails, onEmailPress, onStarEmail, onToggleSelection, onArchive, onDelete]);
 
   const draftListEmptyComponent = React.useMemo(() => (
     <DraftsEmptyState activeFilter={activeFilter} colors={colors} />
@@ -128,6 +142,17 @@ export function InboxEmailList({
     }
     return <NoEmailsEmptyState colors={colors} />;
   }, [activeFilter, colors]);
+
+  // Show skeleton loader during initial load
+  if (isLoading && !isRefreshing) {
+    if (activeFilter === 'drafts' || activeFilter === 'drafts-ai') {
+      return <EmailSkeleton count={5} />;
+    }
+    if (activeFilter === 'sent') {
+      return <EmailSkeleton count={5} />;
+    }
+    return <EmailSkeleton count={5} />;
+  }
 
   // Render drafts with FlatList
   if (activeFilter === 'drafts' || activeFilter === 'drafts-ai') {

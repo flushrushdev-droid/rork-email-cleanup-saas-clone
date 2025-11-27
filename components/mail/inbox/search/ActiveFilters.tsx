@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { X } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { searchStyles } from '../styles/searchStyles';
@@ -33,9 +34,9 @@ export function ActiveFilters({
     <View style={searchStyles.activeFiltersRow}>
       {labelFilter && (
         <View style={[searchStyles.activeFilterChip, { backgroundColor: colors.primary + '20' }]}>
-          <Text style={[searchStyles.activeFilterText, { color: colors.primary }]}>
+          <AppText style={[searchStyles.activeFilterText, { color: colors.primary }]} dynamicTypeStyle="caption">
             {labelFilter.charAt(0).toUpperCase() + labelFilter.slice(1)}
-          </Text>
+          </AppText>
           <TouchableOpacity onPress={onClearLabel}>
             <X size={14} color={colors.primary} />
           </TouchableOpacity>
@@ -43,9 +44,9 @@ export function ActiveFilters({
       )}
       {attachmentFilter && (
         <View style={[searchStyles.activeFilterChip, { backgroundColor: colors.primary + '20' }]}>
-          <Text style={[searchStyles.activeFilterText, { color: colors.primary }]}>
+          <AppText style={[searchStyles.activeFilterText, { color: colors.primary }]} dynamicTypeStyle="caption">
             {attachmentFilter === 'any' ? 'Has attachment' : attachmentFilter.charAt(0).toUpperCase() + attachmentFilter.slice(1)}
-          </Text>
+          </AppText>
           <TouchableOpacity onPress={onClearAttachment}>
             <X size={14} color={colors.primary} />
           </TouchableOpacity>
@@ -53,9 +54,9 @@ export function ActiveFilters({
       )}
       {contactFilter && (
         <View style={[searchStyles.activeFilterChip, { backgroundColor: colors.primary + '20' }]}>
-          <Text style={[searchStyles.activeFilterText, { color: colors.primary }]}>
+          <AppText style={[searchStyles.activeFilterText, { color: colors.primary }]} dynamicTypeStyle="caption">
             {contactFilter.name}
-          </Text>
+          </AppText>
           <TouchableOpacity onPress={onClearContact}>
             <X size={14} color={colors.primary} />
           </TouchableOpacity>

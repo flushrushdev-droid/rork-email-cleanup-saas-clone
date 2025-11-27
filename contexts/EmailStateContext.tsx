@@ -86,6 +86,8 @@ export function EmailStateProvider({ children }: { children: React.ReactNode }) 
     return starredRef.current.has(emailId);
   }, []);
 
+  // Memoize context value to prevent unnecessary re-renders
+  // All callbacks are already memoized with useCallback, Sets are stable until changed
   const value = useMemo<EmailStateContextType>(
     () => ({
       trashedEmails,
@@ -100,6 +102,7 @@ export function EmailStateProvider({ children }: { children: React.ReactNode }) 
       isArchived,
       isStarred,
     }),
+    // Dependencies: Sets and all callbacks (callbacks are stable via useCallback)
     [trashedEmails, archivedEmails, starredEmails, addTrashedEmail, removeTrashedEmail, addArchivedEmail, removeArchivedEmail, toggleStarredEmail, isTrashed, isArchived, isStarred],
   );
 

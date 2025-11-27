@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { 
@@ -18,6 +19,8 @@ import type { HistoryEntry, HistoryActionType } from '@/constants/types';
 import { formatRelativeDate } from '@/utils/relativeDateFormat';
 import { createHistoryStyles } from '@/styles/app/history';
 import { HistoryItemCard, ACTION_LABELS } from '@/components/history/HistoryItemCard';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { EmptyState } from '@/components/common/EmptyState';
 
 export default function HistoryScreen() {
   const { entries, getStats, clearHistory } = useHistory();
@@ -25,6 +28,7 @@ export default function HistoryScreen() {
   const [filter, setFilter] = useState<HistoryActionType | 'all'>('all');
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createHistoryStyles(colors), [colors]);
+  const { showWarning } = useEnhancedToast();
   
   const stats = useMemo(() => getStats(), [getStats]);
 
@@ -52,18 +56,14 @@ export default function HistoryScreen() {
 
 
   const handleClearHistory = () => {
-    Alert.alert(
-      'Clear History',
-      'Are you sure you want to clear all history? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear', 
-          style: 'destructive',
-          onPress: clearHistory 
-        },
-      ]
-    );
+    showWarning('Are you sure you want to clear all history? This cannot be undone.', {
+      action: {
+        label: 'Clear',
+        style: 'destructive',
+        onPress: clearHistory,
+      },
+      duration: 0,
+    });
   };
 
   return (
@@ -88,49 +88,49 @@ export default function HistoryScreen() {
           activeOpacity={0.7}
         >
           <Trash2 size={20} color={colors.danger} />
-          <Text style={[styles.clearHistoryText, { color: colors.danger }]}>Clear History</Text>
+          <AppText style={[styles.clearHistoryText, { color: colors.danger }]} dynamicTypeStyle="headline">Clear History</AppText>
         </TouchableOpacity>
 
         <View style={styles.summarySection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Summary (60 Days)</Text>
+          <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Summary (60 Days)</AppText>
           
           <View style={styles.summaryGrid}>
             <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
               <View style={[styles.summaryIcon, { backgroundColor: colors.danger + '20' }]}>
                 <Trash2 size={24} color={colors.danger} />
               </View>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.deletedEmails}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Emails Deleted</Text>
+              <AppText style={[styles.summaryValue, { color: colors.text }]} dynamicTypeStyle="title2">{stats.deletedEmails}</AppText>
+              <AppText style={[styles.summaryLabel, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Emails Deleted</AppText>
             </View>
 
             <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
               <View style={[styles.summaryIcon, { backgroundColor: colors.info + '20' }]}>
                 <Archive size={24} color={colors.info} />
               </View>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.archivedEmails}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Emails Archived</Text>
+              <AppText style={[styles.summaryValue, { color: colors.text }]} dynamicTypeStyle="title2">{stats.archivedEmails}</AppText>
+              <AppText style={[styles.summaryLabel, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Emails Archived</AppText>
             </View>
 
             <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
               <View style={[styles.summaryIcon, { backgroundColor: colors.warning + '20' }]}>
                 <MailX size={24} color={colors.warning} />
               </View>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.unsubscribedCount}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Unsubscribed</Text>
+              <AppText style={[styles.summaryValue, { color: colors.text }]} dynamicTypeStyle="title2">{stats.unsubscribedCount}</AppText>
+              <AppText style={[styles.summaryLabel, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Unsubscribed</AppText>
             </View>
 
             <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
               <View style={[styles.summaryIcon, { backgroundColor: colors.primary + '20' }]}>
                 <FolderPlus size={24} color={colors.primary} />
               </View>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>{stats.foldersCreated}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Folders Created</Text>
+              <AppText style={[styles.summaryValue, { color: colors.text }]} dynamicTypeStyle="title2">{stats.foldersCreated}</AppText>
+              <AppText style={[styles.summaryLabel, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Folders Created</AppText>
             </View>
           </View>
         </View>
 
         <View style={styles.filterSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Filter by Action</Text>
+          <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Filter by Action</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
             <TouchableOpacity
               style={[
@@ -140,13 +140,13 @@ export default function HistoryScreen() {
               ]}
               onPress={() => setFilter('all')}
             >
-              <Text style={[
+              <AppText style={[
                 styles.filterChipText,
                 { color: colors.text },
                 filter === 'all' && styles.filterChipTextActive
-              ]}>
+              ]} dynamicTypeStyle="caption">
                 All ({entries.length})
-              </Text>
+              </AppText>
             </TouchableOpacity>
             
             {Object.entries(ACTION_LABELS).map(([type, label]) => {
@@ -163,13 +163,13 @@ export default function HistoryScreen() {
                   ]}
                   onPress={() => setFilter(type as HistoryActionType)}
                 >
-                  <Text style={[
+                  <AppText style={[
                     styles.filterChipText,
                     { color: colors.text },
                     filter === type && styles.filterChipTextActive
-                  ]}>
+                  ]} dynamicTypeStyle="caption">
                     {label} ({count})
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               );
             })}
@@ -177,16 +177,16 @@ export default function HistoryScreen() {
         </View>
 
         <View style={styles.historySection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
+          <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Recent Activity</AppText>
           
           {filteredEntries.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Calendar size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>No history yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-                Your actions will appear here
-              </Text>
-            </View>
+            <EmptyState
+              icon={Calendar}
+              title="No history yet"
+              description="Your actions will appear here"
+              iconSize={48}
+              style={styles.emptyState}
+            />
           ) : (
             filteredEntries.map((entry) => (
               <HistoryItemCard

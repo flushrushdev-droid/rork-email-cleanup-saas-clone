@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, TextInput } from 'react-native';
+import { View, Modal, TouchableOpacity, TextInput } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Calendar, Clock } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { DatePickerModal } from './DatePickerModal';
@@ -60,7 +61,7 @@ export function NoteEditModal({
       <Modal visible={visible} transparent animationType="slide" presentationStyle="overFullScreen">
         <View style={styles.pickerOverlay}>
           <View style={[styles.pickerContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Note</Text>
+            <AppText style={[styles.modalTitle, { color: colors.text }]} dynamicTypeStyle="title2">Edit Note</AppText>
             <TextInput
               style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
               placeholder="Title"
@@ -78,34 +79,34 @@ export function NoteEditModal({
               numberOfLines={4}
             />
             <View style={{ marginTop: 8 }}>
-              <Text style={[styles.eventsSectionTitle, { color: colors.text, marginBottom: 8 }]}>Due</Text>
+              <AppText style={[styles.eventsSectionTitle, { color: colors.text, marginBottom: 8 }]} dynamicTypeStyle="headline">Due</AppText>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity
                   style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
                   onPress={() => setShowDatePicker(true)}
                 >
                   <Calendar size={16} color={colors.textSecondary} />
-                  <Text style={[styles.timeButtonText, { color: colors.text }]}>
+                  <AppText style={[styles.timeButtonText, { color: colors.text }]} dynamicTypeStyle="body">
                     {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.timeButton, { backgroundColor: colors.background, borderColor: colors.border, flex: 1 }]}
                   onPress={() => setShowTimePicker(true)}
                 >
                   <Clock size={16} color={colors.textSecondary} />
-                  <Text style={[styles.timeButtonText, { color: colors.text }]}>
+                  <AppText style={[styles.timeButtonText, { color: colors.text }]} dynamicTypeStyle="body">
                     {dueDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
             </View>
             <View style={styles.pickerButtons}>
               <TouchableOpacity onPress={onClose} style={[styles.pickerButton, { backgroundColor: colors.background }]}>
-                <Text style={[styles.pickerButtonText, { color: colors.text }]}>Cancel</Text>
+                <AppText style={[styles.pickerButtonText, { color: colors.text }]} dynamicTypeStyle="headline">Cancel</AppText>
               </TouchableOpacity>
               <TouchableOpacity onPress={onSave} style={[styles.pickerButton, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.pickerButtonText, { color: '#FFFFFF' }]}>Save</Text>
+                <AppText style={[styles.pickerButtonText, { color: colors.surface }]} dynamicTypeStyle="headline">Save</AppText>
               </TouchableOpacity>
             </View>
           </View>

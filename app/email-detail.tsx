@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Check } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -13,6 +14,11 @@ import { EmailDetailView } from '@/components/mail/EmailDetailView';
 import { categorizeEmail } from '@/utils/emailCategories';
 import type { EmailMessage, Email, EmailCategory } from '@/constants/types';
 import { createEmailDetailStyles } from '@/styles/app/email-detail';
+import { createScopedLogger } from '@/utils/logger';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+
+const emailDetailLogger = createScopedLogger('EmailDetail');
 
 export default function EmailDetailScreen() {
   const params = useLocalSearchParams<{ 
@@ -27,6 +33,8 @@ export default function EmailDetailScreen() {
   const styles = React.useMemo(() => createEmailDetailStyles(colors), [colors]);
   const { isDemoMode } = useAuth();
   const { messages, markAsRead, archiveMessage } = useGmailSync();
+  const { handleAsync } = useErrorHandler({ showAlert: true });
+  const { showError: showErrorToast } = useEnhancedToast();
   const [pendingArchive, setPendingArchive] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<Set<string>>(new Set());
   const [archivedEmails, setArchivedEmails] = useState<Set<string>>(new Set());
@@ -272,20 +280,20 @@ export default function EmailDetailScreen() {
       return;
     }
 
-    try {
+    await handleAsync(async () => {
       await archiveMessage(email.id);
       // Use router.back() to properly pop from navigation stack
       router.back();
-    } catch (error) {
-      console.error('Failed to archive email:', error);
-    }
+    }, {
+      showAlert: true,
+      onError: (error) => {
+        showErrorToast('Failed to archive email. Please try again.');
+      },
+    });
   };
 
   const handleDelete = async (email: EmailMessage) => {
-    // Use alert for debugging since console.log isn't showing
-    if (__DEV__) {
-      console.log('EMAIL-DETAIL handleDelete called with email:', email.id, email.subject);
-    }
+    emailDetailLogger.debug('handleDelete called', undefined, { emailId: email.id, subject: email.subject });
     if (isDemoMode) {
       // Clear any existing timeout for this email
       const existingTimeout = deleteTimeoutRef.current.get(email.id);
@@ -300,9 +308,13 @@ export default function EmailDetailScreen() {
       const hasNextEmail = emailIndex >= 0 && emailIndex < allEmails.length - 1;
       const nextEmail = hasNextEmail ? allEmails[emailIndex + 1] : null;
       
-      if (__DEV__) {
-        console.log('Delete clicked. Email index:', emailIndex, 'Total emails:', allEmails.length, 'Has next:', hasNextEmail, 'Next email:', nextEmail?.id, nextEmail?.subject);
-      }
+      emailDetailLogger.debug('Delete clicked', undefined, {
+        emailIndex,
+        totalEmails: allEmails.length,
+        hasNext: hasNextEmail,
+        nextEmailId: nextEmail?.id,
+        nextEmailSubject: nextEmail?.subject,
+      });
       
       // Immediately add to trash so it disappears from lists
       addTrashedEmail(email.id);
@@ -313,9 +325,7 @@ export default function EmailDetailScreen() {
       // Navigate to next email immediately (or go back if no next)
       // Don't show toast here - it will show on the next screen via showDeleteToast param
       if (nextEmail) {
-        if (__DEV__) {
-          console.log('Navigating to next email:', nextEmail.id, nextEmail.subject);
-        }
+        emailDetailLogger.debug('Navigating to next email', undefined, { nextEmailId: nextEmail.id, nextEmailSubject: nextEmail.subject });
         // Use replace to replace current screen (not add to stack)
         // This ensures: Overview -> Stat-details -> Email-detail (next, replaces deleted)
         router.replace({ 
@@ -328,9 +338,7 @@ export default function EmailDetailScreen() {
           } 
         });
       } else {
-        if (__DEV__) {
-          console.log('No next email, going back');
-        }
+        emailDetailLogger.debug('No next email, going back');
         // Navigate back to stat-details if that's where we came from
         if (params.returnTo === 'stat-details' && params.statType) {
           router.push({
@@ -358,13 +366,16 @@ export default function EmailDetailScreen() {
       return;
     }
 
-    try {
+    await handleAsync(async () => {
       // In production, call delete API
       // await deleteMessage(email.id);
       router.back();
-    } catch (error) {
-      console.error('Failed to delete email:', error);
-    }
+    }, {
+      showAlert: true,
+      onError: (error) => {
+        showErrorToast('Failed to delete email. Please try again.');
+      },
+    });
   };
 
   // Cleanup all timeouts on unmount
@@ -473,8 +484,8 @@ export default function EmailDetailScreen() {
             alignItems: 'center',
             justifyContent: 'space-between',
             borderWidth: 1,
-            borderColor: '#10B98155',
-            shadowColor: '#10B981',
+            borderColor: colors.success + '55',
+            shadowColor: colors.success,
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 10,
@@ -489,14 +500,14 @@ export default function EmailDetailScreen() {
                 borderRadius: 14,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#10B98122',
+                backgroundColor: colors.success + '22',
                 borderWidth: 1,
-                borderColor: '#10B98155',
+                borderColor: colors.success + '55',
               }}
             >
-              <Check size={18} color="#10B981" strokeWidth={3} />
+              <Check size={18} color={colors.success} strokeWidth={3} />
             </View>
-            <Text style={{ color: colors.text, flex: 1 }}>{toast.message}</Text>
+            <AppText style={{ color: colors.text, flex: 1 }} dynamicTypeStyle="body">{toast.message}</AppText>
           </View>
           {toast.onUndo && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -507,7 +518,7 @@ export default function EmailDetailScreen() {
                     cx={10}
                     cy={10}
                     r={8}
-                    stroke="#10B98133"
+                    stroke={colors.success + '33'}
                     strokeWidth={2}
                     fill="none"
                   />
@@ -515,7 +526,7 @@ export default function EmailDetailScreen() {
                     cx={10}
                     cy={10}
                     r={8}
-                    stroke="#10B981"
+                    stroke={colors.success}
                     strokeWidth={2}
                     fill="none"
                     strokeDasharray={`${2 * Math.PI * 8}`}
@@ -531,7 +542,7 @@ export default function EmailDetailScreen() {
                   paddingHorizontal: 12,
                 }}
               >
-                <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Undo</Text>
+                <AppText style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }} dynamicTypeStyle="caption">Undo</AppText>
               </TouchableOpacity>
             </View>
           )}

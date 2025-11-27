@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { X } from 'lucide-react-native';
 import { createSettingsStyles } from '@/styles/app/settings';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 interface FeatureRequestModalProps {
   visible: boolean;
@@ -25,10 +26,11 @@ export function FeatureRequestModal({
   colors,
 }: FeatureRequestModalProps) {
   const styles = createSettingsStyles(colors);
+  const { showWarning } = useEnhancedToast();
 
   const handleSubmit = () => {
     if (!title.trim() || !description.trim()) {
-      Alert.alert('Missing Information', 'Please provide both a title and description for your feature request.');
+      showWarning('Please provide both a title and description for your feature request.');
       return;
     }
     onSubmit();

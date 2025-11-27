@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { FileEdit, Trash2 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Draft, FilterType } from './types';
@@ -38,28 +39,28 @@ export const InboxDraftItem = React.memo<InboxDraftItemProps>(({
       activeOpacity={0.7}
     >
       <View style={[emailListStyles.senderAvatar, { backgroundColor: colors.primary }]}>
-        <Text style={emailListStyles.senderInitial}>{recipientInitial}</Text>
+        <AppText style={emailListStyles.senderInitial} dynamicTypeStyle="body">{recipientInitial}</AppText>
       </View>
       <View style={draftStyles.draftCardContent}>
         <View style={draftStyles.draftCardHeader}>
           <FileEdit size={16} color={colors.primary} />
-          <Text style={[draftStyles.draftBadge, { color: colors.primary }]}>
+          <AppText style={[draftStyles.draftBadge, { color: colors.primary }]} dynamicTypeStyle="caption">
             {activeFilter === 'drafts-ai' ? 'AI Draft' : 'Draft'}
-          </Text>
-          <Text style={[draftStyles.draftDate, { color: colors.textSecondary }]}>
+          </AppText>
+          <AppText style={[draftStyles.draftDate, { color: colors.textSecondary }]} dynamicTypeStyle="caption">
             {formatDate(draft.date)}
-          </Text>
+          </AppText>
         </View>
-        <Text style={[draftStyles.draftTo, { color: colors.text }]} numberOfLines={1}>
+        <AppText style={[draftStyles.draftTo, { color: colors.text }]} numberOfLines={1} dynamicTypeStyle="body">
           To: {draft.to || '(no recipient)'}
-        </Text>
-        <Text style={[draftStyles.draftSubject, { color: colors.text }]} numberOfLines={1}>
+        </AppText>
+        <AppText style={[draftStyles.draftSubject, { color: colors.text }]} numberOfLines={1} dynamicTypeStyle="body">
           {draft.subject || '(no subject)'}
-        </Text>
+        </AppText>
         {draft.body && (
-          <Text style={[draftStyles.draftBody, { color: colors.textSecondary }]} numberOfLines={2}>
+          <AppText style={[draftStyles.draftBody, { color: colors.textSecondary }]} numberOfLines={2} dynamicTypeStyle="caption">
             {draft.body}
-          </Text>
+          </AppText>
         )}
       </View>
       <TouchableOpacity

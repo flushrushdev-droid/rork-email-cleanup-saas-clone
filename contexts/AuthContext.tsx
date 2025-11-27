@@ -6,6 +6,7 @@ import * as AuthSession from 'expo-auth-session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import type { AuthTokens, User } from '@/constants/types';
+import { createScopedLogger } from '@/utils/logger';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -23,9 +24,15 @@ function getRedirectUri() {
 
 const REDIRECT_URI = getRedirectUri();
 
-console.log('OAuth Redirect URI:', REDIRECT_URI);
-console.log('OAuth Client ID:', GOOGLE_CLIENT_ID);
-console.log('Platform:', Platform.OS);
+// Initialize scoped logger for auth context
+const authLogger = createScopedLogger('Auth');
+
+// Log OAuth configuration in development only
+authLogger.debug('OAuth configuration', {
+  redirectUri: REDIRECT_URI,
+  clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+  platform: Platform.OS,
+});
 
 const STORAGE_KEYS = {
   TOKENS: '@auth_tokens',
@@ -119,7 +126,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         }
       }
     } catch (err) {
-      console.error('Error loading stored auth:', err);
+      authLogger.error('Error loading stored auth', err);
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +174,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setTokens(newTokens);
       await AsyncStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
     } catch (err) {
-      console.error('Error exchanging code for tokens:', err);
+      authLogger.error('Error exchanging code for tokens', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setIsLoading(false);
@@ -199,7 +206,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setUser(newUser);
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
     } catch (err) {
-      console.error('Error fetching user info:', err);
+      authLogger.error('Error fetching user info', err);
       throw err;
     }
   };
@@ -237,7 +244,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       return newTokens.accessToken;
     } catch (err) {
-      console.error('Error refreshing token:', err);
+      authLogger.error('Error refreshing token', err);
       await clearAuth();
       throw err;
     }
@@ -249,7 +256,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(true);
       await promptAsync();
     } catch (err) {
-      console.error('Error signing in:', err);
+      authLogger.error('Error signing in', err);
       setError(err instanceof Error ? err.message : 'Sign in failed');
       setIsLoading(false);
     }
@@ -257,14 +264,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const signInDemo = async (): Promise<boolean> => {
     try {
-      console.log('[Demo] Starting demo sign in...');
+      authLogger.info('Starting demo sign in');
       setIsLoading(true);
       setError(null);
       
-      console.log('[Demo] Setting AsyncStorage...');
       await AsyncStorage.setItem('@demo_mode', 'true');
       
-      console.log('[Demo] Setting demo mode and user...');
       setIsDemoMode(true);
       setUser({
         id: 'demo',
@@ -273,11 +278,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         provider: 'google',
       });
       
-      console.log('[Demo] Demo sign in complete');
+      authLogger.info('Demo sign in complete');
       setIsLoading(false);
       return true;
     } catch (err) {
-      console.error('[Demo] Error signing in to demo:', err);
+      authLogger.error('Error signing in to demo', err);
       setError('Failed to enter demo mode');
       setIsLoading(false);
       return false;
@@ -292,7 +297,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         });
       }
     } catch (err) {
-      console.error('Error revoking token:', err);
+      authLogger.error('Error revoking token', err);
     } finally {
       await clearAuth();
     }

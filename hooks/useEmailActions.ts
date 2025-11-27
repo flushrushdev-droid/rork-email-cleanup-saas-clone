@@ -1,5 +1,5 @@
-import { Alert } from 'react-native';
 import type { EmailMessage } from '@/constants/types';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export type EmailActions = {
   handleReply: (email: EmailMessage) => void;
@@ -20,6 +20,7 @@ export function useEmailActions(
   setCurrentView: (view: string) => void,
   isDemoMode: boolean
 ): EmailActions {
+  const { showSuccess, showError, showInfo } = useEnhancedToast();
   const handleReply = (email: EmailMessage) => {
     const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
     setComposeTo(senderEmail);
@@ -49,16 +50,16 @@ export function useEmailActions(
 
   const handleArchive = async (email: EmailMessage) => {
     if (isDemoMode) {
-      Alert.alert('Demo Mode', 'Archive is disabled in demo mode');
+      showInfo('Archive is disabled in demo mode');
       return;
     }
 
     try {
       await archiveMessage(email.id);
-      Alert.alert('Success', 'Email archived');
+      showSuccess('Email archived');
       setCurrentView('inbox');
     } catch {
-      Alert.alert('Error', 'Failed to archive email');
+      showError('Failed to archive email');
     }
   };
 

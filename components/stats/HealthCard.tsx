@@ -32,7 +32,7 @@ export function HealthCard({ health, colors, router }: HealthCardProps) {
 
   return (
     <LinearGradient
-      colors={['#007AFF', '#5856D6']}
+      colors={[colors.primary, colors.secondary]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.healthCard}
@@ -71,9 +71,9 @@ export function HealthCard({ health, colors, router }: HealthCardProps) {
             accessibilityLabel={health.trend === 'up' ? 'Trending up' : 'Trending down'}
           >
             {health.trend === 'up' ? (
-              <TrendingUp size={16} color="#34C759" />
+              <TrendingUp size={16} color={colors.success} />
             ) : (
-              <TrendingDown size={16} color="#FF3B30" />
+              <TrendingDown size={16} color={colors.danger} />
             )}
           </View>
         </View>

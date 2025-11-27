@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Moon, History, Lightbulb, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -9,6 +10,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { createSettingsStyles } from '@/styles/app/settings';
 import { FeatureRequestModal } from '@/components/settings/FeatureRequestModal';
 import { FeatureRequestSuccessModal } from '@/components/settings/FeatureRequestSuccessModal';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -21,6 +23,7 @@ export default function SettingsScreen() {
   const [featureTitle, setFeatureTitle] = React.useState('');
   const [featureDescription, setFeatureDescription] = React.useState('');
   const [successMessageVisible, setSuccessMessageVisible] = React.useState(false);
+  const { showInfo } = useEnhancedToast();
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,24 +56,37 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your preferences</Text>
+        <AppText 
+          style={[styles.title, { color: colors.text }]}
+          accessibilityRole="header"
+          accessibilityLabel="Settings"
+          dynamicTypeStyle="title1"
+        >
+          Settings
+        </AppText>
+        <AppText 
+          style={[styles.subtitle, { color: colors.textSecondary }]}
+          accessibilityRole="text"
+          dynamicTypeStyle="body"
+        >
+          Manage your preferences
+        </AppText>
       </View>
 
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Connected Account</Text>
+          <AppText style={styles.sectionTitle} dynamicTypeStyle="headline">Connected Account</AppText>
           {user && (
             <View style={[styles.accountCard, { backgroundColor: colors.surface }]}>
               <View style={[styles.accountIcon, { backgroundColor: colors.primary + '20' }]}>
                 <Mail size={24} color={colors.primary} />
               </View>
               <View style={styles.accountInfo}>
-                <Text style={[styles.accountName, { color: colors.text }]}>{user.name || 'Google Account'}</Text>
-                <Text style={[styles.accountEmail, { color: colors.textSecondary }]}>{user.email}</Text>
+                <AppText style={[styles.accountName, { color: colors.text }]} dynamicTypeStyle="headline">{user.name || 'Google Account'}</AppText>
+                <AppText style={[styles.accountEmail, { color: colors.textSecondary }]} dynamicTypeStyle="body">{user.email}</AppText>
                 <View style={styles.statusRow}>
                   <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
-                  <Text style={[styles.statusText, { color: colors.success }]}>Connected • Google</Text>
+                  <AppText style={[styles.statusText, { color: colors.success }]} dynamicTypeStyle="caption">Connected • Google</AppText>
                 </View>
               </View>
               <Check size={20} color={colors.success} />
@@ -79,7 +95,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
+          <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Preferences</AppText>
           
           <View style={[styles.settingItem, { backgroundColor: colors.surface }]}>
             <View style={styles.settingLeft}>
@@ -87,14 +103,19 @@ export default function SettingsScreen() {
                 <Moon size={20} color={colors.text} />
               </View>
               <View style={styles.settingContent}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
-                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Switch between light and dark theme</Text>
+                <AppText style={[styles.settingLabel, { color: colors.text }]} dynamicTypeStyle="body">Dark Mode</AppText>
+                <AppText style={[styles.settingDescription, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Switch between light and dark theme</AppText>
               </View>
             </View>
             <Switch
               value={theme === 'dark'}
               onValueChange={toggleTheme}
               trackColor={{ false: colors.border, true: colors.primary }}
+              accessible={true}
+              accessibilityRole="switch"
+              accessibilityLabel="Dark Mode"
+              accessibilityHint={`Toggle to ${theme === 'dark' ? 'disable' : 'enable'} dark mode`}
+              accessibilityState={{ checked: theme === 'dark' }}
             />
           </View>
 
@@ -104,94 +125,155 @@ export default function SettingsScreen() {
                 <Bell size={20} color={colors.info} />
               </View>
               <View style={styles.settingContent}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Notifications</Text>
-                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>Get alerts for important emails</Text>
+                <AppText style={[styles.settingLabel, { color: colors.text }]} dynamicTypeStyle="body">Notifications</AppText>
+                <AppText style={[styles.settingDescription, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Get alerts for important emails</AppText>
               </View>
             </View>
             <Switch
               value={notificationsEnabled}
               onValueChange={(v) => {
                 setNotificationsEnabled(v);
-                Alert.alert('Notifications', v ? 'Enabled' : 'Disabled');
+                showInfo(`Notifications ${v ? 'Enabled' : 'Disabled'}`, { duration: 2000 });
               }}
               trackColor={{ false: colors.border, true: colors.primary }}
+              accessible={true}
+              accessibilityRole="switch"
+              accessibilityLabel="Notifications"
+              accessibilityHint={`Toggle to ${notificationsEnabled ? 'disable' : 'enable'} email notifications`}
+              accessibilityState={{ checked: notificationsEnabled }}
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Security & Privacy</Text>
+          <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Security & Privacy</AppText>
           
-          <TouchableOpacity testID="menu-data" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Data Management', 'Coming soon')}>
+          <TouchableOpacity 
+            testID="menu-data" 
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Data Management"
+            accessibilityHint="Double tap to manage your account data"
+            style={[styles.menuItem, { backgroundColor: colors.surface }]} 
+            onPress={() => showInfo('Data Management coming soon', { duration: 2000 })}
+          >
             <View style={[styles.menuIcon, { backgroundColor: colors.secondary + '20' }]}>
               <Database size={20} color={colors.secondary} />
             </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>Data Management</Text>
+            <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">Data Management</AppText>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity testID="menu-history" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => router.push('/history')}>
-            <View style={[styles.menuIcon, { backgroundColor: '#8E8E93' + '20' }]}>
-              <History size={20} color="#8E8E93" />
+          <TouchableOpacity 
+            testID="menu-history"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="History"
+            accessibilityHint="Double tap to view your account history"
+            style={[styles.menuItem, { backgroundColor: colors.surface }]} 
+            onPress={() => router.push('/history')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: colors.textSecondary + '20' }]}>
+              <History size={20} color={colors.textSecondary} />
             </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>History</Text>
+            <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">History</AppText>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
+          <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Support</AppText>
           
-          <TouchableOpacity testID="menu-help" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Help', 'Visit our docs at help.example.com')}>
+          <TouchableOpacity 
+            testID="menu-help"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Help & Documentation"
+            accessibilityHint="Double tap to view help and documentation"
+            style={[styles.menuItem, { backgroundColor: colors.surface }]} 
+            onPress={() => showInfo('Visit our docs at help.example.com', { duration: 3000 })}
+          >
             <View style={[styles.menuIcon, { backgroundColor: colors.info + '20' }]}> 
               <HelpCircle size={20} color={colors.info} />
             </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>Help & Documentation</Text>
+            <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">Help & Documentation</AppText>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity testID="menu-feature-request" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => setFeatureRequestModalVisible(true)}>
-            <View style={[styles.menuIcon, { backgroundColor: '#FFA500' + '20' }]}> 
-              <Lightbulb size={20} color="#FFA500" />
+          <TouchableOpacity 
+            testID="menu-feature-request"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Feature Request"
+            accessibilityHint="Double tap to submit a feature request"
+            style={[styles.menuItem, { backgroundColor: colors.surface }]} 
+            onPress={() => setFeatureRequestModalVisible(true)}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: colors.warning + '20' }]}> 
+              <Lightbulb size={20} color={colors.warning} />
             </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>Feature Request</Text>
+            <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">Feature Request</AppText>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity testID="menu-terms" style={[styles.menuItem, { backgroundColor: colors.surface }]} onPress={() => Alert.alert('Terms & Privacy', 'Read our policy on example.com/policy')}>
+          <TouchableOpacity 
+            testID="menu-terms"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Terms & Privacy Policy"
+            accessibilityHint="Double tap to view terms and privacy policy"
+            style={[styles.menuItem, { backgroundColor: colors.surface }]} 
+            onPress={() => showInfo('Read our policy on example.com/policy', { duration: 3000 })}
+          >
             <View style={[styles.menuIcon, { backgroundColor: colors.textSecondary + '20' }]}>
               <FileText size={20} color={colors.textSecondary} />
             </View>
-            <Text style={[styles.menuLabel, { color: colors.text }]}>Terms & Privacy Policy</Text>
+            <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">Terms & Privacy Policy</AppText>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <LinearGradient
-          colors={['#FF3B30', '#FF6482']}
+          colors={[colors.danger, colors.category.social]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.upgradeCard}
         >
           <View style={styles.upgradeContent}>
-            <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
-            <Text style={styles.upgradeDescription}>
+            <AppText style={styles.upgradeTitle} dynamicTypeStyle="title2">Upgrade to Pro</AppText>
+            <AppText style={styles.upgradeDescription} dynamicTypeStyle="body">
               Unlimited accounts, advanced AI features, and priority support
-            </Text>
-            <TouchableOpacity testID="upgrade" style={styles.upgradeButton} onPress={() => Alert.alert('Upgrade', 'In-app purchases coming soon')}>
-              <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            </AppText>
+            <TouchableOpacity 
+              testID="upgrade"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Upgrade to Pro"
+              accessibilityHint="Double tap to upgrade to Pro version with unlimited accounts and advanced features"
+              style={styles.upgradeButton} 
+              onPress={() => showInfo('In-app purchases coming soon', { duration: 2000 })}
+            >
+              <AppText style={styles.upgradeButtonText} dynamicTypeStyle="headline">Upgrade Now</AppText>
             </TouchableOpacity>
           </View>
         </LinearGradient>
 
-        <TouchableOpacity testID="logout" style={[styles.logoutButton, { backgroundColor: colors.surface, borderColor: colors.danger }]} onPress={handleSignOut}>
+        <TouchableOpacity 
+          testID="logout"
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Sign Out"
+          accessibilityHint="Double tap to sign out of your account"
+          style={[styles.logoutButton, { backgroundColor: colors.surface, borderColor: colors.danger }]} 
+          onPress={handleSignOut}
+        >
           <LogOut size={20} color={colors.danger} />
-          <Text style={[styles.logoutText, { color: colors.danger }]}>Sign Out</Text>
+          <AppText style={[styles.logoutText, { color: colors.danger }]} dynamicTypeStyle="headline">Sign Out</AppText>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>AthenX Mail v1.0.0</Text>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>Made with ❤️ for productivity</Text>
+          <AppText style={[styles.footerText, { color: colors.textSecondary }]} dynamicTypeStyle="caption">AthenX Mail v1.0.0</AppText>
+          <AppText style={[styles.footerText, { color: colors.textSecondary }]} dynamicTypeStyle="caption">Made with ❤️ for productivity</AppText>
         </View>
 
       </ScrollView>

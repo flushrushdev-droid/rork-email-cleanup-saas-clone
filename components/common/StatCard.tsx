@@ -37,9 +37,9 @@ export function StatCard({
   const { colors } = useTheme();
   const styles = createStyles(colors, variant);
 
-  const finalIconColor = iconColor || (variant === 'default' ? 'rgba(255,255,255,0.8)' : colors.text);
-  const finalValueColor = valueColor || (variant === 'default' ? '#FFFFFF' : colors.text);
-  const finalLabelColor = labelColor || (variant === 'default' ? '#FFFFFF' : colors.textSecondary);
+  const finalIconColor = iconColor || (variant === 'default' ? colors.surface + 'CC' : colors.text);
+  const finalValueColor = valueColor || (variant === 'default' ? colors.surface : colors.text);
+  const finalLabelColor = labelColor || (variant === 'default' ? colors.surface + 'CC' : colors.textSecondary);
 
   const defaultAccessibilityLabel = accessibilityLabel || formatAccessibilityLabel('{label}: {value}', { label, value: String(value) });
 

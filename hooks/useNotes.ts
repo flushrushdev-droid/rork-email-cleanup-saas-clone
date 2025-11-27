@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useCalendarStore } from '@/contexts/CalendarContext';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 import type { CalendarEvent } from '@/hooks/useCalendar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -79,6 +80,7 @@ export function useNotes() {
   const { addEvent, setEvents } = useCalendarStore();
   const params = useLocalSearchParams<{ editNoteId?: string; prefillTitle?: string; prefillContent?: string }>();
   const [notes, setNotes] = useState<Note[]>(demoNotes);
+  const { showError } = useEnhancedToast();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
@@ -150,7 +152,7 @@ export function useNotes() {
 
   const handleSave = useCallback(() => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title');
+      showError('Please enter a title');
       return;
     }
 
@@ -204,7 +206,7 @@ export function useNotes() {
     setTitle('');
     setContent('');
     setDueDate(undefined);
-  }, [title, content, dueDate, editingNote, addEvent]);
+  }, [title, content, dueDate, editingNote, addEvent, showError]);
 
   const performDelete = useCallback(async (noteId: string) => {
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));

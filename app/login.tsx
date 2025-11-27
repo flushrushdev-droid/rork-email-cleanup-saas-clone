@@ -12,6 +12,9 @@ import { AccessibleButton } from '@/components/common/AccessibleButton';
 import { ErrorDisplay } from '@/components/common/ErrorDisplay';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { createLoginStyles } from '@/styles/app/login';
+import { createScopedLogger } from '@/utils/logger';
+
+const loginLogger = createScopedLogger('Login');
 
 export default function LoginScreen() {
   const { signIn, signInDemo, isLoading, error: authError, isAuthenticated } = useAuth();
@@ -34,7 +37,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      console.log('Authenticated, navigating to home');
+      loginLogger.debug('Authenticated, navigating to home');
       router.replace('/');
     }
   }, [isAuthenticated, isLoading, router]);

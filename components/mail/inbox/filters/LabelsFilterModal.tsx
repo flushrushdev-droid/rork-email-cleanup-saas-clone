@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
+import { View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { X, Search, Star, Clock, Bookmark, Send, Calendar, FileEdit, Mail, ShoppingBag } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { modalStyles } from '../styles/modalStyles';
@@ -49,7 +50,7 @@ export function LabelsFilterModal({
       <View style={modalStyles.modalOverlay}>
         <View style={[modalStyles.modalContent, { backgroundColor: colors.surface }]}>
           <View style={[modalStyles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[modalStyles.modalTitle, { color: colors.text }]}>Labels</Text>
+            <AppText style={[modalStyles.modalTitle, { color: colors.text }]} dynamicTypeStyle="title2">Labels</AppText>
             <TouchableOpacity onPress={() => {
               onClose();
               onSearchChange('');
@@ -81,7 +82,7 @@ export function LabelsFilterModal({
                   }}
                 >
                   <Icon size={20} color={colors.textSecondary} />
-                  <Text style={[modalStyles.modalItemText, { color: colors.text }]}>{label.label}</Text>
+                  <AppText style={[modalStyles.modalItemText, { color: colors.text }]} dynamicTypeStyle="body">{label.label}</AppText>
                 </TouchableOpacity>
               );
             })}

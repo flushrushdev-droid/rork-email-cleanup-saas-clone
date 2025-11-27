@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Search, UserX, Mail } from 'lucide-react-native';
 import { Stack, useRouter } from 'expo-router';
 
@@ -7,11 +7,13 @@ import { mockSenders } from '@/mocks/emailData';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EmptyState } from '@/components/common/EmptyState';
 import { createBlockedSendersStyles } from '@/styles/app/blocked-senders';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export default function BlockedSendersScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
+  const { showSuccess, showWarning } = useEnhancedToast();
 
   const blockedSenders = mockSenders.filter(sender => sender.isBlocked);
 
@@ -21,19 +23,15 @@ export default function BlockedSendersScreen() {
   );
 
   const handleUnblock = (senderId: string, senderEmail: string) => {
-    Alert.alert(
-      'Unblock Sender',
-      `Unblock ${senderEmail}? Future emails will be delivered normally.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unblock',
-          onPress: () => {
-            Alert.alert('Success', `${senderEmail} has been unblocked`);
-          },
+    showWarning(`Unblock ${senderEmail}? Future emails will be delivered normally.`, {
+      action: {
+        label: 'Unblock',
+        onPress: () => {
+          showSuccess(`${senderEmail} has been unblocked`);
         },
-      ]
-    );
+      },
+      duration: 0,
+    });
   };
 
   const handleViewSenderEmails = (senderId: string) => {
@@ -118,6 +116,10 @@ export default function BlockedSendersScreen() {
 
               <TouchableOpacity
                 testID={`unblock-${sender.id}`}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Unblock ${sender.email}`}
+                accessibilityHint="Double tap to unblock this sender and allow their emails"
                 style={[styles.unblockButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleUnblock(sender.id, sender.email)}
               >

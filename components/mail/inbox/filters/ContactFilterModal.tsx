@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
+import { View, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { X } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { modalStyles } from '../styles/modalStyles';
@@ -44,9 +45,9 @@ export function ContactFilterModal({
       <View style={modalStyles.modalOverlay}>
         <View style={[modalStyles.modalContent, { backgroundColor: colors.surface }]}>
           <View style={[modalStyles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[modalStyles.modalTitle, { color: colors.text }]}>
+            <AppText style={[modalStyles.modalTitle, { color: colors.text }]} dynamicTypeStyle="title2">
               {type === 'to' ? 'To' : 'From'}
-            </Text>
+            </AppText>
             <TouchableOpacity onPress={() => {
               onClose();
               onSearchChange('');
@@ -64,7 +65,7 @@ export function ContactFilterModal({
             />
           </View>
           <ScrollView style={modalStyles.modalList}>
-            <Text style={[modalStyles.modalSectionTitle, { color: colors.textSecondary }]}>Suggestions</Text>
+            <AppText style={[modalStyles.modalSectionTitle, { color: colors.textSecondary }]} dynamicTypeStyle="headline">Suggestions</AppText>
             {filteredContacts.map((contact, index) => (
               <TouchableOpacity
                 key={index}
@@ -76,19 +77,19 @@ export function ContactFilterModal({
                 }}
               >
                 <View style={[modalStyles.contactAvatar, { backgroundColor: contact.color }]}>
-                  <Text style={modalStyles.contactInitial}>{contact.initial}</Text>
+                  <AppText style={modalStyles.contactInitial} dynamicTypeStyle="body">{contact.initial}</AppText>
                 </View>
                 <View style={modalStyles.contactInfo}>
-                  <Text style={[modalStyles.contactName, { color: colors.text }]}>{contact.name}</Text>
-                  <Text style={[modalStyles.contactEmail, { color: colors.textSecondary }]}>{contact.email}</Text>
+                  <AppText style={[modalStyles.contactName, { color: colors.text }]} dynamicTypeStyle="body">{contact.name}</AppText>
+                  <AppText style={[modalStyles.contactEmail, { color: colors.textSecondary }]} dynamicTypeStyle="caption">{contact.email}</AppText>
                 </View>
               </TouchableOpacity>
             ))}
             
             {searchQuery.length === 0 && (
               <>
-                <Text style={[modalStyles.modalSectionTitle, { color: colors.textSecondary }]}>All contacts</Text>
-                <Text style={[modalStyles.contactSectionLetter, { color: colors.text }]}>J</Text>
+                <AppText style={[modalStyles.modalSectionTitle, { color: colors.textSecondary }]} dynamicTypeStyle="headline">All contacts</AppText>
+                <AppText style={[modalStyles.contactSectionLetter, { color: colors.text }]} dynamicTypeStyle="headline">J</AppText>
                 {contacts.filter(c => c.name.startsWith('J')).map((contact, index) => (
                   <TouchableOpacity
                     key={`all-${index}`}
@@ -100,11 +101,11 @@ export function ContactFilterModal({
                     }}
                   >
                     <View style={[modalStyles.contactAvatar, { backgroundColor: contact.color }]}>
-                      <Text style={modalStyles.contactInitial}>{contact.initial}</Text>
+                      <AppText style={modalStyles.contactInitial} dynamicTypeStyle="body">{contact.initial}</AppText>
                     </View>
                     <View style={modalStyles.contactInfo}>
-                      <Text style={[modalStyles.contactName, { color: colors.text }]}>{contact.name}</Text>
-                      <Text style={[modalStyles.contactEmail, { color: colors.textSecondary }]}>{contact.email}</Text>
+                      <AppText style={[modalStyles.contactName, { color: colors.text }]} dynamicTypeStyle="body">{contact.name}</AppText>
+                      <AppText style={[modalStyles.contactEmail, { color: colors.textSecondary }]} dynamicTypeStyle="caption">{contact.email}</AppText>
                     </View>
                   </TouchableOpacity>
                 ))}

@@ -27,6 +27,8 @@ export function InboxView({
   onStarEmail,
   onLoadDraft,
   onDeleteDraft,
+  onArchive,
+  onDelete,
   onCreateFolder,
   selectionMode,
   selectedEmails,
@@ -40,6 +42,7 @@ export function InboxView({
   onCompose,
   onRefresh,
   isRefreshing = false,
+  isLoading = false,
 }: InboxViewProps) {
   const { colors } = useTheme();
   const [isSidebarVisible, setIsSidebarVisible] = React.useState(false);
@@ -128,9 +131,12 @@ export function InboxView({
           onToggleSelection={onToggleSelection}
           onLoadDraft={onLoadDraft}
           onDeleteDraft={onDeleteDraft}
+          onArchive={onArchive}
+          onDelete={onDelete}
           insets={insets}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          isLoading={isLoading}
         />
       )}
 

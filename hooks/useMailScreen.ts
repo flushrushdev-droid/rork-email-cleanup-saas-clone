@@ -6,10 +6,14 @@ import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useEmailState } from '@/contexts/EmailStateContext';
 import { useDrafts } from '@/hooks/useDrafts';
 import { useSmartFolders } from '@/hooks/useSmartFolders';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 import { mockRecentEmails } from '@/mocks/emailData';
 import { categorizeEmail } from '@/utils/emailCategories';
 import type { EmailMessage, Email, EmailCategory, MailFolder } from '@/constants/types';
 import Colors from '@/constants/colors';
+import { createScopedLogger } from '@/utils/logger';
+
+const mailScreenLogger = createScopedLogger('MailScreen');
 
 type MailView = 'inbox' | 'compose' | 'detail' | 'folders' | 'folder-detail';
 
@@ -20,6 +24,7 @@ export function useMailScreen() {
   const { messages, markAsRead, archiveMessage, syncMailbox, isSyncing } = useGmailSync();
   const { starredEmails, toggleStarredEmail } = useEmailState();
   const { drafts, saveDraft, loadDraft, deleteDraft } = useDrafts();
+  const { showSuccess, showError, showWarning, showInfo } = useEnhancedToast();
 
   // View state
   const [currentView, setCurrentView] = useState<MailView>('inbox');
@@ -100,13 +105,20 @@ export function useMailScreen() {
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;
 
+    // Filter out archived emails (including pending archive) unless viewing archived
     if (activeFilter !== 'archived') {
-      filtered = filtered.filter((email: EmailMessage) => !archivedEmails.has(email.id));
+      filtered = filtered.filter((email: EmailMessage) => 
+        !archivedEmails.has(email.id) && !pendingArchive.has(email.id)
+      );
     }
     
+    // Filter out trashed emails (including pending delete) unless viewing trash
     if (activeFilter !== 'trash') {
-      filtered = filtered.filter((email: EmailMessage) => !trashedEmails.has(email.id));
+      filtered = filtered.filter((email: EmailMessage) => 
+        !trashedEmails.has(email.id) && !pendingDelete.has(email.id)
+      );
     } else {
+      // When viewing trash, show only emails that are actually trashed (not pending)
       filtered = filtered.filter((email: EmailMessage) => trashedEmails.has(email.id));
     }
 
@@ -164,7 +176,7 @@ export function useMailScreen() {
     }
 
     return filtered.sort((a: EmailMessage, b: EmailMessage) => b.date.getTime() - a.date.getTime());
-  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails, activeFilter, archivedEmails, trashedEmails]);
+  }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails, activeFilter, archivedEmails, trashedEmails, pendingArchive, pendingDelete]);
 
   // Handle email press
   const handleEmailPress = useCallback((email: EmailMessage) => {
@@ -172,8 +184,8 @@ export function useMailScreen() {
     setCurrentView('detail');
     
     if (!email.isRead && !isDemoMode) {
-      markAsRead(email.id).catch(() => {
-        console.error('Failed to mark as read');
+      markAsRead(email.id).catch((error) => {
+        mailScreenLogger.error('Failed to mark as read', error);
       });
     }
   }, [isDemoMode, markAsRead]);
@@ -188,24 +200,33 @@ export function useMailScreen() {
   }, []);
 
   // Handle send
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
+    const { triggerSuccessHaptic } = await import('@/utils/haptics');
+    
     if (!composeTo || !composeSubject) {
-      Alert.alert('Error', 'Please fill in recipient and subject');
+      const { triggerErrorHaptic } = await import('@/utils/haptics');
+      await triggerErrorHaptic();
+      showError('Please fill in recipient and subject');
       return;
     }
 
     if (isDemoMode) {
-      Alert.alert('Demo Mode', 'Email sending is disabled in demo mode');
+      await triggerSuccessHaptic();
+      showInfo('Email sending is disabled in demo mode');
       setCurrentView('inbox');
       return;
     }
 
-    Alert.alert('Success', 'Email sent successfully!');
+    await triggerSuccessHaptic();
+    showSuccess('Email sent successfully!');
     setCurrentView('inbox');
   }, [composeTo, composeSubject, isDemoMode]);
 
   // Handle save draft
-  const handleSaveDraft = useCallback(() => {
+  const handleSaveDraft = useCallback(async () => {
+    const { triggerButtonHaptic } = await import('@/utils/haptics');
+    await triggerButtonHaptic();
+    
     if (saveDraft(composeTo, composeCc, composeSubject, composeBody)) {
       setCurrentView('inbox');
       setActiveFilter('drafts');
@@ -229,6 +250,9 @@ export function useMailScreen() {
 
   // Handle archive
   const handleArchive = useCallback(async (email: EmailMessage) => {
+    const { triggerActionHaptic } = await import('@/utils/haptics');
+    await triggerActionHaptic();
+    
     if (isDemoMode) {
       const existingTimeout = archiveTimeoutRef.current.get(email.id);
       if (existingTimeout) {
@@ -255,6 +279,11 @@ export function useMailScreen() {
         },
       });
       
+      // Navigate back to inbox if viewing detail
+      if (currentView === 'detail') {
+        setCurrentView('inbox');
+      }
+      
       const timeout = setTimeout(() => {
         setPendingArchive(prev => {
           if (prev.has(email.id)) {
@@ -273,15 +302,18 @@ export function useMailScreen() {
 
     try {
       await archiveMessage(email.id);
-      Alert.alert('Success', 'Email archived');
+      showSuccess('Email archived');
       setCurrentView('inbox');
     } catch {
-      Alert.alert('Error', 'Failed to archive email');
+      showError('Failed to archive email');
     }
-  }, [isDemoMode, archiveMessage]);
+  }, [isDemoMode, archiveMessage, currentView]);
 
   // Handle delete
   const handleDelete = useCallback(async (email: EmailMessage) => {
+    const { triggerDestructiveHaptic } = await import('@/utils/haptics');
+    await triggerDestructiveHaptic();
+    
     if (isDemoMode) {
       const existingTimeout = deleteTimeoutRef.current.get(email.id);
       if (existingTimeout) {
@@ -316,8 +348,8 @@ export function useMailScreen() {
         if (nextEmail) {
           setSelectedEmail(nextEmail);
           if (!nextEmail.isRead && !isDemoMode) {
-            markAsRead(nextEmail.id).catch(() => {
-              console.error('Failed to mark as read');
+            markAsRead(nextEmail.id).catch((error) => {
+              mailScreenLogger.error('Failed to mark as read', error);
             });
           }
         } else {
@@ -348,12 +380,14 @@ export function useMailScreen() {
     try {
       setCurrentView('inbox');
     } catch {
-      Alert.alert('Error', 'Failed to delete email');
+      showError('Failed to delete email');
     }
   }, [isDemoMode, filteredEmails, currentView, markAsRead]);
 
   // Handle star
-  const handleStar = useCallback((emailId: string) => {
+  const handleStar = useCallback(async (emailId: string) => {
+    const { triggerButtonHaptic } = await import('@/utils/haptics');
+    await triggerButtonHaptic();
     toggleStarredEmail(emailId);
   }, [toggleStarredEmail]);
 
@@ -395,8 +429,8 @@ export function useMailScreen() {
       const nextEmail = filteredEmails[currentIndex + 1];
       setSelectedEmail(nextEmail);
       if (!nextEmail.isRead && !isDemoMode) {
-        markAsRead(nextEmail.id).catch(() => {
-          console.error('Failed to mark as read');
+        markAsRead(nextEmail.id).catch((error) => {
+          mailScreenLogger.error('Failed to mark as read', error);
         });
       }
     }
@@ -410,8 +444,8 @@ export function useMailScreen() {
       const prevEmail = filteredEmails[currentIndex - 1];
       setSelectedEmail(prevEmail);
       if (!prevEmail.isRead && !isDemoMode) {
-        markAsRead(prevEmail.id).catch(() => {
-          console.error('Failed to mark as read');
+        markAsRead(prevEmail.id).catch((error) => {
+          mailScreenLogger.error('Failed to mark as read', error);
         });
       }
     }
@@ -419,6 +453,10 @@ export function useMailScreen() {
 
   // Handle refresh
   const handleRefresh = useCallback(async () => {
+    // Trigger haptic feedback when refresh starts
+    const { triggerRefreshHaptic } = await import('@/utils/haptics');
+    await triggerRefreshHaptic();
+    
     if (isDemoMode) {
       // In demo mode, restore all deleted/archived emails by clearing the state
       setArchivedEmails(new Set());
@@ -440,14 +478,14 @@ export function useMailScreen() {
     try {
       await syncMailbox();
     } catch (error) {
-      console.error('Error refreshing emails:', error);
+      mailScreenLogger.error('Error refreshing emails', error);
     }
   }, [isDemoMode, syncMailbox]);
 
   // Handle create folder
   const handleCreateFolder = useCallback(async () => {
     if (!folderName.trim() || !folderRule.trim()) {
-      Alert.alert('Missing Information', 'Please enter both folder name and rule');
+      showWarning('Please enter both folder name and rule');
       return;
     }
 
@@ -465,16 +503,17 @@ export function useMailScreen() {
       
       setCustomFolders(prev => [newFolder, ...prev]);
       setToast({ message: `Folder "${folderName}" created successfully!` });
+      showSuccess(`Folder "${folderName}" created successfully!`);
       setIsModalVisible(false);
       setFolderName('');
       setFolderRule('');
     } catch (error) {
-      console.error('Error creating folder:', error);
-      Alert.alert('Error', 'Failed to create folder. Please try again.');
+      mailScreenLogger.error('Error creating folder', error);
+      showError('Failed to create folder. Please try again.');
     } finally {
       setIsCreating(false);
     }
-  }, [folderName, folderRule]);
+  }, [folderName, folderRule, showSuccess, showError, showWarning]);
 
   // Selection handlers
   const handleToggleSelection = useCallback((emailId: string) => {
@@ -504,25 +543,21 @@ export function useMailScreen() {
 
   const handleBulkDelete = useCallback(() => {
     if (isDemoMode) {
-      Alert.alert('Demo Mode', 'Bulk delete is disabled in demo mode');
+      showInfo('Bulk delete is disabled in demo mode');
       return;
     }
-    Alert.alert(
-      'Delete Emails',
-      `Delete ${selectedEmails.size} emails?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', `${selectedEmails.size} emails deleted`);
-            handleCancelSelection();
-          },
+    showWarning(`Delete ${selectedEmails.size} emails?`, {
+      action: {
+        label: 'Delete',
+        onPress: () => {
+          showSuccess(`${selectedEmails.size} emails deleted`);
+          handleCancelSelection();
         },
-      ]
-    );
-  }, [isDemoMode, selectedEmails.size, handleCancelSelection]);
+        style: 'destructive',
+      },
+      duration: 0, // Don't auto-dismiss confirmation toasts
+    });
+  }, [isDemoMode, selectedEmails.size, handleCancelSelection, showWarning, showSuccess, showInfo]);
 
   const handleBulkArchive = useCallback(() => {
     if (isDemoMode) {
@@ -531,69 +566,84 @@ export function useMailScreen() {
         selectedEmails.forEach(id => newSet.add(id));
         return newSet;
       });
+      showSuccess(`${selectedEmails.size} emails archived`);
       handleCancelSelection();
       return;
     }
-    Alert.alert('Success', `${selectedEmails.size} emails archived`);
+    showSuccess(`${selectedEmails.size} emails archived`);
     handleCancelSelection();
-  }, [isDemoMode, selectedEmails, handleCancelSelection]);
+  }, [isDemoMode, selectedEmails, handleCancelSelection, showSuccess]);
 
   const handleBulkMarkRead = useCallback(() => {
     if (isDemoMode) {
-      Alert.alert('Demo Mode', 'Bulk mark read is disabled in demo mode');
+      showInfo('Bulk mark read is disabled in demo mode');
       return;
     }
-    Alert.alert('Success', `${selectedEmails.size} emails marked as read`);
+    showSuccess(`${selectedEmails.size} emails marked as read`);
     handleCancelSelection();
-  }, [isDemoMode, selectedEmails.size, handleCancelSelection]);
+  }, [isDemoMode, selectedEmails.size, handleCancelSelection, showSuccess, showInfo]);
 
   const handleBulkMove = useCallback(() => {
-    Alert.alert('Move Emails', `Move ${selectedEmails.size} emails to...`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Promotions', onPress: () => handleCancelSelection() },
-      { text: 'Social', onPress: () => handleCancelSelection() },
-      { text: 'Spam', onPress: () => handleCancelSelection() },
-    ]);
-  }, [selectedEmails.size, handleCancelSelection]);
+    // For now, show info toast - bulk move functionality can be enhanced later with a modal
+    showInfo(`Move ${selectedEmails.size} emails to folder`, { duration: 2000 });
+  }, [selectedEmails.size, showInfo]);
 
   // Smart folders
   const smartFolders = useSmartFolders(messages, allEmails, isDemoMode);
 
   // Handle params for email navigation
   useEffect(() => {
-    if (params.emailId && allEmails.length > 0) {
+    if (!params.emailId) return;
+
+    // Handle compose actions
+    if (params.compose) {
+      // Don't re-trigger if we're already on compose view (prevents loop when closing)
+      if (currentView === 'compose') return;
+      
+      if (allEmails.length === 0) return;
+      
       const email = allEmails.find(e => e.id === params.emailId);
-      if (email) {
-        setSelectedEmail(email);
-        if (params.compose) {
-          if (params.compose === 'reply') {
-            const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
-            setComposeTo(senderEmail);
-            setComposeCc('');
-            setComposeSubject(`Re: ${email.subject}`);
-            setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
-            setCurrentView('compose');
-          } else if (params.compose === 'replyAll') {
-            const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
-            const allRecipients = [senderEmail, ...email.to].filter(e => e !== 'sarah.chen@company.com').join(', ');
-            setComposeTo(allRecipients);
-            setComposeCc('');
-            setComposeSubject(`Re: ${email.subject}`);
-            setComposeBody(`\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`);
-            setCurrentView('compose');
-          } else if (params.compose === 'forward') {
-            setComposeTo('');
-            setComposeCc('');
-            setComposeSubject(`Fwd: ${email.subject}`);
-            setComposeBody(`\n\n---\nForwarded message:\nFrom: ${email.from}\nDate: ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\nSubject: ${email.subject}\n\n${email.snippet}`);
-            setCurrentView('compose');
-          }
-        } else {
-          setCurrentView('detail');
-        }
+      if (!email) return;
+
+      if (params.compose === 'reply') {
+        const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
+        const replyBody = `\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`;
+        setComposeTo(senderEmail);
+        setComposeCc('');
+        setComposeSubject(`Re: ${email.subject}`);
+        setComposeBody(replyBody);
+        setCurrentView('compose');
+      } else if (params.compose === 'replyAll') {
+        const senderEmail = email.from.match(/<(.+?)>/) ?.[1] || email.from;
+        const allRecipients = [senderEmail, ...email.to].filter(e => e !== 'sarah.chen@company.com').join(', ');
+        const replyBody = `\n\n---\nOn ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${email.from.split('<')[0].trim()} wrote:\n${email.snippet}`;
+        setComposeTo(allRecipients);
+        setComposeCc('');
+        setComposeSubject(`Re: ${email.subject}`);
+        setComposeBody(replyBody);
+        setCurrentView('compose');
+      } else if (params.compose === 'forward') {
+        const forwardBody = `\n\n---\nForwarded message:\nFrom: ${email.from}\nDate: ${email.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}\nSubject: ${email.subject}\n\n${email.snippet}`;
+        setComposeTo('');
+        setComposeCc('');
+        setComposeSubject(`Fwd: ${email.subject}`);
+        setComposeBody(forwardBody);
+        setCurrentView('compose');
       }
+      return;
     }
-  }, [params.emailId, params.timestamp, params.compose, allEmails]);
+
+    // Handle email detail view
+    if (allEmails.length === 0) return;
+
+    const email = allEmails.find(e => e.id === params.emailId);
+    if (!email || selectedEmail?.id === email.id) return;
+
+    setSelectedEmail(email);
+    if (currentView !== 'detail') {
+      setCurrentView('detail');
+    }
+  }, [params.emailId, params.compose, allEmails, selectedEmail, currentView, setComposeTo, setComposeCc, setComposeSubject, setComposeBody, setCurrentView, setSelectedEmail]);
 
   // Handle back button
   useEffect(() => {

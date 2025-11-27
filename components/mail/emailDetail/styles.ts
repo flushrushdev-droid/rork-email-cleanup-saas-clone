@@ -77,7 +77,6 @@ export function createEmailDetailStyles(colors: any) {
     detailAvatarText: {
       fontSize: 16,
       fontWeight: '700',
-      color: '#FFF',
     },
     detailSenderInfo: {
       flex: 1,
@@ -158,7 +157,6 @@ export function createEmailDetailStyles(colors: any) {
     emailActionButtonText: {
       fontSize: 15,
       fontWeight: '600',
-      color: '#FFFFFF',
     },
   });
 }

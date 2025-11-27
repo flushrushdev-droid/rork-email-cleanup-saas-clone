@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Paperclip } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -71,30 +72,30 @@ export function EmailDetailView({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <Text style={[styles.detailSubject, { color: colors.text }]}>{selectedEmail.subject}</Text>
+        <AppText style={[styles.detailSubject, { color: colors.text }]} dynamicTypeStyle="title2">{selectedEmail.subject}</AppText>
         
         <View style={styles.detailFrom}>
           <View style={[styles.detailAvatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.detailAvatarText}>
+            <AppText style={[styles.detailAvatarText, { color: colors.surface }]} dynamicTypeStyle="body">
               {selectedEmail.from[0].toUpperCase()}
-            </Text>
+            </AppText>
           </View>
           <View style={styles.detailSenderInfo}>
-            <Text style={[styles.detailSenderName, { color: colors.text }]}>
+            <AppText style={[styles.detailSenderName, { color: colors.text }]} dynamicTypeStyle="body">
               {selectedEmail.from.split('<')[0].trim() || selectedEmail.from}
-            </Text>
-            <Text style={[styles.detailSenderEmail, { color: colors.textSecondary }]}>
+            </AppText>
+            <AppText style={[styles.detailSenderEmail, { color: colors.textSecondary }]} dynamicTypeStyle="caption">
               {selectedEmail.from.match(/<(.+?)>/) ?.[1] || selectedEmail.from}
-            </Text>
+            </AppText>
           </View>
-          <Text style={[styles.detailDate, { color: colors.textSecondary }]}>
+          <AppText style={[styles.detailDate, { color: colors.textSecondary }]} dynamicTypeStyle="caption">
             {selectedEmail.date.toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
               hour: 'numeric',
               minute: '2-digit',
             })}
-          </Text>
+          </AppText>
         </View>
 
         {selectedEmail.hasAttachments && (
@@ -105,11 +106,11 @@ export function EmailDetailView({
         )}
 
         <View style={styles.detailBody}>
-          <Text style={[styles.detailBodyText, { color: colors.text }]}>{selectedEmail.snippet}</Text>
-          <Text style={[styles.detailBodyText, { color: colors.text }]}>
+          <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">{selectedEmail.snippet}</AppText>
+          <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">
             {'\n\n'}Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
             {'\n\n'}Best regards,{'\n'}{selectedEmail.from.split('<')[0].trim()}
-          </Text>
+          </AppText>
         </View>
       </ScrollView>
 

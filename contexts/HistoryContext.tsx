@@ -3,9 +3,11 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { HistoryEntry, HistoryActionType } from '@/constants/types';
 import { sampleHistoryEntries } from '@/mocks/historyData';
+import { createScopedLogger } from '@/utils/logger';
 
 const STORAGE_KEY = '@history_entries';
 const HISTORY_RETENTION_DAYS = 60;
+const historyLogger = createScopedLogger('History');
 
 export const [HistoryProvider, useHistory] = createContextHook(() => {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
@@ -38,7 +40,7 @@ export const [HistoryProvider, useHistory] = createContextHook(() => {
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sampleHistoryEntries));
       }
     } catch (error) {
-      console.error('Error loading history:', error);
+      historyLogger.error('Error loading history', error);
     }
   };
 
@@ -60,7 +62,7 @@ export const [HistoryProvider, useHistory] = createContextHook(() => {
       setEntries(updatedEntries);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
     } catch (error) {
-      console.error('Error adding history entry:', error);
+      historyLogger.error('Error adding history entry', error);
     }
   }, [entries]);
 
@@ -69,7 +71,7 @@ export const [HistoryProvider, useHistory] = createContextHook(() => {
       setEntries([]);
       await AsyncStorage.removeItem(STORAGE_KEY);
     } catch (error) {
-      console.error('Error clearing history:', error);
+      historyLogger.error('Error clearing history', error);
     }
   }, []);
 

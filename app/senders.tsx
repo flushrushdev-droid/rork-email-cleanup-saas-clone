@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { Search, Archive, BellOff, Tag, Trash2 } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 
@@ -10,6 +10,7 @@ import { SenderCard } from '@/components/senders/SenderCard';
 import { SenderFilters } from '@/components/senders/SenderFilters';
 import { UnsubscribeModal } from '@/components/common/UnsubscribeModal';
 import { createSenderStyles } from '@/styles/app/senders';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export default function SendersScreen() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function SendersScreen() {
   const [unsubscribeModalVisible, setUnsubscribeModalVisible] = useState(false);
   const [unsubscribeEmail, setUnsubscribeEmail] = useState('');
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const { showSuccess, showError, showWarning, showInfo } = useEnhancedToast();
 
   const senderFilters = useSenderFilters({
     allSenders: mockSenders,
@@ -27,37 +29,29 @@ export default function SendersScreen() {
   const styles = React.useMemo(() => createSenderStyles(colors), [colors]);
 
   const handleDelete = (senderId: string, senderEmail: string) => {
-    Alert.alert(
-      'Delete Emails',
-      `Move all emails from ${senderEmail} to trash?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', `Emails from ${senderEmail} moved to trash`);
-          },
+    showWarning(`Move all emails from ${senderEmail} to trash?`, {
+      action: {
+        label: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          showSuccess(`Emails from ${senderEmail} moved to trash`);
         },
-      ]
-    );
+      },
+      duration: 0,
+    });
   };
 
   const handlePermanentDelete = (senderId: string, senderEmail: string) => {
-    Alert.alert(
-      'Permanently Delete',
-      `Permanently delete all emails from ${senderEmail}? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Forever',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', `All emails from ${senderEmail} permanently deleted`);
-          },
+    showError(`Permanently delete all emails from ${senderEmail}? This action cannot be undone.`, {
+      action: {
+        label: 'Delete Forever',
+        style: 'destructive',
+        onPress: () => {
+          showSuccess(`All emails from ${senderEmail} permanently deleted`);
         },
-      ]
-    );
+      },
+      duration: 0,
+    });
   };
 
   const handleViewSenderEmails = (senderId: string) => {
@@ -76,24 +70,20 @@ export default function SendersScreen() {
   };
 
   const handleBulk = (action: 'mute' | 'label' | 'archive' | 'delete') => {
-    Alert.alert('Bulk action', `${action} ${senderFilters.selectedSenders.length} senders`);
+    showInfo(`${action} ${senderFilters.selectedSenders.length} senders`, { duration: 2000 });
   };
 
   const handleBlockSender = (senderId: string, senderEmail: string) => {
-    Alert.alert(
-      'Block Sender',
-      `Block all emails from ${senderEmail}? All future emails will be automatically moved to spam.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Block',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Success', `${senderEmail} has been blocked`);
-          },
+    showWarning(`Block all emails from ${senderEmail}? All future emails will be automatically moved to spam.`, {
+      action: {
+        label: 'Block',
+        style: 'destructive',
+        onPress: () => {
+          showSuccess(`${senderEmail} has been blocked`);
         },
-      ]
-    );
+      },
+      duration: 0,
+    });
   };
 
   return (
@@ -120,6 +110,9 @@ export default function SendersScreen() {
             value={senderFilters.searchQuery}
             onChangeText={senderFilters.setSearchQuery}
             placeholderTextColor={colors.textSecondary}
+            accessible={true}
+            accessibilityLabel="Search senders"
+            accessibilityHint="Enter search terms to find senders by name or email address"
           />
         </View>
       </View>
@@ -139,27 +132,43 @@ export default function SendersScreen() {
           <View style={styles.bulkButtons}>
             <TouchableOpacity
               testID="bulk-mute"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Mute ${senderFilters.selectedSenders.length} selected senders`}
+              accessibilityHint="Double tap to mute notifications from selected senders"
               style={styles.bulkButton}
               onPress={() => handleBulk('mute')}
             >
-              <BellOff size={18} color="#FFFFFF" />
+              <BellOff size={18} color={colors.surface} />
             </TouchableOpacity>
             <TouchableOpacity
               testID="bulk-label"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Label ${senderFilters.selectedSenders.length} selected senders`}
+              accessibilityHint="Double tap to apply labels to selected senders"
               style={styles.bulkButton}
               onPress={() => handleBulk('label')}
             >
-              <Tag size={18} color="#FFFFFF" />
+              <Tag size={18} color={colors.surface} />
             </TouchableOpacity>
             <TouchableOpacity
               testID="bulk-archive"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Archive emails from ${senderFilters.selectedSenders.length} selected senders`}
+              accessibilityHint="Double tap to archive emails from selected senders"
               style={styles.bulkButton}
               onPress={() => handleBulk('archive')}
             >
-              <Archive size={18} color="#FFFFFF" />
+              <Archive size={18} color={colors.surface} />
             </TouchableOpacity>
             <TouchableOpacity
               testID="bulk-delete"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete emails from ${senderFilters.selectedSenders.length} selected senders`}
+              accessibilityHint="Double tap to delete emails from selected senders"
               style={styles.bulkButton}
               onPress={() => handleBulk('delete')}
             >
@@ -220,7 +229,7 @@ export default function SendersScreen() {
               style={[styles.successButton, { backgroundColor: colors.success, width: '100%', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }]}
               onPress={() => setSuccessModalVisible(false)}
             >
-              <Text style={[styles.successButtonText, { color: '#FFFFFF', fontSize: 16, fontWeight: '600' }]}>Done</Text>
+              <Text style={[styles.successButtonText, { color: colors.surface, fontSize: 16, fontWeight: '600' }]}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>

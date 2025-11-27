@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView, Pressable } from 'react-native';
+import { View, Modal, TouchableOpacity, ScrollView, Pressable } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { createCalendarStyles } from './styles/calendarStyles';
 
 interface DatePickerModalProps {
@@ -75,14 +76,14 @@ export function DatePickerModal({
         />
         <View style={styles.pickerCenterContainer}>
           <View style={styles.datePickerHeader}>
-            <Text style={styles.datePickerTitle}>Select Date</Text>
+            <AppText style={styles.datePickerTitle} dynamicTypeStyle="title2">Select Date</AppText>
             <TouchableOpacity onPress={handleConfirm} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.datePickerDone}>Done</Text>
+              <AppText style={styles.datePickerDone} dynamicTypeStyle="headline">Done</AppText>
             </TouchableOpacity>
           </View>
           <View style={styles.wheelPickersContainer}>
             <View style={styles.wheelPickerColumn}>
-              <Text style={styles.wheelPickerLabel}>Month</Text>
+              <AppText style={styles.wheelPickerLabel} dynamicTypeStyle="caption">Month</AppText>
               <View style={styles.wheelPickerWrapper}>
                 <View style={styles.wheelPickerHighlight} />
                 <ScrollView
@@ -105,16 +106,16 @@ export function DatePickerModal({
                         monthRef.current?.scrollTo({ y: (month - 1) * 44, animated: true });
                       }}
                     >
-                      <Text style={[styles.wheelItemText, tempMonth === month.toString() && styles.wheelItemTextActive]}>
+                      <AppText style={[styles.wheelItemText, tempMonth === month.toString() && styles.wheelItemTextActive]} dynamicTypeStyle="body">
                         {month}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             </View>
             <View style={styles.wheelPickerColumn}>
-              <Text style={styles.wheelPickerLabel}>Day</Text>
+              <AppText style={styles.wheelPickerLabel} dynamicTypeStyle="caption">Day</AppText>
               <View style={styles.wheelPickerWrapper}>
                 <View style={styles.wheelPickerHighlight} />
                 <ScrollView
@@ -137,16 +138,16 @@ export function DatePickerModal({
                         dayRef.current?.scrollTo({ y: (day - 1) * 44, animated: true });
                       }}
                     >
-                      <Text style={[styles.wheelItemText, tempDay === day.toString() && styles.wheelItemTextActive]}>
+                      <AppText style={[styles.wheelItemText, tempDay === day.toString() && styles.wheelItemTextActive]} dynamicTypeStyle="body">
                         {day}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             </View>
             <View style={[styles.wheelPickerColumn, { flex: 1.3 }]}>
-              <Text style={styles.wheelPickerLabel}>Year</Text>
+              <AppText style={styles.wheelPickerLabel} dynamicTypeStyle="caption">Year</AppText>
               <View style={styles.wheelPickerWrapper}>
                 <View style={styles.wheelPickerHighlight} />
                 <ScrollView
@@ -169,9 +170,9 @@ export function DatePickerModal({
                         yearRef.current?.scrollTo({ y: (year - 2000) * 44, animated: true });
                       }}
                     >
-                      <Text style={[styles.wheelItemText, tempYear === year.toString() && styles.wheelItemTextActive]}>
+                      <AppText style={[styles.wheelItemText, tempYear === year.toString() && styles.wheelItemTextActive]} dynamicTypeStyle="body">
                         {year}
-                      </Text>
+                      </AppText>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>

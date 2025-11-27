@@ -66,8 +66,8 @@ export function ErrorDisplay({
   if (variant === 'toast') {
     return (
       <View style={[styles.toastContainer, { backgroundColor: colors.danger }, style]}>
-        <AlertCircle size={16} color="#FFFFFF" />
-        <Text style={styles.toastText} numberOfLines={2}>
+        <AlertCircle size={16} color={colors.surface} />
+        <Text style={[styles.toastText, { color: colors.surface }]} numberOfLines={2}>
           {errorMessage}
         </Text>
         {onDismiss && (
@@ -77,7 +77,7 @@ export function ErrorDisplay({
             accessibilityRole="button"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <X size={16} color="#FFFFFF" />
+            <X size={16} color={colors.surface} />
           </TouchableOpacity>
         )}
       </View>
@@ -160,7 +160,6 @@ const styles = StyleSheet.create({
   },
   toastText: {
     flex: 1,
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },

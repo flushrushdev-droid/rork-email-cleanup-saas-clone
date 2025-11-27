@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { generateCalendarWeeks, isToday, isSelected, monthNames, dayNames } from './utils/calendarUtils';
 import { createCalendarStyles } from './styles/calendarStyles';
@@ -50,11 +51,32 @@ export function CalendarGrid({
   return (
     <>
       <View style={styles.monthNavigation}>
-        <TouchableOpacity onPress={goToPreviousMonth} style={styles.monthButton}>
+        <TouchableOpacity 
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Previous month"
+          accessibilityHint="Double tap to navigate to the previous month"
+          onPress={goToPreviousMonth} 
+          style={styles.monthButton}
+        >
           <ChevronLeft size={20} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.monthText}>{monthNames[currentMonth]} {currentYear}</Text>
-        <TouchableOpacity onPress={goToNextMonth} style={styles.monthButton}>
+        <AppText 
+          style={styles.monthText}
+          accessibilityRole="header"
+          accessibilityLabel={`${monthNames[currentMonth]} ${currentYear}`}
+          dynamicTypeStyle="title2"
+        >
+          {monthNames[currentMonth]} {currentYear}
+        </AppText>
+        <TouchableOpacity 
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Next month"
+          accessibilityHint="Double tap to navigate to the next month"
+          onPress={goToNextMonth} 
+          style={styles.monthButton}
+        >
           <ChevronRight size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
@@ -63,7 +85,7 @@ export function CalendarGrid({
         <View style={styles.weekDaysRow}>
           {dayNames.map((day) => (
             <View key={day} style={styles.weekDayCell}>
-              <Text style={styles.weekDayText}>{day}</Text>
+              <AppText style={styles.weekDayText} dynamicTypeStyle="caption">{day}</AppText>
             </View>
           ))}
         </View>
@@ -78,6 +100,11 @@ export function CalendarGrid({
               return (
                 <TouchableOpacity
                   key={dayIndex}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={day ? `${day}${dayIsToday ? ', today' : ''}${dayIsSelected ? ', selected' : ''}${hasEvent ? ', has events' : ''}` : 'Empty day'}
+                  accessibilityHint={day ? 'Double tap to select this date' : undefined}
+                  accessibilityState={{ selected: dayIsSelected }}
                   style={[
                     styles.dayCell,
                     dayIsToday && styles.todayCell,
@@ -86,16 +113,17 @@ export function CalendarGrid({
                   onPress={() => handleDayPress(day)}
                   disabled={!day}
                 >
-                  <Text
+                  <AppText
                     style={[
                       styles.dayText,
                       !day && styles.emptyDayText,
                       dayIsToday && styles.todayText,
                       dayIsSelected && styles.selectedDayText,
                     ]}
+                    dynamicTypeStyle="body"
                   >
                     {day || ''}
-                  </Text>
+                  </AppText>
                   {hasEvent && day && (
                     <View
                       style={{
@@ -104,7 +132,7 @@ export function CalendarGrid({
                         width: 6,
                         height: 6,
                         borderRadius: 3,
-                        backgroundColor: dayIsSelected ? '#FFFFFF' : colors.primary,
+                        backgroundColor: dayIsSelected ? colors.surface : colors.primary,
                       }}
                     />
                   )}
@@ -117,15 +145,15 @@ export function CalendarGrid({
 
       {showSelectedDateInfo && (
         <View style={styles.selectedDateInfo}>
-          <Text style={styles.selectedDateLabel}>Selected Date</Text>
-          <Text style={styles.selectedDateValue}>
+          <AppText style={styles.selectedDateLabel} dynamicTypeStyle="caption">Selected Date</AppText>
+          <AppText style={styles.selectedDateValue} dynamicTypeStyle="body">
             {selectedDate.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric',
             })}
-          </Text>
+          </AppText>
         </View>
       )}
     </>

@@ -42,8 +42,8 @@ export function UndoToast({
         alignItems: 'center',
         justifyContent: 'space-between',
         borderWidth: 1,
-        borderColor: '#10B98155',
-        shadowColor: '#10B981',
+        borderColor: colors.success + '55',
+        shadowColor: colors.success,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 10,
@@ -58,12 +58,12 @@ export function UndoToast({
             borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#10B98122',
+            backgroundColor: colors.success + '22',
             borderWidth: 1,
-            borderColor: '#10B98155',
+            borderColor: colors.success + '55',
           }}
         >
-          <Check size={18} color="#10B981" strokeWidth={3} />
+          <Check size={18} color={colors.success} strokeWidth={3} />
         </View>
         <Text style={{ color: colors.text, flex: 1 }}>{message}</Text>
       </View>
@@ -76,7 +76,7 @@ export function UndoToast({
                 cx={10}
                 cy={10}
                 r={8}
-                stroke="#10B98133"
+                stroke={colors.success + '33'}
                 strokeWidth={2}
                 fill="none"
               />
@@ -84,7 +84,7 @@ export function UndoToast({
                 cx={10}
                 cy={10}
                 r={8}
-                stroke="#10B981"
+                stroke={colors.success}
                 strokeWidth={2}
                 fill="none"
                 strokeDasharray={circumference}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Search } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { searchStyles } from './styles/searchStyles';
@@ -28,9 +29,9 @@ export function InboxSearchBar({
       activeOpacity={0.8}
     >
       <Search size={18} color={colors.textSecondary} />
-      <Text style={[searchStyles.searchPlaceholder, { color: colors.textSecondary }]}>
+      <AppText style={[searchStyles.searchPlaceholder, { color: colors.textSecondary }]} dynamicTypeStyle="body">
         {searchQuery || 'Search mail'}
-      </Text>
+      </AppText>
     </TouchableOpacity>
   );
 }

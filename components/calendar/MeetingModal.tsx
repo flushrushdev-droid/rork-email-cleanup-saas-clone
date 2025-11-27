@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
+import { View, Modal, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { X, Calendar, Clock, Video, MapPin } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { createCalendarStyles } from './styles/calendarStyles';
@@ -68,8 +69,21 @@ export function MeetingModal({
         />
         <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Meeting</Text>
-            <TouchableOpacity onPress={onClose}>
+            <AppText 
+              style={styles.modalTitle}
+              accessibilityRole="header"
+              accessibilityLabel="New Meeting"
+              dynamicTypeStyle="title2"
+            >
+              New Meeting
+            </AppText>
+            <TouchableOpacity 
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              accessibilityHint="Double tap to close the meeting modal"
+              onPress={onClose}
+            >
               <X size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
@@ -79,112 +93,152 @@ export function MeetingModal({
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Title *</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">Title *</AppText>
               <TextInput
                 style={styles.input}
                 placeholder="Meeting title"
                 placeholderTextColor={colors.textSecondary}
                 value={meetingTitle}
                 onChangeText={setMeetingTitle}
+                accessible={true}
+                accessibilityLabel="Meeting title"
+                accessibilityHint="Enter the title for this meeting"
               />
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Date</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">Date</AppText>
               <TouchableOpacity
                 style={styles.dateDisplay}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Meeting date: ${selectedDate.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}`}
+                accessibilityHint="Double tap to change the meeting date"
                 onPress={() => {
-                  console.log('Date picker pressed, current platform:', Platform.OS);
                   onOpenDatePicker();
                 }}
                 activeOpacity={0.7}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Calendar size={16} color={colors.primary} />
-                <Text style={styles.dateDisplayText}>
+                <AppText style={styles.dateDisplayText} dynamicTypeStyle="body">
                   {selectedDate.toLocaleDateString('en-US', {
                     weekday: 'short',
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',
                   })}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Start Time</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">Start Time</AppText>
               <TouchableOpacity
                 style={styles.dateDisplay}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`Start time: ${startTime.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}`}
+                accessibilityHint="Double tap to change the meeting start time"
                 onPress={onOpenStartTimePicker}
                 activeOpacity={0.7}
               >
                 <Clock size={16} color={colors.primary} />
-                <Text style={styles.dateDisplayText}>
+                <AppText style={styles.dateDisplayText} dynamicTypeStyle="body">
                   {startTime.toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true,
                   })}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>End Time</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">End Time</AppText>
               <TouchableOpacity
                 style={styles.dateDisplay}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel={`End time: ${endTime.toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}`}
+                accessibilityHint="Double tap to change the meeting end time"
                 onPress={onOpenEndTimePicker}
                 activeOpacity={0.7}
               >
                 <Clock size={16} color={colors.primary} />
-                <Text style={styles.dateDisplayText}>
+                <AppText style={styles.dateDisplayText} dynamicTypeStyle="body">
                   {endTime.toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true,
                   })}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Meeting Type</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">Meeting Type</AppText>
               <View style={styles.meetingTypeContainer}>
                 <TouchableOpacity
                   style={[styles.meetingTypeButton, meetingType === 'video' && styles.meetingTypeButtonActive]}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Video Call"
+                  accessibilityHint="Double tap to select video call as meeting type"
+                  accessibilityState={{ selected: meetingType === 'video' }}
                   onPress={() => setMeetingType('video')}
                 >
-                  <Video size={18} color={meetingType === 'video' ? '#FFFFFF' : colors.text} />
-                  <Text style={[styles.meetingTypeText, meetingType === 'video' && styles.meetingTypeTextActive]}>
+                  <Video size={18} color={meetingType === 'video' ? colors.surface : colors.text} />
+                  <AppText style={[styles.meetingTypeText, meetingType === 'video' && styles.meetingTypeTextActive]} dynamicTypeStyle="body">
                     Video Call
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.meetingTypeButton, meetingType === 'in-person' && styles.meetingTypeButtonActive]}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="In Person"
+                  accessibilityHint="Double tap to select in-person as meeting type"
+                  accessibilityState={{ selected: meetingType === 'in-person' }}
                   onPress={() => setMeetingType('in-person')}
                 >
-                  <MapPin size={18} color={meetingType === 'in-person' ? '#FFFFFF' : colors.text} />
-                  <Text style={[styles.meetingTypeText, meetingType === 'in-person' && styles.meetingTypeTextActive]}>
+                  <MapPin size={18} color={meetingType === 'in-person' ? colors.surface : colors.text} />
+                  <AppText style={[styles.meetingTypeText, meetingType === 'in-person' && styles.meetingTypeTextActive]} dynamicTypeStyle="body">
                     In Person
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Location</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">Location</AppText>
               <TextInput
                 style={styles.input}
                 placeholder={meetingType === 'video' ? 'Zoom, Meet, etc.' : 'Meeting room or address'}
                 placeholderTextColor={colors.textSecondary}
                 value={meetingLocation}
                 onChangeText={setMeetingLocation}
+                accessible={true}
+                accessibilityLabel="Meeting location"
+                accessibilityHint={meetingType === 'video' ? 'Enter video call link like Zoom or Meet' : 'Enter meeting room or address'}
               />
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Description</Text>
+              <AppText style={styles.inputLabel} dynamicTypeStyle="headline">Description</AppText>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Meeting agenda or notes"
@@ -193,17 +247,25 @@ export function MeetingModal({
                 onChangeText={setMeetingDescription}
                 multiline
                 numberOfLines={4}
+                accessible={true}
+                accessibilityLabel="Meeting description"
+                accessibilityHint="Enter meeting agenda or notes"
               />
             </View>
           </ScrollView>
 
           <TouchableOpacity
             style={[styles.createMeetingButton, !meetingTitle.trim() && styles.createMeetingButtonDisabled]}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Create Meeting"
+            accessibilityHint={!meetingTitle.trim() ? 'Meeting title is required to create a meeting' : 'Double tap to create the meeting'}
+            accessibilityState={{ disabled: !meetingTitle.trim() }}
             onPress={onCreate}
             disabled={!meetingTitle.trim()}
             activeOpacity={0.8}
           >
-            <Text style={styles.createMeetingButtonText}>Create Meeting</Text>
+            <AppText style={styles.createMeetingButtonText} dynamicTypeStyle="headline">Create Meeting</AppText>
           </TouchableOpacity>
         </View>
       </View>

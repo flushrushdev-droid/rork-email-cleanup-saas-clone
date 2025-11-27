@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { createComposeStyles } from './styles';
 
 interface ComposeFormFieldProps {
@@ -10,6 +10,8 @@ interface ComposeFormFieldProps {
   multiline?: boolean;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   colors: any;
+  error?: boolean;
+  errorMessage?: string;
 }
 
 export function ComposeFormField({
@@ -20,6 +22,8 @@ export function ComposeFormField({
   multiline = false,
   keyboardType = 'default',
   colors,
+  error = false,
+  errorMessage,
 }: ComposeFormFieldProps) {
   const styles = createComposeStyles(colors);
 
@@ -30,7 +34,8 @@ export function ComposeFormField({
         style={[
           styles.composeInput,
           multiline && styles.composeBodyInput,
-          { color: colors.text }
+          { color: colors.text },
+          error && { borderColor: colors.danger, borderWidth: 1 },
         ]}
         placeholder={placeholder}
         value={value}
@@ -40,9 +45,23 @@ export function ComposeFormField({
         keyboardType={keyboardType}
         autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
         placeholderTextColor={colors.textSecondary}
+        accessible={true}
+        accessibilityLabel={label || placeholder || 'Text input'}
+        accessibilityHint={error && errorMessage ? errorMessage : (placeholder ? `Enter ${placeholder.toLowerCase()}` : undefined)}
       />
+      {error && errorMessage && (
+        <Text style={[fieldStyles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
+      )}
     </View>
   );
 }
+
+const fieldStyles = StyleSheet.create({
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+});
 
 

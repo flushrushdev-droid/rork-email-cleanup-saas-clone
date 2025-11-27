@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { X, Paperclip, File, FileEdit } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { modalStyles } from '../styles/modalStyles';
@@ -37,7 +38,7 @@ export function AttachmentFilterModal({
       <View style={modalStyles.modalOverlay}>
         <View style={[modalStyles.modalContent, { backgroundColor: colors.surface }]}>
           <View style={[modalStyles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[modalStyles.modalTitle, { color: colors.text }]}>Attachment</Text>
+            <AppText style={[modalStyles.modalTitle, { color: colors.text }]} dynamicTypeStyle="title2">Attachment</AppText>
             <TouchableOpacity onPress={onClose}>
               <X size={24} color={colors.text} />
             </TouchableOpacity>
@@ -55,7 +56,7 @@ export function AttachmentFilterModal({
                   }}
                 >
                   <Icon size={20} color={colors.primary} />
-                  <Text style={[modalStyles.modalItemText, { color: colors.text }]}>{type.label}</Text>
+                  <AppText style={[modalStyles.modalItemText, { color: colors.text }]} dynamicTypeStyle="body">{type.label}</AppText>
                 </TouchableOpacity>
               );
             })}

@@ -46,7 +46,7 @@ export function NoiseSendersView({ senders, onSenderPress, colors }: NoiseSender
               </Text>
             </View>
           </View>
-          <View style={[styles.noiseBadge, { backgroundColor: sender.noiseScore >= 8 ? '#FFE5E5' : '#FFF4E5' }]}>
+          <View style={[styles.noiseBadge, { backgroundColor: sender.noiseScore >= 8 ? colors.danger + '20' : colors.warning + '20' }]}>
             <Text style={[styles.noiseScore, { color: sender.noiseScore >= 8 ? colors.danger : colors.warning }]}>
               {sender.noiseScore.toFixed(1)}
             </Text>

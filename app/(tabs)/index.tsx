@@ -20,12 +20,17 @@ import { HealthCard } from '@/components/stats/HealthCard';
 import { SavingsCards } from '@/components/stats/SavingsCards';
 import { SuggestionsCard } from '@/components/stats/SuggestionsCard';
 import { ActionRequiredSection } from '@/components/stats/ActionRequiredSection';
+import { createScopedLogger } from '@/utils/logger';
+import { CardSkeleton } from '@/components/common/CardSkeleton';
+import { LastSyncedIndicator } from '@/components/common/LastSyncedIndicator';
+
+const overviewLogger = createScopedLogger('Overview');
 
 export default function OverviewScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isAuthenticated, user, isLoading, isDemoMode } = useAuth();
-  const { syncMailbox, isSyncing, messages, syncProgress, profile } = useGmailSync();
+  const { syncMailbox, isSyncing, messages, syncProgress, profile, lastSyncedAt } = useGmailSync();
   const { colors } = useTheme();
   const { trashedEmails } = useEmailState();
   const { handleAsync, error, clearError } = useErrorHandler({ showAlert: false });
@@ -43,6 +48,8 @@ export default function OverviewScreen() {
   }, [isDemoMode, syncMailbox, handleAsync, clearError]);
 
   const handleRefresh = useCallback(async () => {
+    const { triggerRefreshHaptic } = await import('@/utils/haptics');
+    await triggerRefreshHaptic();
     setIsRefreshing(true);
     await handleSync();
     setIsRefreshing(false);
@@ -50,7 +57,7 @@ export default function OverviewScreen() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      console.log('Redirecting to login - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+      overviewLogger.debug('Redirecting to login', undefined, { isAuthenticated, isLoading });
       router.replace('/login');
     }
   }, [isAuthenticated, isLoading, router]);
@@ -77,6 +84,13 @@ export default function OverviewScreen() {
           />
         }
       >
+        {!isDemoMode && lastSyncedAt && (
+          <LastSyncedIndicator
+            lastSyncedAt={lastSyncedAt}
+            onSyncPress={handleSync}
+            isSyncing={isSyncing}
+          />
+        )}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -154,11 +168,21 @@ export default function OverviewScreen() {
           )}
         </View>
 
-        <HealthCard health={health} colors={colors} router={router} />
+        {isSyncing && messages.length === 0 ? (
+          <>
+            <CardSkeleton count={1} variant="default" style={{ marginBottom: 16 }} />
+            <CardSkeleton count={3} variant="compact" style={{ marginBottom: 16 }} />
+            <CardSkeleton count={1} variant="default" style={{ marginBottom: 16 }} />
+          </>
+        ) : (
+          <>
+            <HealthCard health={health} colors={colors} router={router} />
 
-        <SavingsCards health={health} colors={colors} />
+            <SavingsCards health={health} colors={colors} />
 
-        <SuggestionsCard colors={colors} router={router} />
+            <SuggestionsCard colors={colors} router={router} />
+          </>
+        )}
 
         <ActionRequiredSection
           emails={(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))

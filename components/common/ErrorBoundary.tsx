@@ -4,6 +4,9 @@ import { AlertCircle, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { AccessibleButton } from './AccessibleButton';
 import { formatErrorMessage, normalizeError } from '@/utils/errorHandling';
+import { createScopedLogger } from '@/utils/logger';
+
+const errorBoundaryLogger = createScopedLogger('ErrorBoundary');
 
 interface Props {
   children: ReactNode;
@@ -21,7 +24,9 @@ interface State {
  * ErrorBoundary - Catches React component errors and displays a fallback UI
  * 
  * @example
- * <ErrorBoundary onError={(error, errorInfo) => console.error(error, errorInfo)}>
+ * <ErrorBoundary onError={(error, errorInfo) => {
+ *   // Handle error (e.g., log to error tracking service)
+ * }}>
  *   <YourApp />
  * </ErrorBoundary>
  */
@@ -44,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    errorBoundaryLogger.error('ErrorBoundary caught an error', error, { errorInfo });
     
     this.setState({
       errorInfo,
@@ -127,8 +132,8 @@ function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
           style={[styles.retryButton, { backgroundColor: colors.primary }]}
         >
           <View style={styles.retryButtonContent}>
-            <RefreshCw size={20} color="#FFFFFF" />
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <RefreshCw size={20} color={colors.surface} />
+            <Text style={[styles.retryButtonText, { color: colors.surface }]}>Try Again</Text>
           </View>
         </AccessibleButton>
       </ScrollView>
@@ -194,7 +199,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

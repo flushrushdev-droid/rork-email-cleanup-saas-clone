@@ -155,6 +155,8 @@ export function getTextAccessibilityProps(
 
 /**
  * Helper to create input accessibility props
+ * Note: TextInput components on Android don't accept custom accessibilityRole values.
+ * They have built-in accessibility support, so we only provide label and hint.
  */
 export function getInputAccessibilityProps(
   label: string,
@@ -168,11 +170,14 @@ export function getInputAccessibilityProps(
   const hint = options?.hint || (options?.placeholder ? `Enter ${options.placeholder.toLowerCase()}` : undefined);
   const errorHint = options?.error ? 'This field has an error' : undefined;
   
-  return getAccessibilityProps(label, {
-    role: ACCESSIBILITY_ROLES.SEARCHBOX,
-    hint: errorHint || hint,
-    disabled: options?.disabled,
-  });
+  // Don't set accessibilityRole for TextInput - Android doesn't accept custom roles
+  // TextInput has built-in accessibility support
+  return {
+    accessible: true,
+    accessibilityLabel: label,
+    accessibilityHint: errorHint || hint,
+    accessibilityState: options?.disabled ? { disabled: options.disabled } : undefined,
+  };
 }
 
 

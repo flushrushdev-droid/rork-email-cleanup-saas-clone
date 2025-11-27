@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, Modal, TouchableOpacity, TextInput, Pressable } from 'react-native';
+import { View, Modal, TouchableOpacity, TextInput, Pressable } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { EdgeInsets } from 'react-native-safe-area-context';
 import { createCalendarStyles } from './styles/calendarStyles';
 
@@ -80,14 +81,14 @@ export function TimePickerModal({
         />
         <View style={[styles.datePickerContainerIOS, { paddingBottom: insets.bottom + 20 }]}>
           <View style={styles.datePickerHeader}>
-            <Text style={styles.datePickerTitle}>{title}</Text>
+            <AppText style={styles.datePickerTitle} dynamicTypeStyle="title2">{title}</AppText>
             <TouchableOpacity onPress={handleConfirm} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.datePickerDone}>Done</Text>
+              <AppText style={styles.datePickerDone} dynamicTypeStyle="headline">Done</AppText>
             </TouchableOpacity>
           </View>
           <View style={styles.timeInputsRow}>
             <View style={styles.timeInputGroup}>
-              <Text style={styles.dateInputLabel}>Hour</Text>
+              <AppText style={styles.dateInputLabel} dynamicTypeStyle="caption">Hour</AppText>
               <TextInput
                 style={styles.dateInput}
                 value={tempHour}
@@ -97,9 +98,9 @@ export function TimePickerModal({
                 maxLength={2}
               />
             </View>
-            <Text style={styles.timeSeparator}>:</Text>
+            <AppText style={styles.timeSeparator} dynamicTypeStyle="body">:</AppText>
             <View style={styles.timeInputGroup}>
-              <Text style={styles.dateInputLabel}>Minute</Text>
+              <AppText style={styles.dateInputLabel} dynamicTypeStyle="caption">Minute</AppText>
               <TextInput
                 style={styles.dateInput}
                 value={tempMinute}
@@ -114,13 +115,13 @@ export function TimePickerModal({
                 style={[styles.ampmButton, tempAMPM === 'AM' && styles.ampmButtonActive]}
                 onPress={() => setTempAMPM('AM')}
               >
-                <Text style={[styles.ampmText, tempAMPM === 'AM' && styles.ampmTextActive]}>AM</Text>
+                <AppText style={[styles.ampmText, tempAMPM === 'AM' && styles.ampmTextActive]} dynamicTypeStyle="headline">AM</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.ampmButton, tempAMPM === 'PM' && styles.ampmButtonActive]}
                 onPress={() => setTempAMPM('PM')}
               >
-                <Text style={[styles.ampmText, tempAMPM === 'PM' && styles.ampmTextActive]}>PM</Text>
+                <AppText style={[styles.ampmText, tempAMPM === 'PM' && styles.ampmTextActive]} dynamicTypeStyle="headline">PM</AppText>
               </TouchableOpacity>
             </View>
           </View>

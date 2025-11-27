@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, TouchableOpacityProps, ActivityIndicator, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, TouchableOpacityProps, ActivityIndicator, View, StyleSheet, Animated } from 'react-native';
 import { getButtonAccessibilityProps, type AccessibilityProps } from '@/utils/accessibility';
 
 export interface AccessibleButtonProps extends Omit<TouchableOpacityProps, 'accessibilityRole' | 'accessibilityLabel' | 'accessibilityHint' | 'accessibilityState'> {
@@ -42,6 +42,7 @@ export function AccessibleButton({
   loading,
   children,
   style,
+  onPress,
   ...props
 }: AccessibleButtonProps) {
   const accessibilityProps = getButtonAccessibilityProps(accessibilityLabel, {
@@ -49,22 +50,49 @@ export function AccessibleButton({
     disabled: disabled || loading,
     busy: loading,
   });
+  
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    if (disabled || loading) return;
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 20,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    if (disabled || loading) return;
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 20,
+    }).start();
+  };
 
   return (
     <TouchableOpacity
       {...props}
       {...accessibilityProps}
       disabled={disabled || loading}
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       style={[style, (disabled || loading) && styles.disabled]}
-      activeOpacity={0.7}
+      activeOpacity={1}
     >
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="currentColor" />
-        </View>
-      ) : (
-        children
-      )}
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="currentColor" />
+          </View>
+        ) : (
+          children
+        )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { Alert } from 'react-native';
 import {
   normalizeError,
   formatErrorMessage,
@@ -7,6 +6,10 @@ import {
   type AppError,
   ErrorCode,
 } from '@/utils/errorHandling';
+import { createScopedLogger } from '@/utils/logger';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+
+const errorHandlerLogger = createScopedLogger('ErrorHandler');
 
 export interface UseErrorHandlerOptions {
   /**
@@ -79,6 +82,7 @@ export function useErrorHandler(
   defaultOptions?: UseErrorHandlerOptions
 ): UseErrorHandlerReturn {
   const [error, setError] = useState<AppError | null>(null);
+  const { showError: showErrorToast } = useEnhancedToast();
 
   const clearError = useCallback(() => {
     setError(null);
@@ -91,10 +95,10 @@ export function useErrorHandler(
 
       // Log error if enabled
       if (opts.logErrors !== false) {
-        console.error('Error handled:', appError);
-        if (appError.originalError) {
-          console.error('Original error:', appError.originalError);
-        }
+        errorHandlerLogger.error('Error handled', appError.originalError || appError, {
+          errorCode: appError.code,
+          isRetryable: isRetryableError(appError),
+        });
       }
 
       // Set error state
@@ -105,29 +109,32 @@ export function useErrorHandler(
         opts.onError(appError);
       }
 
-      // Show alert if requested
+      // Show toast if requested
       if (opts.showAlert) {
         const message = opts.formatError
           ? opts.formatError(appError)
           : formatErrorMessage(appError);
 
-        const buttons: any[] = [{ text: 'OK' }];
-
         if (opts.showRetryInAlert && isRetryableError(appError)) {
-          buttons.push({
-            text: 'Retry',
-            onPress: () => {
-              // Retry logic should be handled by caller
+          // For retryable errors, show toast with retry action
+          // Note: Retry logic should be handled by caller via onError callback
+          showErrorToast(message, {
+            action: {
+              label: 'Retry',
+              onPress: () => {
+                // Retry logic should be handled by caller
+              },
             },
+            duration: 0, // Don't auto-dismiss if retry is available
           });
+        } else {
+          showErrorToast(message);
         }
-
-        Alert.alert('Error', message, buttons);
       }
 
       return appError;
     },
-    [defaultOptions]
+    [defaultOptions, showErrorToast]
   );
 
   const handleAsync = useCallback(

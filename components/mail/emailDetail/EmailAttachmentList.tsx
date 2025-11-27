@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Paperclip } from 'lucide-react-native';
 import { createEmailDetailStyles } from './styles';
 
@@ -20,8 +21,8 @@ export function EmailAttachmentList({ attachments, colors }: EmailAttachmentList
       {attachments.map((attachment, index) => (
         <View key={index} style={[styles.attachmentItem, { backgroundColor: colors.background }]}>
           <Paperclip size={16} color={colors.textSecondary} />
-          <Text style={[styles.attachmentName, { color: colors.text }]}>{attachment.name}</Text>
-          <Text style={[styles.attachmentSize, { color: colors.textSecondary }]}>{attachment.size}</Text>
+          <AppText style={[styles.attachmentName, { color: colors.text }]} dynamicTypeStyle="body">{attachment.name}</AppText>
+          <AppText style={[styles.attachmentSize, { color: colors.textSecondary }]} dynamicTypeStyle="caption">{attachment.size}</AppText>
         </View>
       ))}
     </View>

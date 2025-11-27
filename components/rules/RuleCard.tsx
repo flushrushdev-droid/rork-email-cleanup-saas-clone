@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import { Archive, Tag, Trash2, Play, Settings } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Rule } from '@/constants/types';
 import { createRulesStyles } from '@/styles/app/rules';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 interface RuleCardProps {
   rule: Rule;
@@ -14,6 +15,7 @@ interface RuleCardProps {
 
 export function RuleCard({ rule, onToggle, showActions = true, colors }: RuleCardProps) {
   const styles = createRulesStyles(colors);
+  const { showInfo } = useEnhancedToast();
 
   const getConditionText = (rule: Rule): string => {
     return rule.conditions
@@ -48,7 +50,7 @@ export function RuleCard({ rule, onToggle, showActions = true, colors }: RuleCar
   };
 
   const handleTest = () => {
-    Alert.alert('Test Rule', `Testing rule: ${rule.name}`);
+    showInfo(`Testing rule: ${rule.name}`, { duration: 2000 });
   };
 
   const handleEdit = () => {

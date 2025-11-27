@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Clock, ArrowLeft, Trash2, MapPin, Plus } from 'lucide-react-native';
@@ -13,6 +14,7 @@ import { DeleteMeetingModal } from '@/components/calendar/DeleteMeetingModal';
 import { NoteEditModal } from '@/components/calendar/NoteEditModal';
 import { DatePickerModal } from '@/components/calendar/DatePickerModal';
 import { TimePickerModal } from '@/components/calendar/TimePickerModal';
+import { EmptyState } from '@/components/common/EmptyState';
 import { createCalendarScreenStyles } from '@/styles/app/calendar';
 
 export default function CalendarScreen() {
@@ -151,7 +153,7 @@ export default function CalendarScreen() {
         >
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Calendar</Text>
+        <AppText style={[styles.headerTitle, { color: colors.text }]} dynamicTypeStyle="title2">Calendar</AppText>
         <View style={{ width: 40 }} />
       </View>
 
@@ -170,9 +172,9 @@ export default function CalendarScreen() {
         {/* Events Section */}
         <View style={[styles.eventsSection, { backgroundColor: colors.surface }]}>
           <View style={styles.eventsSectionHeader}>
-            <Text style={[styles.eventsSectionTitle, { color: colors.text }]}>
+            <AppText style={[styles.eventsSectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">
               Events for {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </Text>
+            </AppText>
             <TouchableOpacity
               onPress={() => setIsNewMeetingModalVisible(true)}
               style={[styles.addButton, { backgroundColor: colors.primary }]}
@@ -182,12 +184,13 @@ export default function CalendarScreen() {
           </View>
 
           {eventsForSelectedDate.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Calendar size={40} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                No events scheduled
-              </Text>
-            </View>
+            <EmptyState
+              icon={Calendar}
+              title="No events scheduled"
+              description="Tap the + button to add an event for this day"
+              iconSize={48}
+              style={styles.emptyState}
+            />
           ) : (
             eventsForSelectedDate.map((event) => (
               <TouchableOpacity
@@ -205,21 +208,21 @@ export default function CalendarScreen() {
                 <View style={styles.eventContent}>
                   <View style={[styles.eventColorBar, { backgroundColor: event.color || colors.primary }]} />
                   <View style={styles.eventDetails}>
-                    <Text style={[styles.eventTitle, { color: colors.text }]}>{event.title}</Text>
+                    <AppText style={[styles.eventTitle, { color: colors.text }]} dynamicTypeStyle="body">{event.title}</AppText>
                     <View style={styles.eventMeta}>
                       <Clock size={14} color={colors.textSecondary} />
-                      <Text style={[styles.eventTime, { color: colors.textSecondary }]}>
+                      <AppText style={[styles.eventTime, { color: colors.textSecondary }]} dynamicTypeStyle="caption">
                         {event.startTime && event.endTime
                           ? `${event.startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - ${event.endTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
                           : event.time || 'Time not set'}
-                      </Text>
+                      </AppText>
                     </View>
                     {event.location && (
                       <View style={styles.eventMeta}>
                         <MapPin size={14} color={colors.textSecondary} />
-                        <Text style={[styles.eventLocation, { color: colors.textSecondary }]}>
+                        <AppText style={[styles.eventLocation, { color: colors.textSecondary }]} dynamicTypeStyle="caption">
                           {event.location}
-                        </Text>
+                        </AppText>
                       </View>
                     )}
                   </View>
@@ -363,7 +366,7 @@ export default function CalendarScreen() {
             bottom: insets.bottom + 20 
           }
         ]}>
-          <Text style={styles.feedbackText}>{feedback.message}</Text>
+          <AppText style={styles.feedbackText} dynamicTypeStyle="body">{feedback.message}</AppText>
         </View>
       )}
     </View>

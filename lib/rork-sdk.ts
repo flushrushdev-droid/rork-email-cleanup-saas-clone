@@ -7,6 +7,10 @@
  * This file CAN be pushed to GitHub - it's smart enough to work in both environments.
  */
 
+import { createScopedLogger } from '@/utils/logger';
+
+const sdkLogger = createScopedLogger('Rork SDK');
+
 // Try to import the real Rork SDK, fall back to mock if not available
 let useRorkAgent: any;
 let createRorkTool: any;
@@ -16,13 +20,13 @@ try {
   const rorkSdk = require('@rork-ai/toolkit-sdk');
   useRorkAgent = rorkSdk.useRorkAgent;
   createRorkTool = rorkSdk.createRorkTool;
-  console.log('[Rork SDK] Using real Rork SDK');
+  sdkLogger.debug('Using real Rork SDK');
 } catch (error) {
   // Fall back to mock implementation for local development
   const mockSdk = require('./rork-sdk-mock');
   useRorkAgent = mockSdk.useRorkAgent;
   createRorkTool = mockSdk.createRorkTool;
-  console.log('[Rork SDK] Using mock SDK for local development');
+  sdkLogger.debug('Using mock SDK for local development');
 }
 
 export { useRorkAgent, createRorkTool };

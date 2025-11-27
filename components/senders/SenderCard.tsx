@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Mail, HardDrive, TrendingUp, BellOff, Trash, Trash2 } from 'lucide-react-native';
 import type { Sender } from '@/constants/types';
 import { calculateSavings, formatBytes, getNoiseColor } from '@/mocks/emailData';
 import { createSenderStyles } from '@/styles/app/senders';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 interface SenderCardProps {
   sender: Sender;
@@ -32,6 +33,7 @@ export function SenderCard({
 }: SenderCardProps) {
   const styles = React.useMemo(() => createSenderStyles(colors), [colors]);
   const savings = calculateSavings(sender);
+  const { showInfo } = useEnhancedToast();
 
   return (
     <View
@@ -43,6 +45,10 @@ export function SenderCard({
     >
       <TouchableOpacity
         testID={`sender-card-${sender.id}`}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`${sender.displayName || sender.email}, ${sender.totalEmails} emails, ${sender.engagementRate}% engagement, noise score ${sender.noiseScore.toFixed(1)}`}
+        accessibilityHint="Double tap to view emails from this sender, long press to select"
         onPress={onViewEmails}
         onLongPress={onLongPress}
         activeOpacity={0.7}
@@ -113,15 +119,23 @@ export function SenderCard({
         {sender.hasUnsubscribe && (
           <TouchableOpacity
             testID={`unsubscribe-${sender.id}`}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={`Unsubscribe from ${sender.email}`}
+            accessibilityHint="Double tap to unsubscribe from emails from this sender"
             style={[styles.actionButton, { backgroundColor: colors.primary }]}
             onPress={() => onUnsubscribe(sender.email)}
           >
-            <BellOff size={16} color="#FFFFFF" />
+            <BellOff size={16} color={colors.surface} />
             <Text style={styles.actionButtonPrimaryText}>Unsubscribe</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           testID={`delete-${sender.id}`}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Delete emails from ${sender.email}`}
+          accessibilityHint="Double tap to delete emails from this sender"
           style={[styles.actionButton, { backgroundColor: colors.background }]}
           onPress={() => onDelete(sender.id, sender.email)}
         >
@@ -130,6 +144,10 @@ export function SenderCard({
         </TouchableOpacity>
         <TouchableOpacity
           testID={`permanent-delete-${sender.id}`}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Permanently delete emails from ${sender.email}`}
+          accessibilityHint="Double tap to permanently delete emails from this sender"
           style={[styles.actionButton, { backgroundColor: colors.background, borderColor: colors.danger }]}
           onPress={() => onPermanentDelete(sender.id, sender.email)}
         >
@@ -141,14 +159,22 @@ export function SenderCard({
       <View style={styles.bottomActions}>
         <TouchableOpacity
           testID={`auto-rule-${sender.id}`}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Create automatic rule for ${sender.email}`}
+          accessibilityHint="Double tap to create an automation rule for this sender"
           style={[styles.autoRuleButton, { backgroundColor: colors.primary }]}
-          onPress={() => Alert.alert('Auto Rule', `Create automatic rule for ${sender.email}`)}
+          onPress={() => showInfo(`Create automatic rule for ${sender.email}`, { duration: 2000 })}
         >
           <Text style={styles.autoRuleButtonText}>Auto Rule</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           testID={`block-${sender.id}`}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Block ${sender.email}`}
+          accessibilityHint="Double tap to block this sender and move their emails to spam"
           style={[styles.blockButton, { backgroundColor: colors.danger }]}
           onPress={() => onBlock(sender.id, sender.email)}
         >

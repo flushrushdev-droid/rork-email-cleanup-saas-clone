@@ -24,7 +24,7 @@ export function SuggestionsCard({ colors, router }: SuggestionsCardProps) {
       <View style={styles.suggestionsHeader}>
         <View style={styles.suggestionsHeaderLeft}>
           <View style={styles.suggestionsIconContainer}>
-            <Sparkles size={24} color="#FFA500" />
+            <Sparkles size={24} color={colors.warning} />
           </View>
           <View>
             <Text style={[styles.suggestionsTitle, { color: colors.text }]}>Suggestions</Text>

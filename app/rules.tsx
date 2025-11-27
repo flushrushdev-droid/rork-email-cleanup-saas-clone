@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { AppText } from '@/components/common/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Plus, Zap, Mail } from 'lucide-react-native';
@@ -9,6 +10,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { createRulesStyles } from '@/styles/app/rules';
 import { StatCard } from '@/components/common/StatCard';
 import { RuleCard } from '@/components/rules/RuleCard';
+import { createScopedLogger } from '@/utils/logger';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+
+const rulesLogger = createScopedLogger('Rules');
 
 const mockRules: Rule[] = [
   {
@@ -57,6 +62,7 @@ export default function RulesScreen() {
   const params = useLocalSearchParams<{ updatedRule?: string; isEdit?: string }>();
   const [rules, setRules] = useState(mockRules);
   const styles = React.useMemo(() => createRulesStyles(colors), [colors]);
+  const { showInfo } = useEnhancedToast();
 
   // Update rules when returning from create-rule screen
   useFocusEffect(
@@ -88,7 +94,7 @@ export default function RulesScreen() {
           // Clear params to prevent re-applying on next focus
           router.setParams({ updatedRule: undefined, isEdit: undefined });
         } catch (error) {
-          console.error('Error parsing updated rule:', error);
+          rulesLogger.error('Error parsing updated rule', error);
         }
       }
     }, [params.updatedRule, params.isEdit])
@@ -117,10 +123,10 @@ export default function RulesScreen() {
       />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
         <View style={[styles.header, { paddingTop: 0 }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Automation Rules</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          <AppText style={[styles.title, { color: colors.text }]} dynamicTypeStyle="title1">Automation Rules</AppText>
+          <AppText style={[styles.subtitle, { color: colors.textSecondary }]} dynamicTypeStyle="body">
             Automatically organize and manage your emails
-          </Text>
+          </AppText>
         </View>
 
         <TouchableOpacity
@@ -131,7 +137,7 @@ export default function RulesScreen() {
           onPress={() => router.push('/create-rule')}
         >
           <Plus size={20} color={colors.primary} />
-          <Text style={[styles.createButtonText, { color: colors.primary }]}>Create New Rule</Text>
+          <AppText style={[styles.createButtonText, { color: colors.primary }]} dynamicTypeStyle="headline">Create New Rule</AppText>
         </TouchableOpacity>
 
         <View style={styles.statsBar}>
@@ -158,7 +164,7 @@ export default function RulesScreen() {
         >
           {enabledRules.length > 0 && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Rules ({enabledRules.length})</Text>
+              <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Active Rules ({enabledRules.length})</AppText>
               {enabledRules.map((rule) => (
                 <RuleCard
                   key={rule.id}
@@ -173,7 +179,7 @@ export default function RulesScreen() {
 
           {disabledRules.length > 0 && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Rules ({rules.length})</Text>
+              <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Your Rules ({rules.length})</AppText>
               {rules.map((rule) => (
                 <RuleCard
                   key={rule.id}
@@ -190,15 +196,19 @@ export default function RulesScreen() {
             <View style={[styles.builderIcon, { backgroundColor: colors.primary + '20' }]}>
               <Zap size={32} color={colors.primary} />
             </View>
-            <Text style={[styles.builderTitle, { color: colors.text }]}>Rule Builder</Text>
-            <Text style={[styles.builderDescription, { color: colors.textSecondary }]}>
+            <AppText style={[styles.builderTitle, { color: colors.text }]} dynamicTypeStyle="headline">Rule Builder</AppText>
+            <AppText style={[styles.builderDescription, { color: colors.textSecondary }]} dynamicTypeStyle="body">
               Create complex automation rules with our visual rule builder
-            </Text>
+            </AppText>
             <TouchableOpacity
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Try Rule Builder"
+              accessibilityHint="Double tap to try the visual rule builder feature"
               style={[styles.builderButton, { backgroundColor: colors.primary }]}
-              onPress={() => Alert.alert('Coming Soon', 'Rule Builder feature coming soon!')}
+              onPress={() => showInfo('Rule Builder feature coming soon!', { duration: 2000 })}
             >
-              <Text style={styles.builderButtonText}>Try Rule Builder</Text>
+              <AppText style={styles.builderButtonText} dynamicTypeStyle="headline">Try Rule Builder</AppText>
             </TouchableOpacity>
           </View>
 
