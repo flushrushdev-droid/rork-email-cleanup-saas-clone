@@ -1,10 +1,11 @@
 /**
  * React hook for Android Intent handling
  * Handles share intents and app shortcuts
+ * Android-specific implementation
  */
 
 import { useEffect } from 'react';
-import { Platform, Linking } from 'react-native';
+import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { handleSharedContent, parseIntentExtras, type SharedContent } from '@/utils/android/shareIntents';
 import { handleShortcutAction, ShortcutAction } from '@/utils/android/shortcuts';
@@ -14,22 +15,18 @@ import { isValidShortcutAction, sanitizeSearchQuery } from '@/utils/security';
 const intentsLogger = createScopedLogger('useAndroidIntents');
 
 /**
- * Hook to handle Android intents when app is opened via share or shortcut
+ * Hook to handle Android intents (share intents, shortcuts)
  */
 export function useAndroidIntents() {
   const router = useRouter();
 
   useEffect(() => {
-    if (Platform.OS !== 'android') {
-      return;
-    }
-
-    // Handle initial URL (when app is opened via intent)
+    // Handle initial URL (when app is opened via intent/shortcut)
     const handleInitialURL = async () => {
       try {
         const initialUrl = await Linking.getInitialURL();
-        if (initialUrl) {
-          intentsLogger.info('App opened via intent', { url: initialUrl });
+        if (initialUrl && initialUrl.startsWith('rork-app://')) {
+          intentsLogger.info('App opened via intent/shortcut', { url: initialUrl });
           handleIntentFromURL(initialUrl);
         }
       } catch (error) {
@@ -39,8 +36,10 @@ export function useAndroidIntents() {
 
     // Handle URL changes (when app is already open)
     const handleURLChange = (event: { url: string }) => {
-      intentsLogger.info('URL changed via intent', { url: event.url });
-      handleIntentFromURL(event.url);
+      if (event.url.startsWith('rork-app://')) {
+        intentsLogger.info('URL changed via intent/shortcut', { url: event.url });
+        handleIntentFromURL(event.url);
+      }
     };
 
     // Set up listeners
@@ -54,29 +53,9 @@ export function useAndroidIntents() {
 }
 
 /**
- * Parse URL and handle intent action
+ * Parse URL and handle intent/shortcut action
  */
 function handleIntentFromURL(url: string): void {
-  try {
-    // Check if this is a share intent or shortcut
-    if (url.startsWith('rork-app://')) {
-      // Handle as shortcut/deep link
-      handleShortcutFromURL(url);
-    } else if (url.startsWith('content://') || url.startsWith('file://')) {
-      // Handle as shared content
-      // Note: Full share intent handling requires native code to get intent extras
-      intentsLogger.info('Received shared content URI', { url });
-      // TODO: Extract intent extras from native module
-    }
-  } catch (error) {
-    intentsLogger.error('Error parsing intent URL', error);
-  }
-}
-
-/**
- * Parse URL and handle shortcut action
- */
-function handleShortcutFromURL(url: string): void {
   try {
     const urlObj = new URL(url);
     const path = urlObj.pathname;
@@ -89,19 +68,21 @@ function handleShortcutFromURL(url: string): void {
       const search = params.get('search');
 
       if (filter === 'unread') {
+        const shortcutAction = isValidShortcutAction('showUnread') ? 'showUnread' : ShortcutAction.SHOW_INBOX;
         handleShortcutAction({
-          action: ShortcutAction.SHOW_UNREAD,
+          action: shortcutAction as ShortcutAction,
         });
       } else if (action === 'sync') {
+        const shortcutAction = isValidShortcutAction('syncEmails') ? 'syncEmails' : ShortcutAction.SHOW_INBOX;
         handleShortcutAction({
-          action: ShortcutAction.SYNC_EMAILS,
+          action: shortcutAction as ShortcutAction,
         });
       } else if (search) {
-        // Sanitize search query
         const sanitizedSearch = sanitizeSearchQuery(search);
         if (sanitizedSearch) {
+          const shortcutAction = isValidShortcutAction('searchEmails') ? 'searchEmails' : ShortcutAction.SHOW_INBOX;
           handleShortcutAction({
-            action: ShortcutAction.SEARCH_EMAILS,
+            action: shortcutAction as ShortcutAction,
             query: sanitizedSearch,
           });
         }
@@ -110,28 +91,15 @@ function handleShortcutFromURL(url: string): void {
           action: ShortcutAction.SHOW_INBOX,
         });
       }
-    } else if (path.includes('/compose')) {
-      const body = params.get('body');
-      const url = params.get('url');
-      const image = params.get('image');
-      const file = params.get('file');
-
-      // Handle compose with shared content
-      if (body || url || image || file) {
-        const sharedContent: SharedContent = {
-          type: body ? 'text/plain' as any : url ? 'text/uri-list' as any : image ? 'image/*' as any : '*/*' as any,
-          text: body || url,
-          uri: image || file,
-        };
+    } else if (path.includes('/share')) {
+      // Handle share intent
+      const sharedContent: SharedContent = parseIntentExtras(params);
+      if (sharedContent) {
         handleSharedContent(sharedContent);
-      } else {
-        handleShortcutAction({
-          action: ShortcutAction.COMPOSE_EMAIL,
-        });
       }
     }
   } catch (error) {
-    intentsLogger.error('Error parsing shortcut URL', error);
+    intentsLogger.error('Error parsing intent URL', error);
   }
 }
 

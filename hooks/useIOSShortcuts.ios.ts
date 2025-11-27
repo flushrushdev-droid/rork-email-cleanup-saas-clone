@@ -1,9 +1,10 @@
 /**
  * React hook for iOS Siri Shortcuts integration
+ * iOS-specific implementation
  */
 
 import { useEffect } from 'react';
-import { Platform, Linking } from 'react-native';
+import { Linking } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { handleShortcutAction, ShortcutAction, type ShortcutParams } from '@/utils/ios/shortcuts';
 import { createScopedLogger } from '@/utils/logger';
@@ -19,10 +20,6 @@ export function useIOSShortcuts() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') {
-      return;
-    }
-
     // Handle initial URL (when app is opened via shortcut)
     const handleInitialURL = async () => {
       try {
