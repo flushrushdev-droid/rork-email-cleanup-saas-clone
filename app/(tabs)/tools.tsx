@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/contexts/ThemeContext';
 import { createToolsStyles } from '@/styles/app/tools';
+import { getOptimizedFlatListProps } from '@/utils/listConfig';
 
 export default function ToolsScreen() {
   const router = useRouter();
@@ -142,11 +143,7 @@ export default function ToolsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        updateCellsBatchingPeriod={50}
+        {...getOptimizedFlatListProps()}
       />
     </View>
   );

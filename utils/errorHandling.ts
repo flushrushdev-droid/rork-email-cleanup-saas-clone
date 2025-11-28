@@ -138,14 +138,62 @@ export function normalizeError(error: unknown): AppError {
 }
 
 /**
+ * Sanitize error message to prevent information disclosure
+ * Removes sensitive information like API endpoints, tokens, internal paths
+ */
+export function sanitizeErrorMessage(message: string): string {
+  if (!message || typeof message !== 'string') {
+    return 'An error occurred. Please try again.';
+  }
+
+  let sanitized = message;
+
+  // Remove API endpoints and URLs (but keep domain names for user context)
+  sanitized = sanitized.replace(/https?:\/\/[^\s]+/gi, '[API endpoint]');
+  
+  // Remove tokens and secrets (common patterns)
+  sanitized = sanitized.replace(/token[=:]\s*[\w-]+/gi, 'token=[REDACTED]');
+  sanitized = sanitized.replace(/bearer\s+[\w-]+/gi, 'bearer [REDACTED]');
+  sanitized = sanitized.replace(/api[_-]?key[=:]\s*[\w-]+/gi, 'api_key=[REDACTED]');
+  sanitized = sanitized.replace(/secret[=:]\s*[\w-]+/gi, 'secret=[REDACTED]');
+  
+  // Remove file paths and internal structure
+  sanitized = sanitized.replace(/[\/\\][\w\-\.]+\.(ts|tsx|js|jsx|json|md)/gi, '[file]');
+  sanitized = sanitized.replace(/at\s+[\w\.]+:\d+:\d+/gi, '[location]');
+  
+  // Remove stack traces
+  sanitized = sanitized.replace(/at\s+.*/g, '');
+  sanitized = sanitized.replace(/Error:\s*/gi, '');
+  
+  // Remove internal error codes and IDs
+  sanitized = sanitized.replace(/error[_-]?code[=:]\s*[\w-]+/gi, 'error_code=[REDACTED]');
+  sanitized = sanitized.replace(/id[=:]\s*[a-f0-9-]{20,}/gi, 'id=[REDACTED]');
+  
+  // Clean up extra whitespace
+  sanitized = sanitized.replace(/\s+/g, ' ').trim();
+  
+  // Limit message length
+  if (sanitized.length > 200) {
+    sanitized = sanitized.substring(0, 197) + '...';
+  }
+  
+  return sanitized || 'An error occurred. Please try again.';
+}
+
+/**
  * Format error message for user display
+ * Sanitizes messages to prevent information disclosure
  */
 export function formatErrorMessage(error: AppError | Error | unknown): string {
   const appError = error instanceof Error && 'code' in error 
     ? (error as AppError)
     : normalizeError(error);
 
-  // Return user-friendly messages
+  // Get base message and sanitize it
+  let message = appError.message || '';
+  message = sanitizeErrorMessage(message);
+
+  // Return user-friendly messages based on error code
   switch (appError.code) {
     case ErrorCode.NETWORK_ERROR:
       return 'Unable to connect. Please check your internet connection and try again.';
@@ -154,7 +202,8 @@ export function formatErrorMessage(error: AppError | Error | unknown): string {
       return 'Your session has expired. Please sign in again.';
     
     case ErrorCode.VALIDATION_ERROR:
-      return appError.message || 'Please check your input and try again.';
+      // Use sanitized message for validation errors (they're usually safe)
+      return message || 'Please check your input and try again.';
     
     case ErrorCode.API_ERROR:
       if (appError.statusCode === 429) {
@@ -163,7 +212,8 @@ export function formatErrorMessage(error: AppError | Error | unknown): string {
       if (appError.statusCode && appError.statusCode >= 500) {
         return 'Server error. Please try again later.';
       }
-      return appError.message || 'An error occurred. Please try again.';
+      // For client errors, use generic message to avoid exposing details
+      return 'An error occurred. Please try again.';
     
     case ErrorCode.TIMEOUT_ERROR:
       return 'Request timed out. Please try again.';
@@ -173,7 +223,8 @@ export function formatErrorMessage(error: AppError | Error | unknown): string {
     
     case ErrorCode.UNKNOWN_ERROR:
     default:
-      return appError.message || 'An unexpected error occurred. Please try again.';
+      // Always use generic message for unknown errors
+      return 'An unexpected error occurred. Please try again.';
   }
 }
 

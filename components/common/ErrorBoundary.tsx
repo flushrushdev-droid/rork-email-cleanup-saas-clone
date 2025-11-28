@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { AlertCircle, RefreshCw } from 'lucide-react-native';
+import * as Sentry from '@sentry/react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { AccessibleButton } from './AccessibleButton';
 import { formatErrorMessage, normalizeError } from '@/utils/errorHandling';
@@ -50,6 +51,18 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error for debugging
     errorBoundaryLogger.error('ErrorBoundary caught an error', error, { errorInfo });
+    
+    // Send to Sentry with React component stack
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      tags: {
+        errorBoundary: 'true',
+      },
+    });
     
     this.setState({
       errorInfo,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Modal, StyleSheet, ScrollView, Keyboard, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Modal, StyleSheet, ScrollView, Keyboard, Platform, KeyboardAvoidingView, TextInput } from 'react-native';
 import { X } from 'lucide-react-native';
 import { z } from 'zod';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -53,10 +53,10 @@ export function CreateFolderModal({
   // Fall back to a regular View while keeping manual keyboard translation logic.
   // Using typeof avoids ReferenceError when the symbol isn't defined.
   // @ts-ignore
-  const Container: any = typeof KeyboardAvoidingView !== 'undefined' ? KeyboardAvoidingView : View;
+  const Container: typeof KeyboardAvoidingView | typeof View = typeof KeyboardAvoidingView !== 'undefined' ? KeyboardAvoidingView : View;
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
-  const nameInputRef = React.useRef<any>(null);
-  const ruleInputRef = React.useRef<any>(null);
+  const nameInputRef = React.useRef<TextInput>(null);
+  const ruleInputRef = React.useRef<TextInput>(null);
 
   // Form validation hook
   const {

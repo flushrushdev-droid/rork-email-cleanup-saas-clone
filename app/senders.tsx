@@ -11,6 +11,9 @@ import { SenderFilters } from '@/components/senders/SenderFilters';
 import { UnsubscribeModal } from '@/components/common/UnsubscribeModal';
 import { createSenderStyles } from '@/styles/app/senders';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { createScopedLogger } from '@/utils/logger';
+
+const sendersLogger = createScopedLogger('Senders');
 
 export default function SendersScreen() {
   const router = useRouter();
@@ -40,7 +43,7 @@ export default function SendersScreen() {
               showSuccess(`Emails from ${senderEmail} moved to trash`);
             }, 200);
           } catch (error) {
-            console.error('Error deleting emails:', error);
+            sendersLogger.error('Error deleting emails', error);
           }
         },
       },
@@ -60,7 +63,7 @@ export default function SendersScreen() {
               showSuccess(`All emails from ${senderEmail} permanently deleted`);
             }, 200);
           } catch (error) {
-            console.error('Error permanently deleting emails:', error);
+            sendersLogger.error('Error permanently deleting emails', error);
           }
         },
       },
@@ -99,7 +102,7 @@ export default function SendersScreen() {
               showSuccess(`${senderEmail} has been blocked`);
             }, 200);
           } catch (error) {
-            console.error('Error blocking sender:', error);
+            sendersLogger.error('Error blocking sender', error);
           }
         },
       },

@@ -6,6 +6,7 @@ import { Sparkles, CheckCircle2 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { EmptyState } from '@/components/common/EmptyState';
 import { createSuggestionsStyles } from '@/styles/app/suggestions';
+import { getOptimizedFlatListProps } from '@/utils/listConfig';
 import { SuggestionCard } from '@/components/suggestions/SuggestionCard';
 import type { SuggestionType } from '@/utils/suggestionUtils';
 
@@ -137,11 +138,7 @@ export default function SuggestionsScreen() {
           }
           contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          updateCellsBatchingPeriod={50}
+          {...getOptimizedFlatListProps()}
         />
     </View>
   );

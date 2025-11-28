@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Text,
   View,
   FlatList,
   TouchableOpacity,
   Keyboard,
-  RefreshControl,
   ListRenderItem,
 } from 'react-native';
 import { Stack } from 'expo-router';
@@ -20,6 +19,8 @@ import { createNotesStyles } from '@/styles/app/notes';
 import { useNotes, type Note } from '@/hooks/useNotes';
 
 import { useTheme } from '@/contexts/ThemeContext';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
+import { getOptimizedFlatListProps } from '@/utils/listConfig';
 import { triggerButtonHaptic } from '@/utils/haptics';
 
 export default function NotesScreen() {
@@ -53,15 +54,9 @@ export default function NotesScreen() {
     handleRefresh,
   } = useNotes();
   
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  const onRefresh = React.useCallback(async () => {
-    const { triggerRefreshHaptic } = await import('@/utils/haptics');
-    await triggerRefreshHaptic();
-    setIsRefreshing(true);
-    await handleRefresh();
-    setIsRefreshing(false);
-  }, [handleRefresh]);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: handleRefresh,
+  });
 
   const formatDateWrapper = React.useCallback((date: Date | string) => {
     const dateString = typeof date === 'string' ? date : date.toISOString();
@@ -125,20 +120,8 @@ export default function NotesScreen() {
         ListEmptyComponent={listEmptyComponent}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 80 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-            progressViewOffset={0}
-          />
-        }
-        removeClippedSubviews={true}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        updateCellsBatchingPeriod={50}
+        refreshControl={refreshControl}
+        {...getOptimizedFlatListProps()}
       />
 
       <NoteEditorModal

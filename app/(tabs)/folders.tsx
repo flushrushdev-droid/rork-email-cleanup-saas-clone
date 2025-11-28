@@ -17,6 +17,7 @@ import { createScopedLogger } from '@/utils/logger';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { EmptyState } from '@/components/common/EmptyState';
+import type { SmartFolder } from '@/hooks/useSmartFolders';
 
 const foldersLogger = createScopedLogger('Folders');
 
@@ -31,6 +32,8 @@ export default function FoldersScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  type CustomFolder = { id: string; name: string; color: string; count: number; isCustom: true };
+  type FolderWithCustom = SmartFolder | CustomFolder;
   const [customFolders, setCustomFolders] = useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
   // No persistence for demo mode - folders reset on refresh
   
@@ -228,7 +231,7 @@ export default function FoldersScreen() {
           />
         ) : (
           <View style={styles.foldersGrid}>
-            {[...customFolders.map(f => ({...f, isCustom: true} as any)), ...smartFolders].map((folder: any) => {
+            {([...customFolders.map(f => ({...f, isCustom: true} as CustomFolder)), ...smartFolders] as FolderWithCustom[]).map((folder) => {
               const Icon = folderIconMap[folder.icon] || FolderOpen;
               
               return (

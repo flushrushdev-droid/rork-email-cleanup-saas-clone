@@ -21,6 +21,9 @@ import { createHistoryStyles } from '@/styles/app/history';
 import { HistoryItemCard, ACTION_LABELS } from '@/components/history/HistoryItemCard';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 import { EmptyState } from '@/components/common/EmptyState';
+import { createScopedLogger } from '@/utils/logger';
+
+const historyLogger = createScopedLogger('History');
 
 export default function HistoryScreen() {
   const { entries, getStats, clearHistory } = useHistory();
@@ -34,7 +37,7 @@ export default function HistoryScreen() {
     try {
       return getStats();
     } catch (error) {
-      console.error('Error calculating stats:', error);
+      historyLogger.error('Error calculating stats', error);
       // Return default stats if calculation fails
       return {
         totalActions: 0,
@@ -87,7 +90,7 @@ export default function HistoryScreen() {
                 try {
                   clearHistory();
                 } catch (error) {
-                  console.error('Error clearing history:', error);
+                  historyLogger.error('Error clearing history', error);
                 }
               }, 50);
             });

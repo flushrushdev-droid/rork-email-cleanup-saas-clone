@@ -16,7 +16,7 @@ import { Platform } from 'react-native';
  * Get environment variable with fallback
  * Priority: expo-constants extra > process.env > fallback
  */
-function getEnvVar(key: string, fallback?: string): string | undefined {
+export function getEnvVar(key: string, fallback?: string): string | undefined {
   // Try expo-constants extra first (for Expo/React Native)
   const expoExtra = Constants.expoConfig?.extra?.[key];
   if (expoExtra) return expoExtra;

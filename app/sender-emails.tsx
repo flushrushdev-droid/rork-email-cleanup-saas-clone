@@ -9,6 +9,7 @@ import { EmailMessage } from '@/constants/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createSenderEmailsStyles } from '@/styles/app/sender-emails';
 import { formatShortRelativeDate } from '@/utils/relativeDateFormat';
+import { getOptimizedFlatListProps } from '@/utils/listConfig';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 export default function SenderEmailsScreen() {
@@ -243,11 +244,7 @@ export default function SenderEmailsScreen() {
         }
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 80 }]}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        updateCellsBatchingPeriod={50}
+        {...getOptimizedFlatListProps()}
       />
     </View>
   );

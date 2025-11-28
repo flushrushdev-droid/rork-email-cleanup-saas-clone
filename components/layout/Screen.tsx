@@ -57,7 +57,11 @@ export function Screen({ children, footer, scroll = false, topPadding = 48, styl
 						if (Math.abs(h - footerHeight) > 2) setFooterHeight(h);
 					}}
 					style={{
-						paddingHorizontal: (style as any)?.paddingHorizontal ?? 0,
+						paddingHorizontal: (style && typeof style === 'object' && !Array.isArray(style) && 'paddingHorizontal' in style && typeof style.paddingHorizontal === 'number')
+							? style.paddingHorizontal
+							: (Array.isArray(style) && style.length > 0 && typeof style[0] === 'object' && 'paddingHorizontal' in style[0] && typeof style[0].paddingHorizontal === 'number')
+							? style[0].paddingHorizontal
+							: 0,
 						paddingTop: 4,
 						// Minimal padding - just the raw inset without extra cushion
 						paddingBottom: insets.bottom,

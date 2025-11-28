@@ -204,147 +204,138 @@ export function validateSecureUrl(url: string): string {
 
 ---
 
-### 5. **Content Security Policy (Web Platform)** ⏭️ NEXT TASK
-**Current State:** No CSP headers configured
+### 5. **Content Security Policy (Web Platform)**
+**Current State:** ✅ Implemented - CSP meta tag and HTTP headers configured
 **Risk:** Medium - XSS attacks, unauthorized script execution
 
 **Solution (Frontend Only):**
-- Add CSP meta tag to web HTML
-- Configure CSP for React Native Web
-- Restrict inline scripts and external resources
-- **Important:** Must account for:
-  - **Local development** (`localhost:8081`) - allow localhost connections
-  - **Rork development environment** (`https://rork.com`) - allow Rork domains
-  - **Future production** (Vercel/Render/Supabase) - allow production domains dynamically
+- ✅ CSP meta tag added to web HTML via `app/_layout.tsx`
+- ✅ HTTP headers configured for hosting providers (Vercel, Netlify, Render)
+- ✅ Environment-aware CSP that adjusts based on `AppConfig.env`
+- ✅ Includes `frame-ancestors` directive via HTTP headers (not supported in meta tags)
 
-**Files to Update:**
-- `app/_layout.tsx` - Add CSP meta tag for web with environment-aware configuration
+**Files Created/Updated:**
+- `app/_layout.tsx` - Applies CSP meta tag for web platform
+- `utils/csp.ts` - CSP utility with environment-aware policy generation
+- `vercel.json` - Vercel headers configuration (includes full CSP with frame-ancestors)
+- `netlify.toml` - Netlify headers configuration (includes full CSP with frame-ancestors)
+- `public/_headers` - Headers file for Render/Cloudflare Pages (includes full CSP with frame-ancestors)
+- `docs/DEPLOYMENT_CSP.md` - Complete deployment guide for CSP configuration
 
 **Implementation Notes:**
-- Use `AppConfig.env` and `AppConfig.api.baseUrl` to determine which domains to allow
-- For **development**: Allow `localhost`, `127.0.0.1`, and Rork domains (`https://rork.com`)
-- For **production**: Only allow production domains (from `AppConfig.api.baseUrl`) and Google APIs
-- Must allow `'unsafe-inline'` and `'unsafe-eval'` for React/Expo (unavoidable for now)
-- Allow Google APIs (`https://*.googleapis.com`, `https://*.google.com`) for OAuth and Gmail integration
-- Use `AppConfig.redirectBaseUrl` to determine allowed connect-src domains
+- ✅ Uses `AppConfig.env` and `AppConfig.api.baseUrl` to determine which domains to allow
+- ✅ For **development**: Allows `localhost`, `127.0.0.1`, and Rork domains (`https://rork.com`)
+- ✅ For **production**: Only allows production domains (from `AppConfig.api.baseUrl`) and Google APIs
+- ✅ Allows `'unsafe-inline'` and `'unsafe-eval'` for React/Expo (unavoidable for now)
+- ✅ Allows Google APIs (`https://*.googleapis.com`, `https://*.google.com`) for OAuth and Gmail integration
+- ✅ Uses `AppConfig.redirectBaseUrl` to determine allowed connect-src domains
+- ✅ `frame-ancestors 'none'` configured via HTTP headers (prevents clickjacking)
 
-**Example CSP for Development:**
-```
-default-src 'self'; 
-script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-style-src 'self' 'unsafe-inline'; 
-img-src 'self' data: https:; 
-font-src 'self' data:; 
-connect-src 'self' http://localhost:8081 https://rork.com https://*.googleapis.com https://*.google.com;
-```
+**Deployment:**
+- **Vercel**: Automatically reads `vercel.json` on deployment
+- **Netlify**: Automatically reads `netlify.toml` on deployment
+- **Render/Cloudflare**: Uses `public/_headers` file (ensure it's copied to build output)
+- See `docs/DEPLOYMENT_CSP.md` for detailed deployment instructions
 
-**Example CSP for Production:**
-```
-default-src 'self'; 
-script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-style-src 'self' 'unsafe-inline'; 
-img-src 'self' data: https:; 
-font-src 'self' data:; 
-connect-src 'self' https://your-app.vercel.app https://*.googleapis.com https://*.google.com;
-```
-
-**Priority:** 🟡 High - Should be done before production (web only)
+**Priority:** 🟡 High - ✅ Completed
 
 ---
 
 ### 6. **Rate Limiting (Client-Side)**
-**Current State:** No client-side rate limiting
+**Current State:** ✅ Implemented - Rate limiting with exponential backoff
 **Risk:** Low-Medium - API abuse, excessive retry attempts
 
 **Solution (Frontend Only):**
-- Implement client-side rate limiting for API calls
-- Add exponential backoff for failed requests
-- Limit retry attempts per time window
+- ✅ Client-side rate limiting for API calls
+- ✅ Exponential backoff for failed requests
+- ✅ Retry logic with configurable attempts per time window
+- ✅ Automatic cleanup of old rate limit entries
 
-**Files to Update:**
-- Create `utils/rateLimiter.ts` - New utility
-- `contexts/GmailSyncContext.tsx` - Add rate limiting wrapper
+**Files Created/Updated:**
+- `utils/rateLimiter.ts` - Comprehensive rate limiter utility with:
+  - Rate limiting per endpoint/key
+  - Exponential backoff calculator
+  - Retry utility with configurable retry logic
+  - Automatic memory cleanup
+- `contexts/GmailSyncContext.tsx` - Integrated rate limiting and retry logic into `makeGmailRequest`
 
-**Implementation:**
-Create `utils/rateLimiter.ts`:pt
-interface RateLimitConfig {
-  maxRequests: number;
-  windowMs: number;
-}
+**Implementation Details:**
+- **Rate Limiting**: 100 requests per minute (configurable per endpoint)
+- **Retry Logic**: Up to 3 retries with exponential backoff (1s, 2s, 4s delays)
+- **Smart Retry**: Only retries on network errors, 429 (rate limit), and 5xx server errors
+- **No Retry**: Auth errors (401/403) and client errors (4xx) are not retried
+- **Automatic Cleanup**: Old rate limit entries are cleaned up every 5 minutes
 
-class RateLimiter {
-  private requests: Map<string, number[]> = new Map();
-
-  canMakeRequest(key: string, config: RateLimitConfig): boolean {
-    const now = Date.now();
-    const requests = this.requests.get(key) || [];
-    const recentRequests = requests.filter(time => now - time < config.windowMs);
-    
-    if (recentRequests.length >= config.maxRequests) {
-      return false;
-    }
-    
-    recentRequests.push(now);
-    this.requests.set(key, recentRequests);
-    return true;
-  }
-
-  reset(key: string): void {
-    this.requests.delete(key);
-  }
-}
-
-export const rateLimiter = new RateLimiter();
-**Priority:** 🟡 High - Nice to have
+**Priority:** 🟡 High - ✅ Completed
 
 ---
 
 ## 🟢 Medium Priority Security Enhancements (Frontend Only)
 
 ### 7. **Token Expiration Handling**
-**Current State:** Token refresh exists but could be more robust
+**Current State:** ✅ Implemented - Enhanced token expiration handling
 **Risk:** Low-Medium - Token theft, replay attacks
 
 **Solution (Frontend Only):**
-- Add token expiration warnings
-- Implement automatic logout on multiple refresh failures
-- Add token validation before use
+- ✅ Token expiration warnings (5 min and 1 min before expiration)
+- ✅ Automatic logout on multiple refresh failures (3 consecutive failures)
+- ✅ Token validation before use (structure and format checks)
+- ✅ Periodic expiration checks (every 30 seconds)
 
-**Files to Update:**
-- `contexts/AuthContext.tsx` - Enhance token refresh and validation logic
+**Files Updated:**
+- `contexts/AuthContext.tsx` - Enhanced token refresh and validation logic
 
-**Priority:** 🟢 Medium - Nice to have
+**Implementation Details:**
+- **Expiration Warnings**: Warns at 5 minutes and 1 minute before expiration
+- **Refresh Failure Tracking**: Logs out after 3 consecutive refresh failures
+- **Token Validation**: Validates token structure, format, and expiration before use
+- **Periodic Checks**: Checks token expiration every 30 seconds
+
+**Priority:** 🟢 Medium - ✅ Completed
 
 ---
 
 ### 8. **Error Message Sanitization**
-**Current State:** Error messages may expose sensitive information
+**Current State:** ✅ Implemented - Error messages are sanitized before display
 **Risk:** Low - Information disclosure
 
 **Solution (Frontend Only):**
-- Sanitize error messages before displaying to users
-- Show generic messages to users, log detailed errors
-- Avoid exposing API endpoints, tokens, or internal structure
+- ✅ Sanitize error messages before displaying to users
+- ✅ Show generic messages to users, log detailed errors
+- ✅ Remove API endpoints, tokens, file paths, and internal structure
 
-**Files to Update:**
-- `utils/errorHandling.ts` - Sanitize error messages
+**Files Updated:**
+- `utils/errorHandling.ts` - Added `sanitizeErrorMessage()` function and integrated into `formatErrorMessage()`
 
-**Priority:** 🟢 Medium - Nice to have
+**Implementation Details:**
+- **Removes**: API endpoints, tokens, secrets, file paths, stack traces, internal IDs
+- **Limits**: Message length to 200 characters
+- **Generic Messages**: Uses user-friendly messages based on error type
+- **Security**: Prevents exposure of sensitive information in error messages
+
+**Priority:** 🟢 Medium - ✅ Completed
 
 ---
 
 ### 9. **Session Timeout (Client-Side)**
-**Current State:** Basic session management exists
+**Current State:** ✅ Implemented - Session timeout based on inactivity
 **Risk:** Low - Session hijacking
 
 **Solution (Frontend Only):**
-- Add session timeout based on inactivity
-- Track last activity and logout after extended inactivity
+- ✅ Session timeout based on inactivity (30 minutes)
+- ✅ Track last activity (mouse, keyboard, touch, scroll events)
+- ✅ Automatic logout after extended inactivity
 
-**Files to Update:**
-- `contexts/AuthContext.tsx` - Add session timeout logic
+**Files Updated:**
+- `contexts/AuthContext.tsx` - Added session timeout logic with activity tracking
 
-**Priority:** 🟢 Medium - Nice to have
+**Implementation Details:**
+- **Timeout Duration**: 30 minutes of inactivity
+- **Activity Tracking**: Tracks mouse, keyboard, touch, and scroll events
+- **Automatic Logout**: Logs out user after timeout with clear message
+- **Periodic Checks**: Checks for timeout every minute
+
+**Priority:** 🟢 Medium - ✅ Completed
 
 ---
 
@@ -373,13 +364,13 @@ export const rateLimiter = new RateLimiter();
 - [x] Enforce HTTPS in production (#4)
 
 ### High Priority:
-- [ ] Configure Content Security Policy for web (#5) ⏭️ NEXT
-- [ ] Implement client-side rate limiting (#6)
+- [x] Configure Content Security Policy for web (#5)
+- [x] Implement client-side rate limiting (#6)
 
 ### Medium Priority:
-- [ ] Enhance token expiration handling (#7)
-- [ ] Sanitize error messages (#8)
-- [ ] Add session timeout (#9)
+- [x] Enhance token expiration handling (#7)
+- [x] Sanitize error messages (#8)
+- [x] Add session timeout (#9)
 
 ---
 
@@ -411,10 +402,65 @@ export const rateLimiter = new RateLimiter();
 4. **HTTPS enforcement** (#4) - Added production validation for all API calls
 5. **Toast crash fix** - Fixed Android crash in EnhancedToast component (gesture handler conflict)
 
-### ⏭️ Next Session:
-- **Content Security Policy** (#5) - Environment-aware CSP for web platform
-  - Must support: local development (localhost), Rork (rork.com), and future production domains
-  - Use `AppConfig.env` and `AppConfig.api.baseUrl` for dynamic configuration
+### ✅ Completed Today:
+6. **Content Security Policy** (#5) - Environment-aware CSP for web platform
+   - Created `utils/csp.ts` with dynamic CSP generation
+   - Added CSP meta tag to `app/_layout.tsx` for web platform
+   - Supports: local development (localhost), Rork (rork.com), and production domains
+   - Uses `AppConfig.env` and `AppConfig.api.baseUrl` for dynamic configuration
+   - Allows Google APIs for OAuth and Gmail integration
+   - **Deployment configurations added:**
+     - `vercel.json` - Vercel headers with full CSP including `frame-ancestors`
+     - `netlify.toml` - Netlify headers with full CSP including `frame-ancestors`
+     - `public/_headers` - Headers file for Render/Cloudflare Pages
+     - `docs/DEPLOYMENT_CSP.md` - Complete deployment guide
+
+### ✅ Completed Today:
+7. **Client-side rate limiting** (#6) - Rate limiting with exponential backoff
+   - Created `utils/rateLimiter.ts` with comprehensive rate limiting and retry utilities
+   - Integrated into `GmailSyncContext` with smart retry logic
+   - Prevents API abuse and handles rate limit errors gracefully
+   - Automatic cleanup to prevent memory leaks
+
+### ✅ Completed Today:
+8. **Token expiration handling** (#7) - Enhanced token expiration handling
+   - Token expiration warnings at 5 min and 1 min before expiration
+   - Automatic logout after 3 consecutive refresh failures
+   - Token validation before use
+   - Periodic expiration checks every 30 seconds
+
+9. **Error message sanitization** (#8) - Error messages are sanitized
+   - Removes API endpoints, tokens, file paths, and internal structure
+   - Shows generic user-friendly messages
+   - Prevents information disclosure
+
+10. **Session timeout** (#9) - Session timeout based on inactivity
+    - 30-minute inactivity timeout
+    - Tracks user activity (mouse, keyboard, touch, scroll)
+    - Automatic logout with clear message
+
+---
+
+## 📱 App Store Submission Requirements
+
+**Note:** For submitting to Google Play Store and Apple App Store, see `docs/APP_STORE_SUBMISSION.md` for additional requirements including:
+- Privacy Policy (REQUIRED)
+- Data collection disclosure
+- Privacy labels (iOS) / Data Safety section (Android)
+- Network security configuration
+- ProGuard/R8 rules (Android)
+- Additional security recommendations
+
+---
+
+## 🎉 All Security Enhancements Complete!
+
+All frontend-only security enhancements have been successfully implemented:
+- ✅ **Critical**: Secure token storage, deep link validation, input sanitization, HTTPS enforcement
+- ✅ **High Priority**: Content Security Policy, client-side rate limiting
+- ✅ **Medium Priority**: Token expiration handling, error message sanitization, session timeout
+
+The application is now ready for production with comprehensive frontend security measures in place.
 
 ---
 

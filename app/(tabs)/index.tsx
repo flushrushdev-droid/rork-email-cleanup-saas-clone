@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useState } from 'react';
-import { Text, View, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, Trash2, FolderOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,7 @@ import { AccessibleButton } from '@/components/common/AccessibleButton';
 import { ErrorDisplay } from '@/components/common/ErrorDisplay';
 import { StatCard } from '@/components/common/StatCard';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { formatAccessibilityLabel } from '@/utils/accessibility';
 import { createOverviewStyles } from '@/styles/app/index';
 import { HealthCard } from '@/components/stats/HealthCard';
@@ -35,7 +36,6 @@ export default function OverviewScreen() {
   const { trashedEmails } = useEmailState();
   const { handleAsync, error, clearError } = useErrorHandler({ showAlert: false });
   const styles = React.useMemo(() => createOverviewStyles(colors), [colors]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const handleSync = useCallback(async () => {
     if (isDemoMode) {
@@ -47,13 +47,10 @@ export default function OverviewScreen() {
     }, { showAlert: false });
   }, [isDemoMode, syncMailbox, handleAsync, clearError]);
 
-  const handleRefresh = useCallback(async () => {
-    const { triggerRefreshHaptic } = await import('@/utils/haptics');
-    await triggerRefreshHaptic();
-    setIsRefreshing(true);
-    await handleSync();
-    setIsRefreshing(false);
-  }, [handleSync]);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: handleSync,
+    additionalLoadingState: isSyncing,
+  });
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -75,14 +72,7 @@ export default function OverviewScreen() {
       <ScrollView 
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 80 }]} 
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing || isSyncing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
+        refreshControl={refreshControl}
       >
         {!isDemoMode && lastSyncedAt && (
           <LastSyncedIndicator

@@ -207,3 +207,6 @@ To update existing components to use Dynamic Type:
 
 Dynamic Type support is now available throughout the app. Components can opt-in to Dynamic Type by using the enhanced `AppText` component with appropriate `dynamicTypeStyle` and `maxFontSizeMultiplier` props.
 
+
+
+

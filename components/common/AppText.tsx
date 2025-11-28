@@ -86,11 +86,14 @@ export function AppText({
 
 	// Extract fontSize from style if provided
 	const styleObj = Array.isArray(style) ? Object.assign({}, ...style) : (style || {});
-	const fontSize = (styleObj as any)?.fontSize as number | undefined;
+	const fontSize = (styleObj && typeof styleObj === 'object' && 'fontSize' in styleObj && typeof styleObj.fontSize === 'number')
+		? styleObj.fontSize
+		: undefined;
 
 	// Calculate line height - use provided lineHeight or calculate from fontSize
 	const baseFontSize = fontSize || (dynamicTypeStyle ? getScaledFontSize(dynamicTypeStyle) : 16);
-	const lineHeightMultiplier = fontSize && (styleObj as any)?.lineHeight ? undefined : 
+	const hasLineHeight = styleObj && typeof styleObj === 'object' && 'lineHeight' in styleObj && typeof styleObj.lineHeight === 'number';
+	const lineHeightMultiplier = fontSize && hasLineHeight ? undefined : 
 		(dynamicTypeStyle === 'title1' || dynamicTypeStyle === 'title2' || dynamicTypeStyle === 'title3' || dynamicTypeStyle === 'largeTitle' ? 1.2 : 1.4);
 	
 	const defaultLineHeight = lineHeightMultiplier ? getLineHeight(baseFontSize, lineHeightMultiplier) : undefined;
@@ -104,7 +107,7 @@ export function AppText({
 		<Text
 			allowFontScaling={allowFontScaling}
 			maxFontSizeMultiplier={maxMultiplier}
-			{...(Platform.OS === 'android' ? { includeFontPadding: false, textBreakStrategy: 'simple' as any } : {})}
+			{...(Platform.OS === 'android' ? { includeFontPadding: false, textBreakStrategy: 'simple' as 'simple' } : {})}
 			style={[
 				defaultLineHeight && { lineHeight: defaultLineHeight },
 				dynamicStyle,

@@ -21,14 +21,23 @@ import { logConfig } from '@/config/env';
 import { queryClientConfig } from '@/lib/queryCache';
 import { useIOSShortcuts } from '@/hooks/useIOSShortcuts';
 import { useAndroidIntents } from '@/hooks/useAndroidIntents';
+import { applyCSP } from '@/utils/csp';
+import { validateProductionBuild } from '@/utils/debugDetection';
+import { initSentry } from '@/lib/sentry';
 
 const appLogger = createScopedLogger('App');
+
+// Initialize Sentry for error tracking (must be called before any other imports that might throw)
+initSentry();
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 // Log configuration on app startup (development only)
 logConfig();
+
+// Validate production build (warns if debug features are enabled in production)
+validateProductionBuild();
 
 // Create QueryClient with optimized cache configuration
 const queryClient = new QueryClient(queryClientConfig);
@@ -122,6 +131,11 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  // Apply Content Security Policy for web platform
+  useEffect(() => {
+    applyCSP();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>

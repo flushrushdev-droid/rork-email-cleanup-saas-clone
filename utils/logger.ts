@@ -3,10 +3,13 @@
  * 
  * Environment-aware logging utility that:
  * - Logs to console in development
- * - Can be enhanced later with external logging service (Sentry, LogRocket, etc.)
+ * - Integrates with Sentry for production error tracking
  * - Provides structured logging interface
- * - Can be easily extended to send logs to remote services in production
+ * - Automatically sends errors to Sentry in production
  */
+
+import * as Sentry from '@sentry/react-native';
+import { isDevelopmentMode } from './debugDetection';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -68,12 +71,55 @@ const log = (level: LogLevel, message: string, data?: unknown, context?: Record<
     }
   }
 
-  // TODO: In production, send to external logging service (Sentry, LogRocket, etc.)
-  // This is where Recommendation #22 (Error Logging Service) would integrate
-  // Example:
-  // if (!isDev) {
-  //   sendToLoggingService(entry);
-  // }
+  // Send to Sentry in production (errors and warnings only)
+  if (!isDev && (level === 'error' || level === 'warn')) {
+    try {
+      if (level === 'error' && data instanceof Error) {
+        // Capture exception with context
+        Sentry.captureException(data, {
+          contexts: {
+            custom: context || {},
+          },
+          tags: {
+            logger: 'true',
+            message,
+          },
+        });
+      } else if (level === 'error') {
+        // Capture error message if not an Error object
+        Sentry.captureMessage(message, {
+          level: 'error',
+          contexts: {
+            custom: {
+              ...context,
+              errorData: data,
+            },
+          },
+          tags: {
+            logger: 'true',
+          },
+        });
+      } else if (level === 'warn') {
+        // Capture warnings as messages
+        Sentry.captureMessage(message, {
+          level: 'warning',
+          contexts: {
+            custom: {
+              ...context,
+              warningData: data,
+            },
+          },
+          tags: {
+            logger: 'true',
+          },
+        });
+      }
+    } catch (sentryError) {
+      // Don't let Sentry errors break the app
+      // eslint-disable-next-line no-console
+      console.error('[Logger] Failed to send to Sentry:', sentryError);
+    }
+  }
 };
 
 /**
@@ -150,5 +196,7 @@ export const createScopedLogger = (scope: string) => ({
     logger.error(`[${scope}] ${message}`, error, context);
   },
 });
+
+
 
 

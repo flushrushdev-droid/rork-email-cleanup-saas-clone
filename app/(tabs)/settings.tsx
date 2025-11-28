@@ -223,7 +223,7 @@ export default function SettingsScreen() {
             accessibilityLabel="Terms & Privacy Policy"
             accessibilityHint="Double tap to view terms and privacy policy"
             style={[styles.menuItem, { backgroundColor: colors.surface }]} 
-            onPress={() => showInfo('Read our policy on example.com/policy', { duration: 3000 })}
+            onPress={() => router.push('/privacy-policy')}
           >
             <View style={[styles.menuIcon, { backgroundColor: colors.textSecondary + '20' }]}>
               <FileText size={20} color={colors.textSecondary} />

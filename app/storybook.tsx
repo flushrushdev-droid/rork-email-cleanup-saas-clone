@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Platform, Text } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { createScopedLogger } from '@/utils/logger';
+import { isDevelopmentMode } from '@/utils/debugDetection';
 
 export default function StorybookScreen() {
   const { colors } = useTheme();
@@ -35,7 +37,11 @@ export default function StorybookScreen() {
           setStorybookComponent(() => module.default);
         })
         .catch((err) => {
-          console.warn('Failed to load Storybook:', err);
+          // Only log in development (Storybook is dev-only anyway)
+          if (isDevelopmentMode()) {
+            const storybookLogger = createScopedLogger('Storybook');
+            storybookLogger.warn('Failed to load Storybook', err);
+          }
           setError('Failed to load Storybook. Make sure all dependencies are installed.');
         });
     }

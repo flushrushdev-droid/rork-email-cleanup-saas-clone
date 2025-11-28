@@ -7,6 +7,7 @@ import { APIError, AuthError, NetworkError, normalizeError } from '@/utils/error
 import { createScopedLogger } from '@/utils/logger';
 import { AppConfig, validateSecureUrl } from '@/config/env';
 import { getStaleTime, getCacheTTL, CACHE_KEYS } from '@/lib/queryCache';
+import { rateLimiter, retryWithBackoff, shouldRetryError, DEFAULT_RATE_LIMIT, DEFAULT_RETRY_CONFIG } from '@/utils/rateLimiter';
 
 // Validate Gmail API base URL is HTTPS in production
 const GMAIL_API_BASE = validateSecureUrl(AppConfig.gmail.apiBase);
@@ -19,62 +20,100 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   const makeGmailRequest = async (endpoint: string, options: RequestInit = {}) => {
-    try {
-      const accessToken = await getValidAccessToken();
-      if (!accessToken) {
-        throw new AuthError('No valid access token. Please sign in again.');
-      }
-
-      // Construct full URL and validate it's secure in production
-      const fullUrl = `${GMAIL_API_BASE}${endpoint}`;
-      const validatedUrl = validateSecureUrl(fullUrl);
-
-      const response = await fetch(validatedUrl, {
-        ...options,
-        headers: {
-          ...options.headers,
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const statusCode = response.status;
-        const errorMessage = errorData.error?.message || `Gmail API error: ${statusCode}`;
-        
-        // Handle specific error codes
-        if (statusCode === 401 || statusCode === 403) {
-          throw new AuthError('Authentication failed. Please sign in again.', new Error(errorMessage));
-        }
-        
-        if (statusCode === 429) {
-          throw new APIError('Too many requests. Please wait a moment and try again.', statusCode, true);
-        }
-        
-        if (statusCode >= 500) {
-          throw new APIError('Gmail service is temporarily unavailable. Please try again later.', statusCode, true);
-        }
-        
-        throw new APIError(errorMessage, statusCode, false);
-      }
-
-      return response.json();
-    } catch (error) {
-      // Re-throw if already a known error type
-      if (error instanceof APIError || error instanceof AuthError || error instanceof NetworkError) {
-        throw error;
-      }
-      
-      // Check for network errors
-      const normalized = normalizeError(error);
-      if (normalized.code === 'NETWORK_ERROR') {
-        throw new NetworkError('Unable to connect to Gmail. Please check your internet connection.', error instanceof Error ? error : undefined);
-      }
-      
-      // Re-throw as API error for unknown cases
-      throw new APIError('An error occurred while communicating with Gmail.', undefined, false, error instanceof Error ? error : undefined);
+    // Use endpoint as rate limit key (allows different limits per endpoint if needed)
+    const rateLimitKey = `gmail:${endpoint}`;
+    
+    // Check rate limit before making request
+    if (!rateLimiter.canMakeRequest(rateLimitKey, DEFAULT_RATE_LIMIT)) {
+      const waitTime = rateLimiter.getTimeUntilNextRequest(rateLimitKey, DEFAULT_RATE_LIMIT);
+      gmailLogger.warn(`Rate limit exceeded for ${endpoint}. Waiting ${Math.ceil(waitTime / 1000)}s`);
+      throw new APIError(
+        `Too many requests. Please wait ${Math.ceil(waitTime / 1000)} seconds before trying again.`,
+        429,
+        true
+      );
     }
+
+    // Wrap the actual request with retry logic
+    return retryWithBackoff(
+      async () => {
+        try {
+          const accessToken = await getValidAccessToken();
+          if (!accessToken) {
+            throw new AuthError('No valid access token. Please sign in again.');
+          }
+
+          // Construct full URL and validate it's secure in production
+          const fullUrl = `${GMAIL_API_BASE}${endpoint}`;
+          const validatedUrl = validateSecureUrl(fullUrl);
+
+          const response = await fetch(validatedUrl, {
+            ...options,
+            headers: {
+              ...options.headers,
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const statusCode = response.status;
+            const errorMessage = errorData.error?.message || `Gmail API error: ${statusCode}`;
+            
+            // Handle specific error codes
+            if (statusCode === 401 || statusCode === 403) {
+              // Don't retry auth errors
+              throw new AuthError('Authentication failed. Please sign in again.', new Error(errorMessage));
+            }
+            
+            if (statusCode === 429) {
+              // Rate limit error - will be retried if configured
+              throw new APIError('Too many requests. Please wait a moment and try again.', statusCode, true);
+            }
+            
+            if (statusCode >= 500) {
+              // Server error - will be retried if configured
+              throw new APIError('Gmail service is temporarily unavailable. Please try again later.', statusCode, true);
+            }
+            
+            // Client errors (4xx) - don't retry
+            throw new APIError(errorMessage, statusCode, false);
+          }
+
+          return response.json();
+        } catch (error) {
+          // Re-throw if already a known error type
+          if (error instanceof APIError || error instanceof AuthError || error instanceof NetworkError) {
+            throw error;
+          }
+          
+          // Check for network errors
+          const normalized = normalizeError(error);
+          if (normalized.code === 'NETWORK_ERROR') {
+            throw new NetworkError('Unable to connect to Gmail. Please check your internet connection.', error instanceof Error ? error : undefined);
+          }
+          
+          // Re-throw as API error for unknown cases
+          throw new APIError('An error occurred while communicating with Gmail.', undefined, false, error instanceof Error ? error : undefined);
+        }
+      },
+      DEFAULT_RETRY_CONFIG,
+      (error) => {
+        // Don't retry auth errors (401, 403)
+        if (error instanceof AuthError) {
+          return false;
+        }
+        
+        // Don't retry client errors (4xx) except 429
+        if (error instanceof APIError && error.statusCode && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 429) {
+          return false;
+        }
+        
+        // Retry network errors, 429, and 5xx errors
+        return shouldRetryError(error, DEFAULT_RETRY_CONFIG);
+      }
+    );
   };
 
   const profileQuery = useQuery({

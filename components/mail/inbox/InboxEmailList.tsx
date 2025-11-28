@@ -9,6 +9,7 @@ import { SwipeableEmailItem } from './SwipeableEmailItem';
 import { InboxDraftItem } from './InboxDraftItem';
 import { EmailSkeleton } from '@/components/common/EmailSkeleton';
 import { EmptyState } from '@/components/common/EmptyState';
+import { getOptimizedFlatListProps } from '@/utils/listConfig';
 
 interface InboxEmailListProps {
   filteredEmails: EmailMessage[];
@@ -29,7 +30,7 @@ interface InboxEmailListProps {
 }
 
 // Empty state components using EmptyState component
-const DraftsEmptyState = React.memo<{ activeFilter: FilterType; colors: any }>(({ activeFilter, colors }) => (
+const DraftsEmptyState = React.memo<{ activeFilter: FilterType; colors: import('@/constants/colors').ThemeColors }>(({ activeFilter, colors }) => (
   <EmptyState
     icon={FileEdit}
     title={activeFilter === 'drafts-ai' ? 'No AI drafts' : 'No drafts'}
@@ -40,7 +41,7 @@ const DraftsEmptyState = React.memo<{ activeFilter: FilterType; colors: any }>((
 ));
 DraftsEmptyState.displayName = 'DraftsEmptyState';
 
-const SentEmptyState = React.memo<{ colors: any }>(({ colors }) => (
+const SentEmptyState = React.memo<{ colors: import('@/constants/colors').ThemeColors }>(({ colors }) => (
   <EmptyState
     icon={Send}
     title="No sent emails"
@@ -51,7 +52,7 @@ const SentEmptyState = React.memo<{ colors: any }>(({ colors }) => (
 ));
 SentEmptyState.displayName = 'SentEmptyState';
 
-const TrashEmptyState = React.memo<{ colors: any }>(({ colors }) => (
+const TrashEmptyState = React.memo<{ colors: import('@/constants/colors').ThemeColors }>(({ colors }) => (
   <EmptyState
     icon={Trash2}
     title="Trash is empty"
@@ -62,7 +63,7 @@ const TrashEmptyState = React.memo<{ colors: any }>(({ colors }) => (
 ));
 TrashEmptyState.displayName = 'TrashEmptyState';
 
-const NoEmailsEmptyState = React.memo<{ colors: any }>(({ colors }) => (
+const NoEmailsEmptyState = React.memo<{ colors: import('@/constants/colors').ThemeColors }>(({ colors }) => (
   <EmptyState
     icon={Mail}
     title="No emails found"
@@ -166,11 +167,7 @@ export function InboxEmailList({
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
         ListEmptyComponent={draftListEmptyComponent}
-        removeClippedSubviews={true}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        updateCellsBatchingPeriod={50}
+        {...getOptimizedFlatListProps()}
       />
     );
   }
@@ -190,11 +187,7 @@ export function InboxEmailList({
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
       ListEmptyComponent={emailListEmptyComponent}
-      removeClippedSubviews={true}
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={10}
-      updateCellsBatchingPeriod={50}
+      {...getOptimizedFlatListProps()}
     />
   );
 }

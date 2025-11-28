@@ -801,9 +801,43 @@ const handleSync = async () => {
 
 ### 22. **Implement Error Logging Service**
 **Priority: Medium**
-**Status: ⏭️ SKIPPED** (Better suited for production monitoring - structured logging already in place)
+**Status: ✅ COMPLETED**
 
-**Note:** Skipped as frontend error logging services (Sentry, LogRocket) are more valuable when the app is in production with real users. The codebase already has structured logging (`createScopedLogger`) and proper error handling (`useErrorHandler`, `ErrorBoundary`). Revisit when preparing for production launch.
+**Completed Work:**
+- ✅ Installed and configured `@sentry/react-native` SDK
+- ✅ Created Sentry initialization module (`lib/sentry.ts`) with environment-aware configuration
+- ✅ Integrated Sentry with existing logger utility (`utils/logger.ts`) - errors and warnings automatically sent to Sentry in production
+- ✅ Enhanced ErrorBoundary to capture React component errors with component stack traces
+- ✅ Added user context tracking - automatically sets user ID/email when users sign in/out
+- ✅ Implemented breadcrumb tracking for user actions (sign in, sign out)
+- ✅ Configured error filtering to avoid noise (e.g., handled network errors)
+- ✅ Added performance monitoring with configurable sample rates
+- ✅ Environment-aware: Only active in production (or when explicitly enabled in dev)
+
+**Key Features:**
+- **Automatic Error Capture**: All errors logged via `logger.error()` are automatically sent to Sentry in production
+- **React Error Boundaries**: Component errors are captured with full React component stack
+- **User Context**: User ID and email are automatically associated with errors when logged in
+- **Breadcrumbs**: User actions (sign in/out) are tracked to help debug error context
+- **Performance Monitoring**: Tracks app performance with configurable sample rates
+- **Smart Filtering**: Filters out expected errors (e.g., offline network errors)
+
+**Configuration:**
+- Set `EXPO_PUBLIC_SENTRY_DSN` environment variable with your Sentry DSN
+- Optionally set `EXPO_PUBLIC_SENTRY_ENABLE_IN_DEV=true` to enable Sentry in development mode
+- Sentry is automatically disabled in development unless explicitly enabled
+
+**Note on Backend Error Logging:**
+- **Backend will use self-hosted GlitchTip** instead of Sentry for error logging
+- GlitchTip is Sentry-compatible, so the frontend can easily be adapted to use GlitchTip if needed
+- This allows for full control over error logging infrastructure and data privacy
+
+**Files Created/Modified:**
+- `lib/sentry.ts` - Sentry initialization and utilities
+- `utils/logger.ts` - Integrated Sentry for error/warning logging
+- `components/common/ErrorBoundary.tsx` - Added Sentry exception capture
+- `contexts/AuthContext.tsx` - Added user context and breadcrumb tracking
+- `app/_layout.tsx` - Initialize Sentry at app startup
 
 ---
 
@@ -1108,8 +1142,8 @@ const handleSync = async () => {
 ### Phase 4: Advanced (COMPLETED)
 - ✅ Add image optimization (COMPLETED - Recommendation #2)
 - ✅ Context optimization (COMPLETED - Recommendation #3)
+- ✅ Error logging service (COMPLETED - Recommendation #22)
 - ⏭️ Code splitting (DEFERRED - Recommendation #4 - To be done as final refactoring step)
-- ⏭️ Error logging service (SKIPPED - Recommendation #22)
 
 **Note:** Phase 4 is complete. Code splitting deferred to final refactoring phase. Remaining items are additional enhancements organized by priority.
 
@@ -1135,9 +1169,9 @@ const handleSync = async () => {
 The codebase is well-structured and follows good practices. Most enhancements have been completed, taking the app from good to excellent, with significant improvements in performance, user experience, and maintainability.
 
 **Current Status:**
-- ✅ **26 recommendations fully completed** (87% completion rate)
+- ✅ **27 recommendations fully completed** (90% completion rate)
 - ⚠️ **3 recommendations partially completed** (#21 Storybook, #28 iOS Features, #29 Android Features)
-- ⏭️ **3 recommendations skipped/deferred** (#4 Code Splitting, #22 Error Logging Service, #30 Performance Monitoring)
+- ⏭️ **2 recommendations skipped/deferred** (#4 Code Splitting, #30 Performance Monitoring)
 - 📋 **0 recommendations not started**
 
 **Completed Phases:**

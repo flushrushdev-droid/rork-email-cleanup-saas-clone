@@ -20,7 +20,7 @@ interface EmailDetailHeaderProps {
   currentIndex?: number;
   totalCount?: number;
   insets: EdgeInsets;
-  colors: any;
+  colors: import('@/constants/colors').ThemeColors;
 }
 
 export function EmailDetailHeader({

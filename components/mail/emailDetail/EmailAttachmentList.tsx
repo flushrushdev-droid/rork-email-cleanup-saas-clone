@@ -3,10 +3,11 @@ import { View } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { Paperclip } from 'lucide-react-native';
 import { createEmailDetailStyles } from './styles';
+import type { ThemeColors } from '@/constants/colors';
 
 interface EmailAttachmentListProps {
   attachments?: Array<{ name: string; size: string }>;
-  colors: any;
+  colors: ThemeColors;
 }
 
 export function EmailAttachmentList({ attachments, colors }: EmailAttachmentListProps) {

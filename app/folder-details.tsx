@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { createFolderDetailsStyles } from '@/styles/app/folder-details';
 import { categorizeEmail } from '@/utils/emailCategories';
+import { getOptimizedFlatListProps } from '@/utils/listConfig';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/common/EmptyState';
 import { FolderOpen } from 'lucide-react-native';
@@ -43,7 +44,7 @@ export default function FolderDetailsScreen() {
   const filteredEmails = useMemo(() => {
     // For now, custom folders have no rule logic -> show empty
     if (params.isCustom === '1') {
-      return [] as any[];
+      return [] as EmailMessage[];
     }
     if (params.folderName === 'Action Required') {
       return emailsWithCategories.filter(email => 
@@ -138,11 +139,7 @@ export default function FolderDetailsScreen() {
           }
           contentContainerStyle={[{ paddingBottom: 40 }]}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          updateCellsBatchingPeriod={50}
+          {...getOptimizedFlatListProps()}
           style={styles.scrollView}
         />
       </View>

@@ -11,6 +11,7 @@ import type { AuthTokens, User } from '@/constants/types';
 import { createScopedLogger } from '@/utils/logger';
 import { AppConfig, getRedirectUri, validateSecureUrl } from '@/config/env';
 import { isValidOAuthCode } from '@/utils/security';
+import { setSentryUser, addBreadcrumb } from '@/lib/sentry';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -68,6 +69,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [refreshFailureCount, setRefreshFailureCount] = useState(0);
+  const [tokenExpirationWarning, setTokenExpirationWarning] = useState<string | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+  
+  // Maximum number of consecutive refresh failures before logout
+  const MAX_REFRESH_FAILURES = 3;
+  
+  // Token expiration warning thresholds (in milliseconds)
+  const EXPIRATION_WARNING_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiration
+  const EXPIRATION_IMMINENT_THRESHOLD = 1 * 60 * 1000; // 1 minute before expiration
+  
+  // Session timeout (30 minutes of inactivity)
+  const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -290,6 +304,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       setUser(newUser);
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+      
+      // Update Sentry user context
+      setSentryUser({
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.name,
+      });
+      addBreadcrumb('User signed in', 'auth', { userId: newUser.id, email: newUser.email });
     } catch (err) {
       authLogger.error('Error fetching user info', err);
       throw err;
@@ -317,6 +339,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (!response.ok) {
+        const newFailureCount = refreshFailureCount + 1;
+        setRefreshFailureCount(newFailureCount);
+        
+        // Logout after multiple consecutive failures
+        if (newFailureCount >= MAX_REFRESH_FAILURES) {
+          authLogger.warn(`Token refresh failed ${newFailureCount} times. Logging out.`);
+          await clearAuth();
+          setError('Session expired. Please sign in again.');
+          throw new Error('Token refresh failed multiple times');
+        }
+        
         throw new Error('Token refresh failed');
       }
 
@@ -329,13 +362,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       };
 
       setTokens(newTokens);
+      // Reset failure count on successful refresh
+      setRefreshFailureCount(0);
+      // Clear expiration warning
+      setTokenExpirationWarning(null);
+      
       // Store tokens securely in SecureStore
       await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
       
       return newTokens.accessToken;
     } catch (err) {
       authLogger.error('Error refreshing token', err);
-      await clearAuth();
+      
+      // Only clear auth if we've exceeded max failures
+      if (refreshFailureCount >= MAX_REFRESH_FAILURES - 1) {
+        await clearAuth();
+      }
+      
       throw err;
     }
   };
@@ -361,12 +404,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       await AsyncStorage.setItem(STORAGE_KEYS.DEMO_MODE, 'true');
       
       setIsDemoMode(true);
-      setUser({
+      const demoUser = {
         id: 'demo',
         email: 'demo@example.com',
         name: 'Demo User',
-        provider: 'google',
+        provider: 'google' as const,
+      };
+      setUser(demoUser);
+      
+      // Update Sentry user context for demo mode
+      setSentryUser({
+        id: demoUser.id,
+        email: demoUser.email,
+        username: demoUser.name,
       });
+      addBreadcrumb('User signed in (demo mode)', 'auth', { userId: demoUser.id });
       
       authLogger.info('Demo sign in complete');
       setIsLoading(false);
@@ -394,6 +446,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   };
 
   const clearAuth = async () => {
+    // Clear Sentry user context before clearing auth state
+    setSentryUser(null);
+    addBreadcrumb('User signed out', 'auth');
+    
     setUser(null);
     setTokens(null);
     setIsDemoMode(false);
@@ -405,21 +461,41 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     await AsyncStorage.multiRemove([STORAGE_KEYS.USER, STORAGE_KEYS.DEMO_MODE]);
   };
 
+
   const getValidAccessToken = async (): Promise<string | null> => {
     if (!tokens) return null;
 
-    if (tokens.expiresAt > Date.now() + 60000) {
+    // Validate token structure
+    if (!validateToken(tokens)) {
+      authLogger.warn('Invalid token structure. Clearing auth.');
+      await clearAuth();
+      return null;
+    }
+
+    const now = Date.now();
+    const timeUntilExpiration = tokens.expiresAt - now;
+    
+    // Check expiration and set warnings
+    checkTokenExpiration(tokens.expiresAt);
+
+    // If token expires in more than 1 minute, return it
+    if (timeUntilExpiration > 60000) {
       return tokens.accessToken;
     }
 
+    // Token is expiring soon or expired, try to refresh
     if (tokens.refreshToken) {
       try {
         return await refreshAccessToken(tokens.refreshToken);
-      } catch {
+      } catch (err) {
+        authLogger.error('Failed to refresh token', err);
         return null;
       }
     }
 
+    // No refresh token available
+    authLogger.warn('Token expired and no refresh token available. Clearing auth.');
+    await clearAuth();
     return null;
   };
 
@@ -430,6 +506,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     error,
     isAuthenticated: !!user && (!!tokens || isDemoMode),
     isDemoMode,
+    tokenExpirationWarning,
     signIn,
     signInDemo,
     signOut,

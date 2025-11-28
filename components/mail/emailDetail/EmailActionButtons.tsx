@@ -14,7 +14,7 @@ interface EmailActionButtonsProps {
   onReplyAll: (email: EmailMessage) => void;
   onForward: (email: EmailMessage) => void;
   insets: EdgeInsets;
-  colors: any;
+  colors: import('@/constants/colors').ThemeColors;
 }
 
 export function EmailActionButtons({
