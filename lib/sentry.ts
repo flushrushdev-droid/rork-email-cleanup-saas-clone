@@ -80,12 +80,7 @@ export function initSentry(): void {
       
       // Platform-specific options
       ...(Platform.OS === 'web' && {
-        integrations: [
-          new Sentry.BrowserTracing({
-            // Set sampling rate for web
-            tracePropagationTargets: ['localhost', /^https:\/\/.*\.googleapis\.com/],
-          }),
-        ],
+        integrations: [],
       }),
     });
 
@@ -145,7 +140,7 @@ export function captureException(error: Error, context?: Record<string, unknown>
  * Capture message manually
  * Use this for important events that aren't errors
  */
-export function captureMessage(message: string, level: Sentry.SeverityLevel = 'info', context?: Record<string, unknown>): void {
+export function captureMessage(message: string, level: 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug' = 'info', context?: Record<string, unknown>): void {
   Sentry.captureMessage(message, {
     level,
     contexts: {
