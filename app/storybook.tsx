@@ -6,24 +6,7 @@ import { isDevelopmentMode } from '@/utils/debugDetection';
 
 export default function StorybookScreen() {
   const { colors } = useTheme();
-
-  // Storybook is only available on native platforms (iOS/Android)
-  // It doesn't work with Expo's web bundler due to incompatible dependencies
-  if (Platform.OS === 'web') {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.messageContainer, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.message, { color: colors.text }]}>
-            Storybook is only available on native platforms (iOS/Android).
-          </Text>
-          <Text style={[styles.subMessage, { color: colors.textSecondary }]}>
-            Please use Expo Go or a development build to view Storybook.
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
+  
   // Dynamically import Storybook only on native platforms
   // This prevents web bundler from trying to resolve Storybook dependencies
   const [StorybookComponent, setStorybookComponent] = React.useState<React.ComponentType | null>(null);
@@ -46,6 +29,23 @@ export default function StorybookScreen() {
         });
     }
   }, []);
+
+  // Storybook is only available on native platforms (iOS/Android)
+  // It doesn't work with Expo's web bundler due to incompatible dependencies
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.messageContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.message, { color: colors.text }]}>
+            Storybook is only available on native platforms (iOS/Android).
+          </Text>
+          <Text style={[styles.subMessage, { color: colors.textSecondary }]}>
+            Please use Expo Go or a development build to view Storybook.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (error) {
     return (
