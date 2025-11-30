@@ -86,6 +86,28 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   // Session timeout (30 minutes of inactivity)
   const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
+  // Get device info for Android OAuth (required for private IP redirect URIs)
+  const getDeviceInfo = () => {
+    if (Platform.OS !== 'android') {
+      return {};
+    }
+    
+    // Generate a stable device ID (use installationId if available, otherwise generate one)
+    const deviceId = Constants.installationId || Constants.sessionId || `device-${Date.now()}`;
+    
+    // Get device name (brand + model if available)
+    const deviceName = Platform.constants?.Brand 
+      ? `${Platform.constants.Brand} ${Platform.constants.Model || 'Device'}`.trim()
+      : 'Android Device';
+    
+    return {
+      device_id: deviceId,
+      device_name: deviceName,
+    };
+  };
+
+  const deviceInfo = getDeviceInfo();
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_ID || '',
@@ -103,6 +125,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       extraParams: {
         access_type: 'offline',
         prompt: 'consent',
+        ...deviceInfo, // Add device_id and device_name for Android
       },
     },
     discovery
@@ -263,7 +286,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           // Tokens expired - try to refresh
           if (parsedTokens.refreshToken) {
             try {
-              await refreshAccessToken(parsedTokens.refreshToken);
+          await refreshAccessToken(parsedTokens.refreshToken);
               // After refresh, verify user exists in database
               const userExists = await verifyUserInDatabase(parsedUser.id);
               if (!userExists) {
@@ -289,7 +312,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
               setIsLoading(false);
               return;
             }
-          } else {
+        } else {
             // No refresh token - clear auth
             await clearAuth();
             setIsLoading(false);
@@ -410,7 +433,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         }
       } else {
         // On native, use SecureStore
-        await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
         // Also save refresh token separately for seamless re-login
         if (newTokens.refreshToken) {
           await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken).catch(() => {
@@ -548,7 +571,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           }
         }
       } else {
-        await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
         // Also save refresh token separately for seamless re-login
         if (newTokens.refreshToken) {
           await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken).catch(() => {
@@ -732,7 +755,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     // If you need to revoke tokens (e.g., for security), do it separately
     
     // Clear auth state (this preserves the refresh token in separate storage)
-    await clearAuth();
+      await clearAuth();
   };
 
   const clearAuth = async () => {
@@ -764,9 +787,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         }
       }
     } else {
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKENS).catch(() => {
-        // Ignore errors if item doesn't exist
-      });
+    await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKENS).catch(() => {
+      // Ignore errors if item doesn't exist
+    });
       // Save refresh token separately if it exists
       if (refreshTokenToSave) {
         await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshTokenToSave).catch(() => {
