@@ -174,7 +174,8 @@ app.get("/auth/callback", (c) => {
     
     // Return HTML that:
     // 1. Stays on page briefly so expo-auth-session can detect the code from URL
-    // 2. Then redirects to deep link as fallback
+    // 2. Then *tries* to redirect to deep link as fallback
+    // 3. Also shows a visible button the user can tap to open the app (for browsers that block auto-redirects)
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
@@ -216,6 +217,16 @@ app.get("/auth/callback", (c) => {
       color: #666;
       margin: 10px 0;
     }
+    a.button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 16px;
+      background-color: #007AFF;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+    }
   </style>
   <script>
     (function() {
@@ -224,8 +235,8 @@ app.get("/auth/callback", (c) => {
       // Wait a moment for expo-auth-session to detect the code from URL
       // WebBrowser.maybeCompleteAuthSession() should detect it
       setTimeout(function() {
-        // After 500ms, try redirecting to deep link as fallback
-        // This ensures the app receives the code even if expo-auth-session doesn't detect it
+        // After 500ms, try redirecting to deep link as fallback.
+        // Some browsers/webviews may block this; in that case, the user can tap the button below.
         try {
           window.location.href = deepLink;
         } catch (e) {
@@ -238,7 +249,9 @@ app.get("/auth/callback", (c) => {
         document.querySelector('.container').innerHTML = 
           '<div class="success-icon">✓</div>' +
           '<h1>Authentication Complete</h1>' +
-          '<p>Redirecting to app...</p>';
+          '<p>Redirecting to app...</p>' +
+          '<p style="font-size: 12px; color: #666; margin-top: 8px;">If nothing happens, tap the button below.</p>' +
+          '<a class="button" href="' + deepLink + '">Open AthenX Mail</a>';
       }, 100);
     })();
   </script>
