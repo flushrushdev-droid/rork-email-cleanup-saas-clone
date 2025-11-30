@@ -31,25 +31,35 @@ function getPlatformRedirectUri(): string {
     return getRedirectUri();
   }
   
-  // For native platforms (Android & iOS), use web-based redirect URI
-  // This works because:
-  // 1. Google accepts web URIs (e.g., https://yourdomain.com/auth/callback or http://localhost:8081/auth/callback)
-  // 2. The web callback page will detect mobile and redirect back to app via deep link
-  // 3. The app will receive the deep link and process the OAuth code
+  // For native platforms (Android & iOS), check for tunnel mode dynamically
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri && (hostUri.includes('.exp.direct') || hostUri.includes('ngrok') || hostUri.includes('tunnel'))) {
+    // We're in tunnel mode - use production backend URL (already in Google Console)
+    const prodBackend = AppConfig.api.baseUrl;
+    if (prodBackend && prodBackend.includes('onrender.com')) {
+      return `${prodBackend}/auth/callback`;
+    }
+  }
+  
+  // Use configured redirect base URL
   return `${AppConfig.redirectBaseUrl}/auth/callback`;
 }
 
-const REDIRECT_URI = getPlatformRedirectUri();
+// Compute redirect URI dynamically (not at module load time)
+// Use this function instead of a constant to detect tunnel mode at runtime
+const getCurrentRedirectUri = () => getPlatformRedirectUri();
 
 // Initialize scoped logger for auth context
 const authLogger = createScopedLogger('Auth');
 
-// Log OAuth configuration in development only
-authLogger.debug('OAuth configuration', {
-  redirectUri: REDIRECT_URI,
-  clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
-  platform: Platform.OS,
-});
+  // Log OAuth configuration in development only (computed dynamically)
+  const currentRedirectUri = getPlatformRedirectUri();
+  authLogger.debug('OAuth configuration', {
+    redirectUri: currentRedirectUri,
+    clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+    platform: Platform.OS,
+    hostUri: Constants.expoConfig?.hostUri,
+  });
 
 const STORAGE_KEYS = {
   TOKENS: 'auth_tokens', // Used with SecureStore (no @ prefix needed)
@@ -116,7 +126,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         'https://www.googleapis.com/auth/gmail.modify',
         'https://www.googleapis.com/auth/gmail.labels',
       ],
-      redirectUri: REDIRECT_URI,
+      redirectUri: getCurrentRedirectUri(),
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
       extraParams: {
@@ -359,7 +369,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (GOOGLE_CLIENT_ID) {
         params.append('client_id', GOOGLE_CLIENT_ID);
       }
-      params.append('redirect_uri', REDIRECT_URI);
+      params.append('redirect_uri', getCurrentRedirectUri());
       params.append('grant_type', 'authorization_code');
 
       // For web OAuth, Google requires client_secret even with PKCE
@@ -391,7 +401,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           status: response.status,
           statusText: response.statusText,
           error: errorData,
-          redirectUri: REDIRECT_URI,
+          redirectUri: getCurrentRedirectUri(),
           clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
         });
         throw new Error(errorMessage);
@@ -442,7 +452,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
       authLogger.error('Error exchanging code for tokens', err, {
         errorMessage,
-        redirectUri: REDIRECT_URI,
+        redirectUri: getCurrentRedirectUri(),
         platform: Platform.OS,
       });
       setError(errorMessage);
@@ -692,7 +702,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       // If no stored tokens or refresh failed, proceed with OAuth flow
       authLogger.debug('Starting OAuth flow', {
-        redirectUri: REDIRECT_URI,
+        redirectUri: getCurrentRedirectUri(),
         clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
       });
       const result = await promptAsync();
