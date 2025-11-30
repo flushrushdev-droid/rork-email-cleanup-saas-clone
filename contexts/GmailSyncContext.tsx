@@ -478,28 +478,28 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         }
       }
 
-      // Check if cache is empty - if so, we need a full sync to restore messages
+      // Check cache state for logging (but don't use it to decide sync type)
       const cachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || [];
-      const isCacheEmpty = cachedMessages.length === 0;
       
       gmailLogger.debug('Cache state check', {
         cachedMessageCount: cachedMessages.length,
-        isCacheEmpty,
         hasHistoryId: !!storedHistoryId,
       });
 
-      // If no historyId exists OR cache is empty, do full sync
+      // Decision logic: Only do full sync if we don't have a historyId
+      // If we have a historyId, always do incremental sync (it will fall back to full sync if historyId is too old)
+      // This prevents unnecessary full syncs when cache is empty but we have a valid historyId
       let messages: Email[];
-      if (!storedHistoryId || isCacheEmpty) {
-        if (isCacheEmpty && storedHistoryId) {
-          gmailLogger.info('Cache is empty but historyId exists, performing full sync to restore messages', { historyId: storedHistoryId });
-        } else {
-          gmailLogger.info('No historyId found, performing full sync');
-        }
+      if (!storedHistoryId) {
+        gmailLogger.info('No historyId found, performing full sync');
         messages = await performFullSync(profile);
       } else {
-        // Otherwise, do incremental sync
-        gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { historyId: storedHistoryId });
+        // We have a historyId - do incremental sync
+        // The incremental sync will automatically fall back to full sync if historyId is too old (404 error)
+        gmailLogger.info('HistoryId found, performing incremental sync', { 
+          historyId: storedHistoryId,
+          cacheEmpty: cachedMessages.length === 0,
+        });
         messages = await performIncrementalSync(profile, storedHistoryId);
       }
 

@@ -14,8 +14,8 @@ export const CACHE_TTL = {
   // User profile data - changes infrequently, can cache for longer
   PROFILE: 5 * 60 * 1000, // 5 minutes
   
-  // Email messages - balance freshness with performance
-  MESSAGES: 2 * 60 * 1000, // 2 minutes
+  // Email messages - keep in cache for a long time to avoid full syncs
+  MESSAGES: 24 * 60 * 60 * 1000, // 24 hours (messages should persist across sessions)
   MESSAGE_DETAIL: 5 * 60 * 1000, // 5 minutes (individual messages change less)
   
   // Senders - relatively stable, can cache longer
@@ -54,7 +54,7 @@ export const STALE_TIME = {
   HISTORY: 30 * 60 * 1000, // 30 minutes
   
   // Moderately changing data
-  MESSAGES: 1 * 60 * 1000, // 1 minute
+  MESSAGES: 5 * 60 * 1000, // 5 minutes (increase stale time to reduce refetches)
   MESSAGE_DETAIL: 3 * 60 * 1000, // 3 minutes
   RULES: 5 * 60 * 1000, // 5 minutes
   FOLDERS: 5 * 60 * 1000, // 5 minutes
