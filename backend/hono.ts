@@ -161,26 +161,18 @@ app.get("/auth/callback", (c) => {
   }
   
   if (code) {
-    console.log('[OAuth Callback] OAuth success, redirecting to app with code');
-    // Success - redirect back to app with code
-    const params = new URLSearchParams({
-      code: code,
-      ...(state && { state: state }),
-    });
-    const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
-    console.log('[OAuth Callback] Deep link:', deepLink);
+    console.log('[OAuth Callback] OAuth success, code received');
+    // Success - expo-auth-session should detect the code from the URL
+    // WebBrowser.maybeCompleteAuthSession() will detect when this page loads
+    // We don't need to redirect - just show a success message
+    // The current URL already has the code parameter, so expo-auth-session can detect it
     
-    // Return HTML page that:
-    // 1. Keeps the code in the URL so expo-auth-session can detect it (via WebBrowser.maybeCompleteAuthSession)
-    // 2. Also tries to open the deep link as a fallback
-    // The current URL already has the code, so expo-auth-session should detect it
-    // But we also try to open the deep link to ensure the app receives it
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting...</title>
+  <title>Authentication Complete</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -194,58 +186,38 @@ app.get("/auth/callback", (c) => {
     .container {
       text-align: center;
       padding: 20px;
+      max-width: 400px;
     }
-    .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #007AFF;
+    .success-icon {
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
+      background: #4CAF50;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
       margin: 0 auto 20px;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    h1 {
+      color: #333;
+      margin: 0 0 10px 0;
+    }
+    p {
+      color: #666;
+      margin: 10px 0;
     }
   </style>
-  <script>
-    (function() {
-      const deepLink = "${deepLink}";
-      
-      // expo-auth-session should detect the code from the current URL
-      // via WebBrowser.maybeCompleteAuthSession()
-      // But we also try to open the deep link to ensure it works
-      
-      // Try to open deep link immediately
-      try {
-        window.location.href = deepLink;
-      } catch (e) {
-        console.error('Failed to redirect:', e);
-      }
-      
-      // Try again after a short delay
-      setTimeout(function() {
-        try {
-          window.location.href = deepLink;
-        } catch (e) {
-          console.error('Failed to redirect (timeout):', e);
-        }
-      }, 100);
-      
-      // Show message if still here after 2 seconds
-      setTimeout(function() {
-        document.querySelector('.container').innerHTML = 
-          '<p>Authentication complete!</p>' +
-          '<p style="font-size: 12px; color: #666; margin-top: 20px;">You can close this window and return to the app.</p>';
-      }, 2000);
-    })();
-  </script>
 </head>
 <body>
   <div class="container">
-    <div class="spinner"></div>
-    <p>Completing authentication...</p>
+    <div class="success-icon">✓</div>
+    <h1>Authentication Complete</h1>
+    <p>You can close this window and return to the app.</p>
+    <p style="font-size: 12px; color: #999; margin-top: 20px;">
+      The app should automatically detect the authentication.
+    </p>
   </div>
 </body>
 </html>`);
