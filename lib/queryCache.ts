@@ -3,9 +3,13 @@
  * 
  * Optimized cache TTL and invalidation strategies for different data types.
  * Implements stale-while-revalidate pattern for better UX and offline support.
+ * Includes persistence to disk for long-term cache retention.
  */
 
 import type { QueryClientConfig } from '@tanstack/react-query';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 /**
  * Cache TTL (Time To Live) in milliseconds for different data types
@@ -14,8 +18,8 @@ export const CACHE_TTL = {
   // User profile data - changes infrequently, can cache for longer
   PROFILE: 5 * 60 * 1000, // 5 minutes
   
-  // Email messages - keep in cache for a long time to avoid full syncs
-  MESSAGES: 24 * 60 * 60 * 1000, // 24 hours (messages should persist across sessions)
+  // Email messages - never garbage collect (persisted to disk)
+  MESSAGES: Infinity, // Never garbage collect - persisted to disk
   MESSAGE_DETAIL: 5 * 60 * 1000, // 5 minutes (individual messages change less)
   
   // Senders - relatively stable, can cache longer
@@ -102,6 +106,7 @@ export const CACHE_KEYS = {
 
 /**
  * Get cache TTL for a query key
+ * Returns Infinity for messages to prevent garbage collection (they're persisted to disk)
  */
 export function getCacheTTL(queryKey: readonly unknown[]): number {
   const key = queryKey[0];
@@ -109,7 +114,7 @@ export function getCacheTTL(queryKey: readonly unknown[]): number {
   
   if (key === 'gmail') {
     if (subKey === 'profile') return CACHE_TTL.PROFILE;
-    if (subKey === 'messages') return CACHE_TTL.MESSAGES;
+    if (subKey === 'messages') return CACHE_TTL.MESSAGES; // Infinity - never garbage collect
     if (subKey === 'message') return CACHE_TTL.MESSAGE_DETAIL;
     if (subKey === 'senders') return CACHE_TTL.SENDERS;
   }
@@ -149,6 +154,50 @@ export function getStaleTime(queryKey: readonly unknown[]): number {
 }
 
 /**
+ * Create persister for React Query cache
+ * Uses AsyncStorage on native, localStorage on web
+ */
+const createPersister = () => {
+  if (Platform.OS === 'web') {
+    // For web, create a localStorage persister that matches the async storage API
+    const webStorage = {
+      getItem: (key: string): Promise<string | null> => {
+        return Promise.resolve(
+          typeof window !== 'undefined' && window.localStorage
+            ? window.localStorage.getItem(key)
+            : null
+        );
+      },
+      setItem: (key: string, value: string): Promise<void> => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(key, value);
+        }
+        return Promise.resolve();
+      },
+      removeItem: (key: string): Promise<void> => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.removeItem(key);
+        }
+        return Promise.resolve();
+      },
+    };
+    
+    return createAsyncStoragePersister({
+      storage: webStorage,
+      key: 'REACT_QUERY_OFFLINE_CACHE',
+    });
+  }
+  
+  // For native, use AsyncStorage persister
+  return createAsyncStoragePersister({
+    storage: AsyncStorage,
+    key: 'REACT_QUERY_OFFLINE_CACHE',
+  });
+};
+
+export const queryPersister = createPersister();
+
+/**
  * React Query default configuration
  * Implements stale-while-revalidate pattern and offline support
  */
@@ -159,7 +208,8 @@ export const queryClientConfig: QueryClientConfig = {
       staleTime: STALE_TIME.DEFAULT,
       
       // Cache time (gcTime in v5) - how long unused data stays in cache
-      gcTime: 30 * 60 * 1000, // 30 minutes (was cacheTime in v4)
+      // Messages use Infinity (never garbage collect) since they're persisted
+      gcTime: 30 * 60 * 1000, // 30 minutes default (was cacheTime in v4)
       
       // Retry configuration
       retry: (failureCount, error) => {

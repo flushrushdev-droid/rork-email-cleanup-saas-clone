@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -18,7 +19,7 @@ import { trpc, trpcClient } from '@/lib/trpc';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { createScopedLogger } from '@/utils/logger';
 import { logConfig } from '@/config/env';
-import { queryClientConfig } from '@/lib/queryCache';
+import { queryClientConfig, queryPersister } from '@/lib/queryCache';
 import { useIOSShortcuts } from '@/hooks/useIOSShortcuts';
 import { useAndroidIntents } from '@/hooks/useAndroidIntents';
 import { applyCSP } from '@/utils/csp';
@@ -40,7 +41,17 @@ logConfig();
 validateProductionBuild();
 
 // Create QueryClient with optimized cache configuration
-const queryClient = new QueryClient(queryClientConfig);
+// Messages will persist to disk and never be garbage collected
+const queryClient = new QueryClient({
+  ...queryClientConfig,
+  defaultOptions: {
+    ...queryClientConfig.defaultOptions,
+    queries: {
+      ...queryClientConfig.defaultOptions?.queries,
+      // Override gcTime for messages to Infinity (handled in getCacheTTL)
+    },
+  },
+});
 
 function RootLayoutNav() {
   const { colors } = useTheme();
@@ -138,12 +149,30 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        // Only persist Gmail messages and senders (most important data)
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const key = query.queryKey[0];
+            const subKey = query.queryKey[1];
+            // Persist Gmail messages and senders
+            if (key === 'gmail' && (subKey === 'messages' || subKey === 'senders')) {
+              return true;
+            }
+            // Don't persist other queries (they can be refetched)
+            return false;
+          },
+        },
+      }}
+    >
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <ThemeProvider>
           <AppContent />
         </ThemeProvider>
       </trpc.Provider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
