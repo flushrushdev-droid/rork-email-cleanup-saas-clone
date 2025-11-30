@@ -10,7 +10,16 @@ import { EmailAttachmentList } from './emailDetail/EmailAttachmentList';
 import { EmailActionButtons } from './emailDetail/EmailActionButtons';
 import { createEmailDetailStyles } from './emailDetail/styles';
 import RenderHTML from 'react-native-render-html';
-import { WebView } from 'react-native-webview';
+
+// Conditionally import WebView only for native platforms
+let WebView: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    WebView = require('react-native-webview').WebView;
+  } catch (e) {
+    console.warn('WebView not available on this platform');
+  }
+}
 
 // Helper function to format file size
 const formatFileSize = (bytes: number): string => {
@@ -189,56 +198,117 @@ export function EmailDetailView({
           {selectedEmail.body ? (
             isHTML ? (
               isComplexHTML ? (
-                // Use WebView for complex HTML emails (better CSS support)
-                <View style={{ width: '100%', height: 600, backgroundColor: colors.background }}>
-                  <WebView
-                    source={{ html: selectedEmail.body }}
-                    style={{ backgroundColor: 'transparent', flex: 1 }}
-                    scrollEnabled={true}
-                    showsVerticalScrollIndicator={true}
-                    showsHorizontalScrollIndicator={false}
-                    // Inject CSS to match theme and ensure proper rendering
-                    injectedCSS={`
-                      body {
-                        color: ${colors.text};
-                        background-color: ${colors.background};
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        margin: 0;
-                        padding: 16px;
-                        width: 100%;
-                        box-sizing: border-box;
-                      }
-                      * {
-                        box-sizing: border-box;
-                      }
-                      a {
-                        color: ${colors.primary};
-                      }
-                      img {
-                        max-width: 100%;
-                        height: auto;
-                      }
-                    `}
-                    // Allow images and external resources
-                    originWhitelist={['*']}
-                    // Disable zoom
-                    scalesPageToFit={false}
-                    // Handle links - open in new window on web
-                    onShouldStartLoadWithRequest={(request) => {
-                      if (Platform.OS === 'web' && request.url.startsWith('http')) {
-                        if (typeof window !== 'undefined') {
-                          window.open(request.url, '_blank');
+                Platform.OS === 'web' ? (
+                  // For web: Use iframe for better isolation and CSS support
+                  <View style={{ width: '100%', minHeight: 400, backgroundColor: colors.background }}>
+                    {/* @ts-ignore - web-only iframe element */}
+                    <iframe
+                      srcDoc={`
+                        <!DOCTYPE html>
+                        <html>
+                          <head>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <style>
+                              body {
+                                color: ${colors.text};
+                                background-color: ${colors.background};
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                margin: 0;
+                                padding: 16px;
+                                width: 100%;
+                                box-sizing: border-box;
+                              }
+                              * {
+                                box-sizing: border-box;
+                              }
+                              a {
+                                color: ${colors.primary};
+                                text-decoration: none;
+                              }
+                              a:hover {
+                                text-decoration: underline;
+                              }
+                              img {
+                                max-width: 100%;
+                                height: auto;
+                              }
+                            </style>
+                          </head>
+                          <body>
+                            ${selectedEmail.body.replace(/<script/gi, '&lt;script').replace(/<\/script>/gi, '&lt;/script&gt;')}
+                          </body>
+                        </html>
+                      `}
+                      style={{
+                        width: '100%',
+                        height: '600px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                      }}
+                      sandbox="allow-same-origin allow-scripts"
+                      title="Email content"
+                    />
+                  </View>
+                ) : WebView ? (
+                  // For native: Use WebView
+                  <View style={{ width: '100%', height: 600, backgroundColor: colors.background }}>
+                    <WebView
+                      source={{ html: selectedEmail.body }}
+                      style={{ backgroundColor: 'transparent', flex: 1 }}
+                      scrollEnabled={true}
+                      showsVerticalScrollIndicator={true}
+                      showsHorizontalScrollIndicator={false}
+                      // Inject CSS to match theme and ensure proper rendering
+                      injectedCSS={`
+                        body {
+                          color: ${colors.text};
+                          background-color: ${colors.background};
+                          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                          margin: 0;
+                          padding: 16px;
+                          width: 100%;
+                          box-sizing: border-box;
                         }
-                        return false;
-                      }
-                      return true;
+                        * {
+                          box-sizing: border-box;
+                        }
+                        a {
+                          color: ${colors.primary};
+                        }
+                        img {
+                          max-width: 100%;
+                          height: auto;
+                        }
+                      `}
+                      // Allow images and external resources
+                      originWhitelist={['*']}
+                      // Disable zoom
+                      scalesPageToFit={false}
+                      // Set initial scale for proper rendering
+                      startInLoadingState={true}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                    />
+                  </View>
+                ) : (
+                  // Fallback: Use RenderHTML if WebView not available
+                  <RenderHTML
+                    contentWidth={htmlRenderConfig.contentWidth}
+                    source={{ html: selectedEmail.body }}
+                    baseStyle={htmlRenderConfig.baseStyle}
+                    tagsStyles={htmlRenderConfig.tagsStyles}
+                    systemFonts={htmlRenderConfig.systemFonts}
+                    defaultTextProps={{
+                      style: { color: colors.text },
                     }}
-                    // Set initial scale for proper rendering
-                    startInLoadingState={true}
-                    javaScriptEnabled={true}
-                    domStorageEnabled={true}
+                    enableExperimentalMarginCollapsing={true}
+                    renderersProps={{
+                      img: {
+                        enableExperimentalPercentWidth: true,
+                      },
+                    }}
                   />
-                </View>
+                )
               ) : (
                 // Use RenderHTML for simple HTML
                 <RenderHTML
