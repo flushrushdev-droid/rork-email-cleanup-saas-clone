@@ -278,7 +278,19 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       );
       
       setSyncProgress({ current: i + 1, total: totalToSync });
-      msgs.push(parseEmailFromMessage(message));
+      const parsedEmail = parseEmailFromMessage(message);
+      
+      // Debug: Log labels for trash/sent emails
+      if (parsedEmail.labels.includes('TRASH') || parsedEmail.labels.includes('SENT')) {
+        gmailLogger.debug('Email with TRASH/SENT label parsed', {
+          id: parsedEmail.id,
+          labels: parsedEmail.labels,
+          hasTrash: parsedEmail.labels.includes('TRASH') || parsedEmail.labels.includes('trash'),
+          hasSent: parsedEmail.labels.includes('SENT') || parsedEmail.labels.includes('sent'),
+        });
+      }
+      
+      msgs.push(parsedEmail);
     }
 
     // Save the current historyId from profile

@@ -84,7 +84,7 @@ export function useMailScreen() {
             snippet: msg.snippet,
             date: new Date(msg.date),
             size: msg.sizeBytes || 0,
-            labels: msg.labels,
+            labels: msg.labels || [], // Ensure labels is always an array
             tags: [],
             hasAttachments: msg.hasAttachments || false,
             attachmentCount: 0,
@@ -95,8 +95,29 @@ export function useMailScreen() {
             category: undefined as EmailCategory | undefined,
           };
           email.category = categorizeEmail(email);
+          
+          // Debug: Log emails with TRASH or SENT labels
+          if (email.labels.includes('TRASH') || email.labels.includes('SENT') || 
+              email.labels.includes('trash') || email.labels.includes('sent')) {
+            mailScreenLogger.debug('Email with TRASH/SENT label processed', {
+              id: email.id,
+              labels: email.labels,
+              subject: email.subject.substring(0, 50),
+            });
+          }
+          
           return email;
         });
+
+    // Debug: Log summary of labels
+    const trashCount = emails.filter(e => e.labels.includes('TRASH') || e.labels.includes('trash')).length;
+    const sentCount = emails.filter(e => e.labels.includes('SENT') || e.labels.includes('sent')).length;
+    mailScreenLogger.debug('Email labels summary', {
+      totalEmails: emails.length,
+      trashCount,
+      sentCount,
+      emailsWithLabels: emails.filter(e => e.labels && e.labels.length > 0).length,
+    });
 
     return emails;
   }, [isDemoMode, messages, starredEmails]);
@@ -104,6 +125,16 @@ export function useMailScreen() {
   // Filter emails
   const filteredEmails = useMemo(() => {
     let filtered = allEmails;
+
+    // Debug: Log email labels when filtering for sent/trash
+    if (activeFilter === 'sent' || activeFilter === 'trash') {
+      const emailsWithLabels = allEmails.filter(e => e.labels && e.labels.length > 0);
+      mailScreenLogger.debug(`Filtering for ${activeFilter}`, {
+        totalEmails: allEmails.length,
+        emailsWithLabels: emailsWithLabels.length,
+        sampleLabels: emailsWithLabels.slice(0, 5).map(e => ({ id: e.id, labels: e.labels })),
+      });
+    }
 
     // Filter out archived emails (including pending archive) unless viewing archived
     if (activeFilter !== 'archived') {
@@ -122,11 +153,19 @@ export function useMailScreen() {
       );
     } else {
       // When viewing trash, show emails with TRASH label OR locally trashed emails
-      filtered = filtered.filter((email: EmailMessage) => 
-        email.labels.includes('TRASH') || 
-        email.labels.includes('trash') ||
-        trashedEmails.has(email.id)
-      );
+      filtered = filtered.filter((email: EmailMessage) => {
+        const hasTrashLabel = email.labels.includes('TRASH') || email.labels.includes('trash');
+        const isLocallyTrashed = trashedEmails.has(email.id);
+        if (hasTrashLabel || isLocallyTrashed) {
+          mailScreenLogger.debug('Trash email found', { 
+            id: email.id, 
+            labels: email.labels, 
+            hasTrashLabel, 
+            isLocallyTrashed 
+          });
+        }
+        return hasTrashLabel || isLocallyTrashed;
+      });
     }
 
     if (currentView === 'folder-detail' && selectedFolder) {
@@ -181,9 +220,16 @@ export function useMailScreen() {
           break;
         case 'sent':
           // Show emails with SENT label
-          filtered = filtered.filter((email: EmailMessage) => 
-            email.labels.includes('SENT') || email.labels.includes('sent')
-          );
+          filtered = filtered.filter((email: EmailMessage) => {
+            const hasSentLabel = email.labels.includes('SENT') || email.labels.includes('sent');
+            if (hasSentLabel) {
+              mailScreenLogger.debug('Sent email found', { 
+                id: email.id, 
+                labels: email.labels 
+              });
+            }
+            return hasSentLabel;
+          });
           break;
         case 'trash':
           // Already handled above, but ensure we're showing TRASH label emails
