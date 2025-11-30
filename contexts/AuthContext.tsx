@@ -37,7 +37,9 @@ function getPlatformRedirectUri(): string {
     // We're in tunnel mode - use production backend URL (already in Google Console)
     const prodBackend = AppConfig.api.baseUrl;
     if (prodBackend && prodBackend.includes('onrender.com')) {
-      return `${prodBackend}/auth/callback`;
+      // Ensure no trailing slash and correct format
+      const baseUrl = prodBackend.replace(/\/$/, ''); // Remove trailing slash if present
+      return `${baseUrl}/auth/callback`;
     }
   }
   
