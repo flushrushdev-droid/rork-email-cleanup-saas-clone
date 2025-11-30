@@ -18,6 +18,86 @@ app.get("/", (c) => {
   return c.json({ status: "ok", message: "API is running" });
 });
 
+// Privacy Policy page (required for Google OAuth)
+app.get("/privacy", (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - AthenX Mail</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+    h1 { color: #333; }
+    h2 { color: #555; margin-top: 30px; }
+    p { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p><strong>Last updated:</strong> ${new Date().toLocaleDateString()}</p>
+  
+  <h2>1. Data Collection</h2>
+  <p>AthenX Mail collects and processes your email data to provide email management and cleanup services. We access your Gmail account with your explicit consent through Google OAuth.</p>
+  
+  <h2>2. Data Usage</h2>
+  <p>Your email data is used solely for providing the email cleanup, organization, and management features you request. We do not sell, share, or use your data for advertising purposes.</p>
+  
+  <h2>3. Data Security</h2>
+  <p>We use industry-standard security measures including OAuth 2.0 authentication and encrypted connections to protect your data. Your email credentials are never stored on our servers.</p>
+  
+  <h2>4. Data Storage</h2>
+  <p>Email data is processed in real-time and is not permanently stored on our servers unless you explicitly use features that require temporary storage (such as email backups).</p>
+  
+  <h2>5. Your Rights</h2>
+  <p>You can revoke access to your Gmail account at any time through your Google Account settings. You can also request deletion of any data we may have stored.</p>
+  
+  <h2>6. Contact</h2>
+  <p>For questions about this privacy policy, please contact us through the app support channels.</p>
+</body>
+</html>`);
+});
+
+// Terms of Service page (required for Google OAuth)
+app.get("/terms", (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service - AthenX Mail</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+    h1 { color: #333; }
+    h2 { color: #555; margin-top: 30px; }
+    p { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Terms of Service</h1>
+  <p><strong>Last updated:</strong> ${new Date().toLocaleDateString()}</p>
+  
+  <h2>1. Acceptance of Terms</h2>
+  <p>By accessing and using AthenX Mail, you accept and agree to be bound by the terms and provision of this agreement.</p>
+  
+  <h2>2. Service Description</h2>
+  <p>AthenX Mail provides email management, organization, and cleanup services for Gmail accounts. The service helps users organize, filter, and manage their email inbox.</p>
+  
+  <h2>3. User Responsibilities</h2>
+  <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
+  
+  <h2>4. Service Availability</h2>
+  <p>We strive to provide reliable service but do not guarantee uninterrupted or error-free operation. The service may be temporarily unavailable due to maintenance or technical issues.</p>
+  
+  <h2>5. Limitation of Liability</h2>
+  <p>AthenX Mail is provided "as is" without warranties of any kind. We are not liable for any damages resulting from use of the service.</p>
+  
+  <h2>6. Changes to Terms</h2>
+  <p>We reserve the right to modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.</p>
+</body>
+</html>`);
+});
+
 // OAuth callback endpoint for mobile apps
 // Google redirects here after authentication, then we redirect back to the app
 app.get("/auth/callback", (c) => {
