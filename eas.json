@@ -8,7 +8,6 @@
       "developmentClient": true,
       "distribution": "internal",
       "node": "20.18.0",
-      "packageManager": "npm",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "1"
       },
@@ -23,7 +22,6 @@
     "preview": {
       "distribution": "internal",
       "node": "20.18.0",
-      "packageManager": "npm",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "1"
       },
@@ -33,7 +31,6 @@
     },
     "production": {
       "node": "20.18.0",
-      "packageManager": "npm",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "1"
       },
@@ -44,11 +41,6 @@
   },
   "submit": {
     "production": {}
-  },
-  "hooks": {
-    "prebuild": {
-      "command": "chmod +x eas-hooks.sh && ./eas-hooks.sh"
-    }
   }
 }
 
