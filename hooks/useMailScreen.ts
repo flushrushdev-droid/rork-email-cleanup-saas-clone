@@ -143,6 +143,20 @@ export function useMailScreen() {
       );
     }
     
+    // Filter for sent emails if viewing sent folder
+    if (activeFilter === 'sent') {
+      filtered = filtered.filter((email: EmailMessage) => {
+        const hasSentLabel = email.labels.includes('SENT') || email.labels.includes('sent');
+        if (hasSentLabel) {
+          mailScreenLogger.debug('Sent email found (early filter)', { 
+            id: email.id, 
+            labels: email.labels 
+          });
+        }
+        return hasSentLabel;
+      });
+    }
+    
     // Filter out trashed emails (including pending delete) unless viewing trash
     if (activeFilter !== 'trash') {
       filtered = filtered.filter((email: EmailMessage) => 
