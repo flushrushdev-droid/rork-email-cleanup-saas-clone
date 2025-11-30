@@ -379,12 +379,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       const data = await response.json();
       
+      authLogger.debug('Token exchange response', {
+        hasRefreshToken: !!data.refresh_token,
+        hasAccessToken: !!data.access_token,
+        expiresIn: data.expires_in,
+      });
+      
       const newTokens: AuthTokens = {
         accessToken: data.access_token,
-        refreshToken: data.refresh_token,
+        refreshToken: data.refresh_token || null, // Google might not always return a refresh token
         expiresAt: Date.now() + data.expires_in * 1000,
         idToken: data.id_token,
       };
+      
+      if (!data.refresh_token) {
+        authLogger.warn('No refresh token received from Google - seamless re-login will not be possible');
+      }
 
       await fetchUserInfo(newTokens.accessToken);
       setTokens(newTokens);
@@ -393,10 +403,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         // On web, use localStorage (SecureStore doesn't work on web)
         if (typeof window !== 'undefined') {
           window.localStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+          // Also save refresh token separately for seamless re-login
+          if (newTokens.refreshToken) {
+            window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
+          }
         }
       } else {
         // On native, use SecureStore
         await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+        // Also save refresh token separately for seamless re-login
+        if (newTokens.refreshToken) {
+          await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken).catch(() => {
+            // Ignore errors
+          });
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
@@ -705,32 +725,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   };
 
   const signOut = async () => {
-    // Start clearing auth immediately (don't wait for token revocation)
-    // Token revocation is best-effort and shouldn't block logout
-    const clearAuthPromise = clearAuth();
+    // NOTE: We do NOT revoke the access token on logout because:
+    // 1. The access token will expire naturally (usually within 1 hour)
+    // 2. Revoking the access token might also revoke the refresh token
+    // 3. We want to preserve the refresh token for seamless re-login
+    // If you need to revoke tokens (e.g., for security), do it separately
     
-    // Try to revoke token in parallel (non-blocking)
-    if (tokens?.accessToken) {
-      try {
-        // Use POST with proper form data for token revocation
-        const params = new URLSearchParams();
-        params.append('token', tokens.accessToken);
-        
-        await fetch(discovery.revocationEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: params.toString(),
-        });
-      } catch (err) {
-        // Silently fail - token revocation is best-effort
-        authLogger.debug('Token revocation failed (non-critical)', err);
-      }
-    }
-    
-    // Wait for auth clearing to complete
-    await clearAuthPromise;
+    // Clear auth state (this preserves the refresh token in separate storage)
+    await clearAuth();
   };
 
   const clearAuth = async () => {
