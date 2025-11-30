@@ -79,13 +79,7 @@ export default function OverviewScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
-        {!isDemoMode && lastSyncedAt && (
-          <LastSyncedIndicator
-            lastSyncedAt={lastSyncedAt}
-            onSyncPress={handleSync}
-            isSyncing={isSyncing}
-          />
-        )}
+        {/* Last synced indicator hidden per user request */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -97,14 +91,7 @@ export default function OverviewScreen() {
               >
                 Inbox Health
               </Text>
-              <Text 
-                style={[styles.subtitle, { color: colors.textSecondary }]}
-                accessible={true}
-                accessibilityRole="text"
-                accessibilityLabel={user?.email || 'Your email management overview'}
-              >
-                {user?.email || 'Your email management overview'}
-              </Text>
+              {/* Email address hidden per user request */}
             </View>
             {!isDemoMode && (
               <AccessibleButton
@@ -154,13 +141,7 @@ export default function OverviewScreen() {
               onDismiss={clearError}
             />
           )}
-          {profile && (
-            <View style={styles.profileInfo}>
-              <Text style={[styles.profileText, { color: colors.textSecondary }]}>
-                {profile.messagesTotal.toLocaleString()} total messages • {profile.threadsTotal.toLocaleString()} threads
-              </Text>
-            </View>
-          )}
+          {/* Message and thread counts hidden per user request */}
         </View>
 
         {isSyncing && messages.length === 0 ? (

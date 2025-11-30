@@ -134,16 +134,17 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       );
 
       const messageIds = listResponse.messages || [];
-      setSyncProgress({ current: 0, total: messageIds.length });
+      const totalToSync = Math.min(messageIds.length, 100);
+      setSyncProgress({ current: 0, total: totalToSync });
 
       const messages: Email[] = [];
 
-      for (let i = 0; i < Math.min(messageIds.length, 50); i++) {
+      for (let i = 0; i < totalToSync; i++) {
         const message: GmailMessage = await makeGmailRequest(
           `/messages/${messageIds[i].id}?format=full`
         );
         
-        setSyncProgress({ current: i + 1, total: messageIds.length });
+        setSyncProgress({ current: i + 1, total: totalToSync });
 
         const headers = message.payload?.headers || [];
         const getHeader = (name: string) => 
@@ -198,16 +199,17 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
           );
 
           const messageIds = listResponse.messages || [];
-          setSyncProgress({ current: 0, total: messageIds.length });
+          const totalToSync = Math.min(messageIds.length, 100);
+          setSyncProgress({ current: 0, total: totalToSync });
 
           const msgs: Email[] = [];
 
-          for (let i = 0; i < Math.min(messageIds.length, 50); i++) {
+          for (let i = 0; i < totalToSync; i++) {
             const message: GmailMessage = await makeGmailRequest(
               `/messages/${messageIds[i].id}?format=full`
             );
             
-            setSyncProgress({ current: i + 1, total: messageIds.length });
+            setSyncProgress({ current: i + 1, total: totalToSync });
 
             const headers = message.payload?.headers || [];
             const getHeader = (name: string) => 
