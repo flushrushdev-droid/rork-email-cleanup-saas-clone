@@ -20,7 +20,9 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_CLIENT_ID = AppConfig.google.clientId;
 
 // Detect if we're running in Expo Go
-const isExpoGo = Constants.executionEnvironment === 'storeClient';
+// executionEnvironment can be: 'storeClient' (Expo Go), 'standalone' (production build), or 'bare' (bare workflow)
+// Also check if app is running in Expo Go by checking if Constants.appOwnership === 'expo'
+const isExpoGo = Constants.executionEnvironment === 'storeClient' || Constants.appOwnership === 'expo';
 
 // Get Expo username and slug for proxy redirect URI
 const EXPO_USERNAME = Constants.expoConfig?.extra?.expoUsername || 'athenx';
@@ -126,11 +128,27 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const deviceInfo = getDeviceInfo();
 
-  // For Expo Go, use makeRedirectUri with useProxy to get the correct redirect URI
-  // This ensures the proxy redirect URI is used correctly
-  const redirectUri = isExpoGo && Platform.OS !== 'web'
+  // For Expo Go, ALWAYS use makeRedirectUri with useProxy to get the correct redirect URI
+  // Check if we're in Expo Go by:
+  // 1. Constants.executionEnvironment === 'storeClient'
+  // 2. OR if the default redirect URI starts with exp:// (which means we're in Expo Go)
+  const defaultRedirectUri = AuthSession.makeRedirectUri();
+  const isUsingExpoScheme = defaultRedirectUri.startsWith('exp://');
+  const shouldUseProxy = (isExpoGo || isUsingExpoScheme) && Platform.OS !== 'web';
+  
+  const redirectUri = shouldUseProxy
     ? AuthSession.makeRedirectUri({ useProxy: true })
     : REDIRECT_URI;
+  
+  // Log the redirect URI for debugging
+  authLogger.debug('Redirect URI determined', {
+    isExpoGo,
+    isUsingExpoScheme,
+    defaultRedirectUri,
+    finalRedirectUri: redirectUri,
+    platform: Platform.OS,
+    shouldUseProxy,
+  });
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -720,16 +738,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       }
       
       // If no stored tokens or refresh failed, proceed with OAuth flow
+      // Re-check if we should use proxy (in case detection changed)
+      const currentDefaultRedirectUri = AuthSession.makeRedirectUri();
+      const currentIsUsingExpoScheme = currentDefaultRedirectUri.startsWith('exp://');
+      const currentShouldUseProxy = (isExpoGo || currentIsUsingExpoScheme) && Platform.OS !== 'web';
+      
       authLogger.debug('Starting OAuth flow', {
-        redirectUri: REDIRECT_URI,
+        redirectUri: redirectUri,
+        defaultRedirectUri: currentDefaultRedirectUri,
         clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
         isExpoGo,
-        usingProxy: isExpoGo && Platform.OS !== 'web',
+        isUsingExpoScheme: currentIsUsingExpoScheme,
+        shouldUseProxy: currentShouldUseProxy,
       });
       
-      // For Expo Go, use the proxy explicitly
+      // For Expo Go, ALWAYS use the proxy explicitly
+      // This is critical - without useProxy: true, it will try to use exp:// scheme which Google rejects
       const result = await promptAsync(
-        isExpoGo && Platform.OS !== 'web' 
+        currentShouldUseProxy
           ? { useProxy: true, showInRecents: true }
           : undefined
       );
