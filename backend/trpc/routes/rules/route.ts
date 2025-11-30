@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from '../../create-context';
-import { createSupabaseAdmin } from '../../lib/supabase';
+import { createTRPCRouter, publicProcedure } from '../../create-context.js';
+import { createSupabaseAdmin } from '../../lib/supabase.js';
 
 const ruleSchema = z.object({
   id: z.string().optional(),
@@ -25,7 +25,7 @@ export default createTRPCRouter({
 
       const { data, error } = await supabase
         .from('rules')
-        .select('*')
+        .select()
         .eq('user_id', input.user_id)
         .order('created_at', { ascending: false });
 
@@ -49,7 +49,7 @@ export default createTRPCRouter({
 
       const { data, error } = await supabase
         .from('rules')
-        .select('*')
+        .select()
         .eq('id', input.id)
         .eq('user_id', input.user_id)
         .single();

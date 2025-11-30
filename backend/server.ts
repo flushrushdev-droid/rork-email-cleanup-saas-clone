@@ -5,7 +5,7 @@
  * Render will run this file to start the server.
  */
 
-import app from './hono';
+import app from './hono.js';
 import { serve } from '@hono/node-server';
 
 // Get port from environment or default to 10000 (Render's default)

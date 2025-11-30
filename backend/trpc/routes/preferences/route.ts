@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from '../../create-context';
-import { createSupabaseAdmin } from '../../lib/supabase';
+import { createTRPCRouter, publicProcedure } from '../../create-context.js';
+import { createSupabaseAdmin } from '../../lib/supabase.js';
 
 const preferencesSchema = z.object({
   user_id: z.string(),
@@ -22,7 +22,7 @@ export default createTRPCRouter({
 
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('*')
+        .select()
         .eq('user_id', input.user_id)
         .single();
 
