@@ -128,7 +128,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const deviceInfo = getDeviceInfo();
 
-  // For Expo Go, ALWAYS use makeRedirectUri with useProxy to get the correct redirect URI
+  // For Expo Go, ALWAYS use the explicit proxy redirect URI
   // Check if we're in Expo Go by:
   // 1. Constants.executionEnvironment === 'storeClient'
   // 2. OR if the default redirect URI starts with exp:// (which means we're in Expo Go)
@@ -136,8 +136,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const isUsingExpoScheme = defaultRedirectUri.startsWith('exp://');
   const shouldUseProxy = (isExpoGo || isUsingExpoScheme) && Platform.OS !== 'web';
   
+  // When using proxy, explicitly use the proxy redirect URI
+  // makeRedirectUri({ useProxy: true }) sometimes doesn't work, so we use the explicit URI
   const redirectUri = shouldUseProxy
-    ? AuthSession.makeRedirectUri({ useProxy: true })
+    ? EXPO_PROXY_REDIRECT_URI
     : REDIRECT_URI;
   
   // Log the redirect URI for debugging
@@ -145,6 +147,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     isExpoGo,
     isUsingExpoScheme,
     defaultRedirectUri,
+    proxyRedirectUri: EXPO_PROXY_REDIRECT_URI,
     finalRedirectUri: redirectUri,
     platform: Platform.OS,
     shouldUseProxy,
