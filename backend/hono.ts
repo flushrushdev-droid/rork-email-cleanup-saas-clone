@@ -6,10 +6,20 @@ import { createContext } from "./trpc/create-context.js";
 
 const app = new Hono();
 
-app.use("*", cors());
+// Enable CORS for all routes
+app.use("*", cors({
+  origin: "*",
+  allowHeaders: ["Content-Type", "Authorization"],
+  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+}));
 
-// Mount tRPC server at /api/trpc
-// trpcServer returns a middleware function that handles all HTTP methods
+// Health check endpoint
+app.get("/", (c) => {
+  return c.json({ status: "ok", message: "API is running" });
+});
+
+// Mount tRPC server - THE PATH MUST MATCH WHERE REQUESTS GO
+// Requests go to /api/trpc/*, so we mount at /api/trpc
 app.use(
   "/api/trpc/*",
   trpcServer({
@@ -17,9 +27,5 @@ app.use(
     createContext,
   })
 );
-
-app.get("/", (c) => {
-  return c.json({ status: "ok", message: "API is running" });
-});
 
 export default app;
