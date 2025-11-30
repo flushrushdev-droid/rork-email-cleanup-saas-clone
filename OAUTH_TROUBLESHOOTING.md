@@ -15,7 +15,12 @@ Please verify in [Google Cloud Console](https://console.cloud.google.com/apis/cr
    - Find the client ID: `663983319983-o43ikpmfjiqs4ofcd07g8a4pakfae2ic`
    - Click to edit it
 
-2. **Check Authorized redirect URIs:**
+2. **CRITICAL: Check Application Type:**
+   - The OAuth client MUST be configured as **"Web application"** (not "Android" or "iOS")
+   - Mobile apps using web redirect URIs require a "Web application" type client
+   - If it's set to "Android" or "iOS", create a new "Web application" client or change the type
+
+3. **Check Authorized redirect URIs:**
    - Must include EXACTLY: `https://athenxmail-backend.onrender.com/auth/callback`
    - NO trailing slash
    - Must be `https://` (not `http://`)

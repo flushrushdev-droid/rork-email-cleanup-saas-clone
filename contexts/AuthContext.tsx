@@ -117,6 +117,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const deviceInfo = getDeviceInfo();
 
+  const redirectUri = getCurrentRedirectUri();
+  
+  // Log the exact OAuth request parameters for debugging
+  authLogger.debug('OAuth request configuration', {
+    clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 20)}...` : 'MISSING',
+    redirectUri: redirectUri,
+    scopes: [
+      'openid',
+      'profile',
+      'email',
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/gmail.labels',
+    ],
+    usePKCE: true,
+    deviceInfo,
+  });
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_ID || '',
@@ -128,7 +146,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         'https://www.googleapis.com/auth/gmail.modify',
         'https://www.googleapis.com/auth/gmail.labels',
       ],
-      redirectUri: getCurrentRedirectUri(),
+      redirectUri: redirectUri,
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
       extraParams: {
@@ -139,6 +157,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     },
     discovery
   );
+  
+  // Log the actual request URL when it's created
+  useEffect(() => {
+    if (request) {
+      authLogger.debug('OAuth request created', {
+        url: request.url,
+        codeChallenge: request.codeChallenge ? `${request.codeChallenge.substring(0, 20)}...` : 'none',
+      });
+    }
+  }, [request]);
 
   useEffect(() => {
     loadStoredAuth();
