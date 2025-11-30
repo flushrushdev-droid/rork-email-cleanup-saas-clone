@@ -79,8 +79,19 @@ export const AppConfig = {
         }
       }
       
-      // For native platforms in development: always use localhost
-      // Tunnel mode will proxy this correctly
+      // For native platforms in development: check for tunnel mode
+      const hostUri = Constants.expoConfig?.hostUri;
+      if (hostUri && (hostUri.includes('.exp.direct') || hostUri.includes('ngrok') || hostUri.includes('tunnel'))) {
+        // We're in tunnel mode - tunnel URLs change each time, so we can't add them to Google Console
+        // Instead, use the production backend URL which is already in Google Console
+        // The backend will handle the callback and redirect back to the app
+        const prodBackend = getEnvVar('EXPO_PUBLIC_API_BASE_URL');
+        if (prodBackend && prodBackend.includes('onrender.com')) {
+          return prodBackend;
+        }
+      }
+      
+      // For local development (not tunnel): use localhost
       return 'http://localhost:8081';
     }
     
