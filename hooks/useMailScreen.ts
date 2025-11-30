@@ -115,11 +115,18 @@ export function useMailScreen() {
     // Filter out trashed emails (including pending delete) unless viewing trash
     if (activeFilter !== 'trash') {
       filtered = filtered.filter((email: EmailMessage) => 
-        !trashedEmails.has(email.id) && !pendingDelete.has(email.id)
+        !trashedEmails.has(email.id) && 
+        !pendingDelete.has(email.id) &&
+        !email.labels.includes('TRASH') && 
+        !email.labels.includes('trash')
       );
     } else {
-      // When viewing trash, show only emails that are actually trashed (not pending)
-      filtered = filtered.filter((email: EmailMessage) => trashedEmails.has(email.id));
+      // When viewing trash, show emails with TRASH label OR locally trashed emails
+      filtered = filtered.filter((email: EmailMessage) => 
+        email.labels.includes('TRASH') || 
+        email.labels.includes('trash') ||
+        trashedEmails.has(email.id)
+      );
     }
 
     if (currentView === 'folder-detail' && selectedFolder) {
@@ -171,6 +178,20 @@ export function useMailScreen() {
           break;
         case 'archived':
           filtered = filtered.filter((email: EmailMessage) => archivedEmails.has(email.id));
+          break;
+        case 'sent':
+          // Show emails with SENT label
+          filtered = filtered.filter((email: EmailMessage) => 
+            email.labels.includes('SENT') || email.labels.includes('sent')
+          );
+          break;
+        case 'trash':
+          // Already handled above, but ensure we're showing TRASH label emails
+          filtered = filtered.filter((email: EmailMessage) => 
+            email.labels.includes('TRASH') || 
+            email.labels.includes('trash') ||
+            trashedEmails.has(email.id)
+          );
           break;
       }
     }
