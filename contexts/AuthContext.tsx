@@ -519,8 +519,36 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
+        authLogger.error('Token refresh failed', {
+          status: response.status,
+          error: errorData.error || errorText,
+          errorDescription: errorData.error_description,
+          fullResponse: errorData,
+        });
+        
         const newFailureCount = refreshFailureCount + 1;
         setRefreshFailureCount(newFailureCount);
+        
+        // If refresh token is invalid, clear it immediately
+        if (errorData.error === 'invalid_grant' || errorData.error === 'invalid_request') {
+          authLogger.warn('Refresh token is invalid, clearing stored token');
+          if (Platform.OS === 'web') {
+            if (typeof window !== 'undefined') {
+              window.localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+            }
+          } else {
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+          }
+          throw new Error('Invalid refresh token');
+        }
         
         // Logout after multiple consecutive failures
         if (newFailureCount >= MAX_REFRESH_FAILURES) {
@@ -530,7 +558,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           throw new Error('Token refresh failed multiple times');
         }
         
-        throw new Error('Token refresh failed');
+        throw new Error(`Token refresh failed: ${errorData.error || errorText}`);
       }
 
       const data = await response.json();
@@ -625,27 +653,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         try {
           authLogger.debug('Attempting seamless login with refresh token');
           // Try to refresh the token silently
-          await refreshAccessToken(refreshToken);
-          // If refresh succeeds, we need to get user info and verify
-          // First, try to get stored user
-          const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
-          if (storedUser) {
-            const parsedUser: User = JSON.parse(storedUser);
-            const userExists = await verifyUserInDatabase(parsedUser.id);
-            if (userExists) {
-              authLogger.info('Seamless login successful with refresh token');
-              setUser(parsedUser);
-              setIsLoading(false);
-              return; // Success! No need to show OAuth consent screen
+          const newAccessToken = await refreshAccessToken(refreshToken);
+          
+          // If refresh succeeds, fetch fresh user info from Google
+          if (newAccessToken) {
+            await fetchUserInfo(newAccessToken);
+            // fetchUserInfo will set the user and verify in database
+            // Check if user was set successfully
+            const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+            if (storedUser) {
+              const parsedUser: User = JSON.parse(storedUser);
+              const userExists = await verifyUserInDatabase(parsedUser.id);
+              if (userExists) {
+                authLogger.info('Seamless login successful with refresh token');
+                setIsLoading(false);
+                return; // Success! No need to show OAuth consent screen
+              }
             }
-          }
-          // If no stored user, fetch user info from Google
-          const currentTokens = tokens;
-          if (currentTokens?.accessToken) {
-            await fetchUserInfo(currentTokens.accessToken);
-            // User will be set by fetchUserInfo
-            setIsLoading(false);
-            return; // Success!
           }
         } catch (err) {
           authLogger.debug('Silent refresh failed, proceeding with OAuth flow', err);
