@@ -92,6 +92,7 @@ export function useMailScreen() {
               filename: att.filename,
               mimeType: att.mimeType,
               size: att.size,
+              attachmentId: att.attachmentId,
             })),
             isRead: msg.isRead,
             isStarred: starredEmails.has(msg.id) || msg.labels.includes('STARRED') || msg.labels.includes('starred'),

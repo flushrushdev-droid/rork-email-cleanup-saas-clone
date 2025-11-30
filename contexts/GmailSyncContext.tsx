@@ -191,6 +191,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
           filename: part.filename,
           mimeType: part.mimeType,
           size: size || 0, // Default to 0 if size is not available
+          attachmentId: attachmentId, // Store attachmentId for downloading
         });
       }
     };

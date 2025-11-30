@@ -112,11 +112,13 @@ export function createEmailDetailStyles(colors: any) {
       padding: 12,
       backgroundColor: Colors.light.background,
       borderRadius: 8,
+      marginBottom: 8,
     },
     attachmentName: {
       flex: 1,
       fontSize: 14,
       color: Colors.light.text,
+      marginRight: 8,
     },
     attachmentSize: {
       fontSize: 12,

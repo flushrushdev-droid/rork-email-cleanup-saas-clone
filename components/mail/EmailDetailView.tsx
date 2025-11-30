@@ -112,7 +112,9 @@ export function EmailDetailView({
             attachments={selectedEmail.attachments.map(att => ({
               name: att.filename,
               size: formatFileSize(att.size),
+              attachmentId: att.attachmentId,
             }))}
+            emailId={selectedEmail.id}
             colors={colors}
           />
         )}

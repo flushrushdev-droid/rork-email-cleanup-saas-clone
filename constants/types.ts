@@ -182,6 +182,7 @@ export interface Attachment {
   filename: string;
   mimeType: string;
   size: number;
+  attachmentId?: string; // Gmail attachment ID for downloading
 }
 
 export interface EmailMessage {
