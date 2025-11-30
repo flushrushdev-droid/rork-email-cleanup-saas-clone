@@ -23,6 +23,7 @@ export function InboxView({
   drafts,
   smartFolders,
   customFolders,
+  folderCounts,
   onEmailPress,
   onStarEmail,
   onLoadDraft,
