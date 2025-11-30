@@ -53,6 +53,7 @@ authLogger.debug('OAuth configuration', {
 
 const STORAGE_KEYS = {
   TOKENS: 'auth_tokens', // Used with SecureStore (no @ prefix needed)
+  REFRESH_TOKEN: 'auth_refresh_token', // Stored separately for seamless re-login
   USER: '@auth_user', // Used with AsyncStorage (non-sensitive)
   DEMO_MODE: '@demo_mode', // Used with AsyncStorage (non-sensitive)
 };
@@ -546,8 +547,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Clear expiration warning
       setTokenExpirationWarning(null);
       
-      // Store tokens securely in SecureStore
-      await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      // Store tokens securely in SecureStore (native) or localStorage (web)
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+          // Also save refresh token separately for seamless re-login
+          if (newTokens.refreshToken) {
+            window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
+          }
+        }
+      } else {
+        await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+        // Also save refresh token separately for seamless re-login
+        if (newTokens.refreshToken) {
+          await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken).catch(() => {
+            // Ignore errors
+          });
+        }
+      }
       
       return newTokens.accessToken;
     } catch (err) {
@@ -568,38 +585,78 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(true);
       
       // First, try to use stored refresh token for seamless login
-      let storedTokens: string | null = null;
+      // Check both the main tokens storage and the separate refresh token storage
+      let refreshToken: string | null = null;
+      
+      // Try to get refresh token from separate storage (saved on logout)
       if (Platform.OS === 'web') {
         if (typeof window !== 'undefined') {
-          storedTokens = window.localStorage.getItem(STORAGE_KEYS.TOKENS);
-        }
-      } else {
-        storedTokens = await SecureStore.getItemAsync(STORAGE_KEYS.TOKENS);
-      }
-      
-      if (storedTokens) {
-        try {
-          const parsedTokens: AuthTokens = JSON.parse(storedTokens);
-          if (parsedTokens.refreshToken && validateToken(parsedTokens)) {
-            authLogger.debug('Attempting seamless login with refresh token');
-            // Try to refresh the token silently
-            await refreshAccessToken(parsedTokens.refreshToken);
-            // If refresh succeeds, we're logged in - no need for OAuth flow
-            const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
-            if (storedUser) {
-              const parsedUser: User = JSON.parse(storedUser);
-              const userExists = await verifyUserInDatabase(parsedUser.id);
-              if (userExists) {
-                authLogger.info('Seamless login successful with refresh token');
-                setUser(parsedUser);
-                setIsLoading(false);
-                return; // Success! No need to show OAuth consent screen
+          refreshToken = window.localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+          // Also check main tokens storage as fallback
+          if (!refreshToken) {
+            const storedTokens = window.localStorage.getItem(STORAGE_KEYS.TOKENS);
+            if (storedTokens) {
+              try {
+                const parsedTokens: AuthTokens = JSON.parse(storedTokens);
+                refreshToken = parsedTokens.refreshToken || null;
+              } catch {
+                // Ignore parse errors
               }
             }
           }
+        }
+      } else {
+        refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+        // Also check main tokens storage as fallback
+        if (!refreshToken) {
+          const storedTokens = await SecureStore.getItemAsync(STORAGE_KEYS.TOKENS);
+          if (storedTokens) {
+            try {
+              const parsedTokens: AuthTokens = JSON.parse(storedTokens);
+              refreshToken = parsedTokens.refreshToken || null;
+            } catch {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+      
+      if (refreshToken) {
+        try {
+          authLogger.debug('Attempting seamless login with refresh token');
+          // Try to refresh the token silently
+          await refreshAccessToken(refreshToken);
+          // If refresh succeeds, we need to get user info and verify
+          // First, try to get stored user
+          const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+          if (storedUser) {
+            const parsedUser: User = JSON.parse(storedUser);
+            const userExists = await verifyUserInDatabase(parsedUser.id);
+            if (userExists) {
+              authLogger.info('Seamless login successful with refresh token');
+              setUser(parsedUser);
+              setIsLoading(false);
+              return; // Success! No need to show OAuth consent screen
+            }
+          }
+          // If no stored user, fetch user info from Google
+          const currentTokens = tokens;
+          if (currentTokens?.accessToken) {
+            await fetchUserInfo(currentTokens.accessToken);
+            // User will be set by fetchUserInfo
+            setIsLoading(false);
+            return; // Success!
+          }
         } catch (err) {
           authLogger.debug('Silent refresh failed, proceeding with OAuth flow', err);
-          // Refresh failed, continue with normal OAuth flow
+          // Refresh failed - clear invalid refresh token and continue with OAuth flow
+          if (Platform.OS === 'web') {
+            if (typeof window !== 'undefined') {
+              window.localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+            }
+          } else {
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+          }
         }
       }
       
@@ -695,19 +752,39 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     setSentryUser(null);
     addBreadcrumb('User signed out', 'auth');
     
+    // Save refresh token before clearing (for seamless re-login)
+    const refreshTokenToSave = tokens?.refreshToken;
+    
     setUser(null);
     setTokens(null);
     setIsDemoMode(false);
     
-    // Clear tokens from SecureStore (native) or localStorage (web)
+    // Clear access tokens from SecureStore (native) or localStorage (web)
+    // BUT keep refresh token for seamless re-login
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(STORAGE_KEYS.TOKENS);
+        // Save refresh token separately if it exists
+        if (refreshTokenToSave) {
+          window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshTokenToSave);
+        } else {
+          window.localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        }
       }
     } else {
       await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKENS).catch(() => {
         // Ignore errors if item doesn't exist
       });
+      // Save refresh token separately if it exists
+      if (refreshTokenToSave) {
+        await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshTokenToSave).catch(() => {
+          // Ignore errors
+        });
+      } else {
+        await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {
+          // Ignore errors
+        });
+      }
     }
     // Remove non-sensitive data from AsyncStorage
     await AsyncStorage.multiRemove([STORAGE_KEYS.USER, STORAGE_KEYS.DEMO_MODE]);
