@@ -170,8 +170,11 @@ app.get("/auth/callback", (c) => {
     const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
     console.log('[OAuth Callback] Deep link:', deepLink);
     
-    // Return HTML page that attempts multiple methods to open the deep link
-    // expo-auth-session uses WebBrowser which should handle this
+    // Return HTML page that:
+    // 1. Keeps the code in the URL so expo-auth-session can detect it (via WebBrowser.maybeCompleteAuthSession)
+    // 2. Also tries to open the deep link as a fallback
+    // The current URL already has the code, so expo-auth-session should detect it
+    // But we also try to open the deep link to ensure the app receives it
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
@@ -210,14 +213,18 @@ app.get("/auth/callback", (c) => {
     (function() {
       const deepLink = "${deepLink}";
       
-      // Method 1: Direct location change (works in most cases)
+      // expo-auth-session should detect the code from the current URL
+      // via WebBrowser.maybeCompleteAuthSession()
+      // But we also try to open the deep link to ensure it works
+      
+      // Try to open deep link immediately
       try {
         window.location.href = deepLink;
       } catch (e) {
         console.error('Failed to redirect:', e);
       }
       
-      // Method 2: Try with setTimeout (fallback)
+      // Try again after a short delay
       setTimeout(function() {
         try {
           window.location.href = deepLink;
@@ -226,28 +233,19 @@ app.get("/auth/callback", (c) => {
         }
       }, 100);
       
-      // Method 3: Try using window.open (some webviews prefer this)
-      setTimeout(function() {
-        try {
-          window.open(deepLink, '_self');
-        } catch (e) {
-          console.error('Failed to open:', e);
-        }
-      }, 200);
-      
-      // Show message if still here after 3 seconds
+      // Show message if still here after 2 seconds
       setTimeout(function() {
         document.querySelector('.container').innerHTML = 
-          '<p>If you are not redirected automatically, please return to the app.</p>' +
-          '<p style="font-size: 12px; color: #666; margin-top: 20px;">The app should open automatically. If not, close this window and check the app.</p>';
-      }, 3000);
+          '<p>Authentication complete!</p>' +
+          '<p style="font-size: 12px; color: #666; margin-top: 20px;">You can close this window and return to the app.</p>';
+      }, 2000);
     })();
   </script>
 </head>
 <body>
   <div class="container">
     <div class="spinner"></div>
-    <p>Redirecting to app...</p>
+    <p>Completing authentication...</p>
   </div>
 </body>
 </html>`);
