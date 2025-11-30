@@ -19,15 +19,21 @@ export default function AffectedEmailsScreen() {
   const count = params.count as string;
   const type = params.type as SuggestionType;
   
-  // Validate that emails is an array
-  if (!Array.isArray(emails)) {
-    router.back();
-    return null;
-  }
-
   const Icon = getSuggestionIcon(type);
   const color = getSuggestionColor(type, colors);
   const styles = React.useMemo(() => createAffectedEmailsStyles(colors), [colors]);
+  
+  // Validate that emails is an array - but after all hooks
+  React.useEffect(() => {
+    if (!Array.isArray(emails)) {
+      router.back();
+    }
+  }, [emails, router]);
+  
+  // Early return if invalid, but after all hooks
+  if (!Array.isArray(emails)) {
+    return null;
+  }
 
   return (
     <>

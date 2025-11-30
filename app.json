@@ -22,13 +22,26 @@
           "INSendMessageIntent"
         ],
         "NSUserActivityDomain": "app.rork.email-cleanup-saas",
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "NSFaceIDUsageDescription": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
       },
       "associatedDomains": [
         "applinks:rork.com"
       ],
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "usesIcloudStorage": true,
+      "entitlements": {
+        "com": {
+          "apple": {
+            "developer": {
+              "networking": {
+                "wifi-info": true
+              }
+            }
+          }
+        }
       }
     },
     "android": {
@@ -40,28 +53,37 @@
       "intentFilters": [
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": {
             "mimeType": "text/plain"
           }
         },
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": {
             "mimeType": "image/*"
           }
         },
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": {
             "mimeType": "*/*"
           }
         },
         {
           "action": "android.intent.action.VIEW",
-          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ],
           "data": {
             "scheme": "rork-app"
           }
@@ -98,6 +120,9 @@
             "data": "rork-app://mail?action=sync"
           }
         }
+      ],
+      "permissions": [
+        "android.permission.VIBRATE"
       ]
     },
     "web": {
@@ -111,7 +136,20 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
