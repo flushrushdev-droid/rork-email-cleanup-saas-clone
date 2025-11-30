@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Platform, Alert } from 'react-native';
+import { View, TouchableOpacity, Platform, Alert, Pressable } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { Paperclip, Download } from 'lucide-react-native';
 import { createEmailDetailStyles } from './styles';
@@ -7,6 +7,8 @@ import type { ThemeColors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { createScopedLogger } from '@/utils/logger';
 import { AppConfig, validateSecureUrl } from '@/config/env';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 const attachmentLogger = createScopedLogger('AttachmentDownload');
 const GMAIL_API_BASE = validateSecureUrl(AppConfig.gmail.apiBase);
@@ -103,13 +105,45 @@ export function EmailAttachmentList({ attachments, emailId, colors }: EmailAttac
         URL.revokeObjectURL(url);
         attachmentLogger.info('Attachment downloaded successfully', { filename: attachment.name });
       } else {
-        // For native: show alert with instructions (can be enhanced with expo-file-system later)
-        Alert.alert(
-          'Download Complete',
-          `Attachment "${attachment.name}" has been downloaded.`,
-          [{ text: 'OK' }]
-        );
-        attachmentLogger.info('Attachment download initiated (native)', { filename: attachment.name });
+        // For native: save file using expo-file-system and share/open it
+        // Convert base64url to base64
+        const base64 = fileData.replace(/-/g, '+').replace(/_/g, '/');
+        
+        // Create file path in document directory
+        const fileUri = `${FileSystem.documentDirectory}${attachment.name}`;
+        
+        // Write file to device storage
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        attachmentLogger.info('File saved to device', { filename: attachment.name, uri: fileUri });
+        
+        // Check if sharing is available and offer to share/open the file
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          try {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/octet-stream',
+              dialogTitle: `Share ${attachment.name}`,
+            });
+            attachmentLogger.info('File shared successfully', { filename: attachment.name });
+          } catch (shareError) {
+            // If sharing fails, just show success message
+            attachmentLogger.warn('Sharing failed, but file was saved', shareError);
+            Alert.alert(
+              'Download Complete',
+              `Attachment "${attachment.name}" has been saved to your device.`,
+              [{ text: 'OK' }]
+            );
+          }
+        } else {
+          Alert.alert(
+            'Download Complete',
+            `Attachment "${attachment.name}" has been saved to your device.`,
+            [{ text: 'OK' }]
+          );
+        }
       }
     } catch (error) {
       attachmentLogger.error('Failed to download attachment', error);
@@ -134,7 +168,7 @@ export function EmailAttachmentList({ attachments, emailId, colors }: EmailAttac
         const canDownload = !!attachment.attachmentId;
 
         return (
-          <TouchableOpacity
+          <View
             key={index}
             style={[
               styles.attachmentItem,
@@ -142,11 +176,6 @@ export function EmailAttachmentList({ attachments, emailId, colors }: EmailAttac
               canDownload && !isDownloading && { opacity: 1 },
               (!canDownload || isDownloading) && { opacity: 0.6 },
             ]}
-            onPress={() => canDownload && !isDownloading && handleDownload(attachment, index)}
-            disabled={!canDownload || isDownloading}
-            accessible={true}
-            accessibilityLabel={`Attachment: ${attachment.name}, ${attachment.size}. ${canDownload ? 'Double tap to download' : 'Download not available'}`}
-            accessibilityRole="button"
           >
             <Paperclip size={16} color={colors.textSecondary} />
             <View style={{ flex: 1, marginLeft: 8 }}>
@@ -158,10 +187,13 @@ export function EmailAttachmentList({ attachments, emailId, colors }: EmailAttac
               </AppText>
             </View>
             {canDownload && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => handleDownload(attachment, index)}
                 disabled={isDownloading}
-                style={{ padding: 8 }}
+                style={({ pressed }) => [
+                  { padding: 8, borderRadius: 4 },
+                  pressed && { backgroundColor: colors.surface, opacity: 0.7 },
+                ]}
                 accessible={true}
                 accessibilityLabel={isDownloading ? 'Downloading...' : 'Download attachment'}
                 accessibilityRole="button"
@@ -170,9 +202,9 @@ export function EmailAttachmentList({ attachments, emailId, colors }: EmailAttac
                   size={18} 
                   color={isDownloading ? colors.textSecondary : colors.primary} 
                 />
-              </TouchableOpacity>
+              </Pressable>
             )}
-          </TouchableOpacity>
+          </View>
         );
       })}
     </View>
