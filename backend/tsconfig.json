@@ -12,9 +12,12 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,

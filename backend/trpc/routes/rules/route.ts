@@ -17,7 +17,7 @@ export default createTRPCRouter({
    */
   getAll: publicProcedure
     .input(z.object({ user_id: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input }: { input: { user_id: string } }) => {
       const supabase = createSupabaseAdmin();
       if (!supabase) {
         throw new Error('Supabase client not configured');
@@ -41,7 +41,7 @@ export default createTRPCRouter({
    */
   getById: publicProcedure
     .input(z.object({ id: z.string(), user_id: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input }: { input: { id: string; user_id: string } }) => {
       const supabase = createSupabaseAdmin();
       if (!supabase) {
         throw new Error('Supabase client not configured');
@@ -66,7 +66,7 @@ export default createTRPCRouter({
    */
   create: publicProcedure
     .input(ruleSchema.omit({ id: true }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input }: { input: z.infer<typeof ruleSchema> & { id?: string } }) => {
       const supabase = createSupabaseAdmin();
       if (!supabase) {
         throw new Error('Supabase client not configured');
@@ -94,7 +94,7 @@ export default createTRPCRouter({
    */
   update: publicProcedure
     .input(ruleSchema.extend({ id: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input }: { input: z.infer<typeof ruleSchema> & { id: string } }) => {
       const supabase = createSupabaseAdmin();
       if (!supabase) {
         throw new Error('Supabase client not configured');
@@ -125,7 +125,7 @@ export default createTRPCRouter({
    */
   delete: publicProcedure
     .input(z.object({ id: z.string(), user_id: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input }: { input: { id: string; user_id: string } }) => {
       const supabase = createSupabaseAdmin();
       if (!supabase) {
         throw new Error('Supabase client not configured');
