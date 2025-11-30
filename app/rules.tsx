@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,101 +12,35 @@ import { StatCard } from '@/components/common/StatCard';
 import { RuleCard } from '@/components/rules/RuleCard';
 import { createScopedLogger } from '@/utils/logger';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { useSupabaseRules } from '@/hooks/useSupabaseRules';
 
 const rulesLogger = createScopedLogger('Rules');
 
-const mockRules: Rule[] = [
-  {
-    id: '1',
-    name: 'Archive old newsletters',
-    enabled: true,
-    conditions: [
-      { field: 'sender', operator: 'contains', value: 'newsletter' },
-      { field: 'age', operator: 'greaterThan', value: 90 },
-    ],
-    actions: [{ type: 'archive' }],
-    createdAt: new Date('2024-11-01'),
-    lastRun: new Date(Date.now() - 86400000),
-    matchCount: 347,
-  },
-  {
-    id: '2',
-    name: 'Label receipts automatically',
-    enabled: true,
-    conditions: [
-      { field: 'semantic', operator: 'matches', value: 'receipt OR invoice' },
-    ],
-    actions: [
-      { type: 'label', value: 'Receipts' },
-      { type: 'tag', value: 'finance' },
-    ],
-    createdAt: new Date('2024-10-15'),
-    lastRun: new Date(Date.now() - 3600000),
-    matchCount: 156,
-  },
-  {
-    id: '3',
-    name: 'Delete spam from specific domain',
-    enabled: false,
-    conditions: [
-      { field: 'domain', operator: 'equals', value: 'spam-domain.com' },
-    ],
-    actions: [{ type: 'delete' }],
-    createdAt: new Date('2024-09-20'),
-    matchCount: 0,
-  },
-];
-
 export default function RulesScreen() {
   const { colors } = useTheme();
-  const params = useLocalSearchParams<{ updatedRule?: string; isEdit?: string }>();
-  const [rules, setRules] = useState(mockRules);
+  const { rules, isLoading, error, toggleRule, refresh } = useSupabaseRules();
   const styles = React.useMemo(() => createRulesStyles(colors), [colors]);
-  const { showInfo } = useEnhancedToast();
+  const { showInfo, showError } = useEnhancedToast();
 
-  // Update rules when returning from create-rule screen
+  // Refresh rules when screen comes into focus (in case they were updated elsewhere)
   useFocusEffect(
     useCallback(() => {
-      if (params.updatedRule) {
-        try {
-          const ruleData = JSON.parse(params.updatedRule);
-          const isEdit = params.isEdit === 'true';
-          
-          // Convert date strings back to Date objects
-          const updatedRule: Rule = {
-            ...ruleData,
-            createdAt: new Date(ruleData.createdAt),
-            lastRun: ruleData.lastRun ? new Date(ruleData.lastRun) : undefined,
-          };
-          
-          setRules((prev) => {
-            if (isEdit) {
-              // Update existing rule
-              return prev.map((rule) =>
-                rule.id === updatedRule.id ? updatedRule : rule
-              );
-            } else {
-              // Add new rule
-              return [updatedRule, ...prev];
-            }
-          });
-          
-          // Clear params to prevent re-applying on next focus
-          router.setParams({ updatedRule: undefined, isEdit: undefined });
-        } catch (error) {
-          rulesLogger.error('Error parsing updated rule', error);
-        }
-      }
-    }, [params.updatedRule, params.isEdit])
+      refresh();
+    }, [refresh])
   );
 
-  const toggleRule = (ruleId: string) => {
-    setRules((prev) =>
-      prev.map((rule) =>
-        rule.id === ruleId ? { ...rule, enabled: !rule.enabled } : rule
-      )
-    );
-  };
+  // Handle toggle with error handling
+  const handleToggle = useCallback(async (ruleId: string) => {
+    try {
+      const rule = rules.find((r) => r.id === ruleId);
+      if (rule) {
+        await toggleRule(ruleId, !rule.enabled);
+      }
+    } catch (err) {
+      showError('Failed to update rule');
+      rulesLogger.error('Error toggling rule', err);
+    }
+  }, [rules, toggleRule, showError]);
 
   const enabledRules = rules.filter((rule) => rule.enabled);
   const disabledRules = rules.filter((rule) => !rule.enabled);
@@ -162,34 +96,56 @@ export default function RulesScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          {enabledRules.length > 0 && (
+          {isLoading ? (
             <View style={styles.section}>
-              <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Active Rules ({enabledRules.length})</AppText>
-              {enabledRules.map((rule) => (
-                <RuleCard
-                  key={rule.id}
-                  rule={rule}
-                  onToggle={toggleRule}
-                  showActions={true}
-                  colors={colors}
-                />
-              ))}
+              <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="body">
+                Loading rules...
+              </AppText>
             </View>
-          )}
+          ) : error ? (
+            <View style={styles.section}>
+              <AppText style={[styles.sectionTitle, { color: colors.error }]} dynamicTypeStyle="body">
+                Error loading rules: {error.message}
+              </AppText>
+            </View>
+          ) : rules.length === 0 ? (
+            <View style={styles.section}>
+              <AppText style={[styles.sectionTitle, { color: colors.textSecondary }]} dynamicTypeStyle="body">
+                No rules yet. Create your first rule to get started!
+              </AppText>
+            </View>
+          ) : (
+            <>
+              {enabledRules.length > 0 && (
+                <View style={styles.section}>
+                  <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Active Rules ({enabledRules.length})</AppText>
+                  {enabledRules.map((rule) => (
+                    <RuleCard
+                      key={rule.id}
+                      rule={rule}
+                      onToggle={handleToggle}
+                      showActions={true}
+                      colors={colors}
+                    />
+                  ))}
+                </View>
+              )}
 
-          {disabledRules.length > 0 && (
-            <View style={styles.section}>
-              <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Your Rules ({rules.length})</AppText>
-              {rules.map((rule) => (
-                <RuleCard
-                  key={rule.id}
-                  rule={rule}
-                  onToggle={toggleRule}
-                  showActions={false}
-                  colors={colors}
-                />
-              ))}
-            </View>
+              {disabledRules.length > 0 && (
+                <View style={styles.section}>
+                  <AppText style={[styles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Disabled Rules ({disabledRules.length})</AppText>
+                  {disabledRules.map((rule) => (
+                    <RuleCard
+                      key={rule.id}
+                      rule={rule}
+                      onToggle={handleToggle}
+                      showActions={true}
+                      colors={colors}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
           )}
 
           <View style={[styles.builderPromo, { backgroundColor: colors.primary + '10' }]}>

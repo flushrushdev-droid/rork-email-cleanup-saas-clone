@@ -17,52 +17,10 @@ import {
   Rule,
 } from '@/constants/types';
 import { useRuleForm } from '@/hooks/useRuleForm';
+import { useSupabaseRules } from '@/hooks/useSupabaseRules';
 import { RuleConditionCard } from '@/components/rules/RuleConditionCard';
 import { RuleActionCard } from '@/components/rules/RuleActionCard';
 import { createRuleFormStyles } from '@/styles/app/rules';
-
-// Mock rules for editing (same as in rules.tsx)
-const mockRules: Rule[] = [
-  {
-    id: '1',
-    name: 'Archive old newsletters',
-    enabled: true,
-    conditions: [
-      { field: 'sender', operator: 'contains', value: 'newsletter' },
-      { field: 'age', operator: 'greaterThan', value: 90 },
-    ],
-    actions: [{ type: 'archive' }],
-    createdAt: new Date('2024-11-01'),
-    lastRun: new Date(Date.now() - 86400000),
-    matchCount: 347,
-  },
-  {
-    id: '2',
-    name: 'Label receipts automatically',
-    enabled: true,
-    conditions: [
-      { field: 'semantic', operator: 'matches', value: 'receipt OR invoice' },
-    ],
-    actions: [
-      { type: 'label', value: 'Receipts' },
-      { type: 'tag', value: 'finance' },
-    ],
-    createdAt: new Date('2024-10-15'),
-    lastRun: new Date(Date.now() - 3600000),
-    matchCount: 156,
-  },
-  {
-    id: '3',
-    name: 'Delete spam from specific domain',
-    enabled: false,
-    conditions: [
-      { field: 'domain', operator: 'equals', value: 'spam-domain.com' },
-    ],
-    actions: [{ type: 'delete' }],
-    createdAt: new Date('2024-09-20'),
-    matchCount: 0,
-  },
-];
 
 const CONDITION_FIELDS: { value: RuleConditionField; label: string }[] = [
   { value: 'sender', label: 'Sender' },
@@ -137,12 +95,15 @@ export default function CreateRuleScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ ruleId?: string }>();
   const isEditMode = !!params.ruleId;
-  const ruleToEdit = params.ruleId ? mockRules.find(r => r.id === params.ruleId) : null;
+  const { rules, createRule, updateRule } = useSupabaseRules();
+  const ruleToEdit = params.ruleId ? rules.find(r => r.id === params.ruleId) : null;
 
   const ruleForm = useRuleForm({
     ruleToEdit: ruleToEdit || null,
     isEditMode,
     getValidOperators,
+    onCreateRule: createRule,
+    onUpdateRule: updateRule,
   });
 
   const styles = React.useMemo(() => createRuleFormStyles(colors), [colors]);

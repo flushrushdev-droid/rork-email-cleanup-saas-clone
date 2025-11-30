@@ -20,6 +20,8 @@ interface UseRuleFormProps {
   ruleToEdit?: Rule | null;
   isEditMode: boolean;
   getValidOperators: (field: RuleConditionField) => RuleConditionOperator[];
+  onCreateRule?: (rule: Omit<Rule, 'id' | 'createdAt' | 'lastRun' | 'matchCount'>) => Promise<Rule>;
+  onUpdateRule?: (rule: Rule) => Promise<Rule>;
 }
 
 interface UseRuleFormReturn {
@@ -45,6 +47,8 @@ export function useRuleForm({
   ruleToEdit,
   isEditMode,
   getValidOperators,
+  onCreateRule,
+  onUpdateRule,
 }: UseRuleFormProps): UseRuleFormReturn {
   const [ruleName, setRuleName] = useState<string>('');
   const [conditions, setConditions] = useState<RuleCondition[]>([
@@ -207,34 +211,79 @@ export function useRuleForm({
       return;
     }
 
-    // Prepare updated rule data
-    const updatedRule: Rule = {
-      id: ruleToEdit?.id || Date.now().toString(),
-      name: ruleName.trim(),
-      enabled: ruleToEdit?.enabled ?? true,
-      conditions,
-      actions,
-      createdAt: ruleToEdit?.createdAt || new Date(),
-      lastRun: ruleToEdit?.lastRun,
-      matchCount: ruleToEdit?.matchCount || 0,
-    };
+    // Save to Supabase if functions are provided, otherwise use old method
+    if (isEditMode && ruleToEdit && onUpdateRule) {
+      // Update existing rule
+      const updatedRule: Rule = {
+        ...ruleToEdit,
+        name: ruleName.trim(),
+        conditions,
+        actions,
+      };
+      
+      onUpdateRule(updatedRule)
+        .then(() => {
+          setToast({
+            message: `Rule "${ruleName}" updated successfully!`,
+          });
+          setTimeout(() => {
+            router.back();
+          }, 1500);
+        })
+        .catch((err) => {
+          showError('Failed to update rule');
+          console.error('Error updating rule:', err);
+        });
+    } else if (!isEditMode && onCreateRule) {
+      // Create new rule
+      const newRule: Omit<Rule, 'id' | 'createdAt' | 'lastRun' | 'matchCount'> = {
+        name: ruleName.trim(),
+        enabled: true,
+        conditions,
+        actions,
+      };
+      
+      onCreateRule(newRule)
+        .then(() => {
+          setToast({
+            message: `Rule "${ruleName}" created successfully!`,
+          });
+          setTimeout(() => {
+            router.back();
+          }, 1500);
+        })
+        .catch((err) => {
+          showError('Failed to create rule');
+          console.error('Error creating rule:', err);
+        });
+    } else {
+      // Fallback to old method (for backward compatibility)
+      const updatedRule: Rule = {
+        id: ruleToEdit?.id || Date.now().toString(),
+        name: ruleName.trim(),
+        enabled: ruleToEdit?.enabled ?? true,
+        conditions,
+        actions,
+        createdAt: ruleToEdit?.createdAt || new Date(),
+        lastRun: ruleToEdit?.lastRun,
+        matchCount: ruleToEdit?.matchCount || 0,
+      };
 
-    // Show success toast
-    setToast({
-      message: `Rule "${ruleName}" ${isEditMode ? 'updated' : 'created'} successfully!`,
-    });
-
-    // Navigate to rules page with updated rule data after a short delay
-    setTimeout(() => {
-      router.push({
-        pathname: '/rules',
-        params: {
-          updatedRule: JSON.stringify(updatedRule),
-          isEdit: isEditMode ? 'true' : 'false',
-        },
+      setToast({
+        message: `Rule "${ruleName}" ${isEditMode ? 'updated' : 'created'} successfully!`,
       });
-    }, 1500);
-  }, [ruleName, conditions, actions, ruleToEdit, isEditMode, getValidOperators, showError]);
+
+      setTimeout(() => {
+        router.push({
+          pathname: '/rules',
+          params: {
+            updatedRule: JSON.stringify(updatedRule),
+            isEdit: isEditMode ? 'true' : 'false',
+          },
+        });
+      }, 1500);
+    }
+  }, [ruleName, conditions, actions, ruleToEdit, isEditMode, getValidOperators, showError, onCreateRule, onUpdateRule]);
 
   // Auto-hide toast after 3 seconds
   useEffect(() => {

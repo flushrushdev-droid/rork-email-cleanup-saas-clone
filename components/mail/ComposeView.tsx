@@ -111,62 +111,21 @@ export function ComposeView({
     mode: 'onSubmit', // Only validate on submit for compose
   });
 
-  // Sync form values with props - only update if prop value differs from form value
-  // Using refs to prevent infinite loops by tracking if we've already synced
-  const prevComposeToRef = React.useRef<string>(composeTo);
-  const prevComposeCcRef = React.useRef<string>(composeCc);
-  const prevComposeSubjectRef = React.useRef<string>(composeSubject);
-  const prevComposeBodyRef = React.useRef<string>(composeBody);
-
-  useEffect(() => {
-    // Only sync if prop changed (tracked via ref) and form value is different
-    // Don't include formValues in dependencies to avoid infinite loops
-    if (prevComposeToRef.current !== composeTo) {
-      prevComposeToRef.current = composeTo;
-      // Check form value inside effect but don't depend on it
-      if (formValues.composeTo !== composeTo) {
-        setFieldValue('composeTo', composeTo, false);
-      }
+  // Track if we've initialized form values to prevent infinite loops
+  const hasInitializedRef = React.useRef(false);
+  
+  // Sync props to form only once on mount
+  // After that, onChangeText handlers update both props and form values directly
+  React.useEffect(() => {
+    if (!hasInitializedRef.current) {
+      setFieldValue('composeTo', composeTo, false);
+      setFieldValue('composeCc', composeCc, false);
+      setFieldValue('composeSubject', composeSubject, false);
+      setFieldValue('composeBody', composeBody, false);
+      hasInitializedRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [composeTo]);
-
-  useEffect(() => {
-    if (prevComposeCcRef.current !== composeCc) {
-      prevComposeCcRef.current = composeCc;
-      if (formValues.composeCc !== composeCc) {
-        setFieldValue('composeCc', composeCc, false);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [composeCc]);
-
-  useEffect(() => {
-    if (prevComposeSubjectRef.current !== composeSubject) {
-      prevComposeSubjectRef.current = composeSubject;
-      if (formValues.composeSubject !== composeSubject) {
-        setFieldValue('composeSubject', composeSubject, false);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [composeSubject]);
-
-  useEffect(() => {
-    if (prevComposeBodyRef.current !== composeBody) {
-      prevComposeBodyRef.current = composeBody;
-      if (formValues.composeBody !== composeBody) {
-        setFieldValue('composeBody', composeBody, false);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [composeBody]);
-
-  // Reset form when compose view closes
-  useEffect(() => {
-    if (!composeTo && !composeCc && !composeSubject && !composeBody) {
-      reset();
-    }
-  }, [composeTo, composeCc, composeSubject, composeBody, reset]);
+  }, []); // Empty deps - only run once on mount
 
   const handleAttachFile = async () => {
     try {
@@ -286,10 +245,7 @@ export function ComposeView({
         <ComposeFormField
           label="To"
           value={composeTo}
-          onChangeText={(text) => {
-            onChangeComposeTo(text);
-            setFieldValue('composeTo', text);
-          }}
+          onChangeText={onChangeComposeTo}
           placeholder="recipient@example.com"
           keyboardType="email-address"
           colors={colors}
@@ -302,10 +258,7 @@ export function ComposeView({
         <ComposeFormField
           label="Cc"
           value={composeCc}
-          onChangeText={(text) => {
-            onChangeComposeCc(text);
-            setFieldValue('composeCc', text);
-          }}
+          onChangeText={onChangeComposeCc}
           placeholder="cc@example.com"
           keyboardType="email-address"
           colors={colors}
@@ -318,10 +271,7 @@ export function ComposeView({
         <ComposeFormField
           label="Subject"
           value={composeSubject}
-          onChangeText={(text) => {
-            onChangeComposeSubject(text);
-            setFieldValue('composeSubject', text);
-          }}
+          onChangeText={onChangeComposeSubject}
           placeholder="Email subject"
           colors={colors}
           error={!!errors.composeSubject}
@@ -333,10 +283,7 @@ export function ComposeView({
         <ComposeFormField
           label=""
           value={composeBody}
-          onChangeText={(text) => {
-            onChangeComposeBody(text);
-            setFieldValue('composeBody', text);
-          }}
+          onChangeText={onChangeComposeBody}
           placeholder="Compose your message..."
           multiline
           colors={colors}
