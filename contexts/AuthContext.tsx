@@ -19,10 +19,21 @@ WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = AppConfig.google.clientId;
 
+// Detect if we're running in Expo Go
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+// Get Expo username and slug for proxy redirect URI
+const EXPO_USERNAME = Constants.expoConfig?.extra?.expoUsername || 'athenx';
+const EXPO_SLUG = Constants.expoConfig?.slug || 'email-cleanup-saas-e0pgo27u';
+
+// Expo proxy redirect URI (for Expo Go)
+const EXPO_PROXY_REDIRECT_URI = `https://auth.expo.io/@${EXPO_USERNAME}/${EXPO_SLUG}`;
+
 /**
- * Get redirect URI based on platform:
+ * Get redirect URI based on platform and environment:
  * - Web: Uses configured redirect base URL (auto-detects localhost or production)
- * - Android/iOS: Uses web-based redirect URI (Google doesn't accept exp:// or custom schemes)
+ * - Expo Go (native): Uses Expo proxy redirect URI (https://auth.expo.io/@username/slug)
+ * - Standalone/Dev Build (native): Uses web-based redirect URI
  *   The web callback page will redirect back to the app using deep linking
  */
 function getPlatformRedirectUri(): string {
@@ -31,7 +42,12 @@ function getPlatformRedirectUri(): string {
     return getRedirectUri();
   }
   
-  // For native platforms (Android & iOS), use web-based redirect URI
+  // For Expo Go, use the Expo proxy redirect URI
+  if (isExpoGo) {
+    return EXPO_PROXY_REDIRECT_URI;
+  }
+  
+  // For standalone/dev builds, use web-based redirect URI
   // This works because:
   // 1. Google accepts web URIs (https://rork.com/auth/callback or http://localhost:8081/auth/callback)
   // 2. The web callback page will detect mobile and redirect back to app via deep link
@@ -44,12 +60,14 @@ const REDIRECT_URI = getPlatformRedirectUri();
 // Initialize scoped logger for auth context
 const authLogger = createScopedLogger('Auth');
 
-// Log OAuth configuration in development only
-authLogger.debug('OAuth configuration', {
-  redirectUri: REDIRECT_URI,
-  clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
-  platform: Platform.OS,
-});
+  // Log OAuth configuration in development only
+  authLogger.debug('OAuth configuration', {
+    redirectUri: REDIRECT_URI,
+    clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+    platform: Platform.OS,
+    isExpoGo,
+    usingProxy: isExpoGo && Platform.OS !== 'web',
+  });
 
 const STORAGE_KEYS = {
   TOKENS: 'auth_tokens', // Used with SecureStore (no @ prefix needed)
@@ -108,6 +126,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const deviceInfo = getDeviceInfo();
 
+  // For Expo Go, use makeRedirectUri with useProxy to get the correct redirect URI
+  // This ensures the proxy redirect URI is used correctly
+  const redirectUri = isExpoGo && Platform.OS !== 'web'
+    ? AuthSession.makeRedirectUri({ useProxy: true })
+    : REDIRECT_URI;
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_ID || '',
@@ -119,13 +143,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         'https://www.googleapis.com/auth/gmail.modify',
         'https://www.googleapis.com/auth/gmail.labels',
       ],
-      redirectUri: REDIRECT_URI,
+      redirectUri,
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
       extraParams: {
         access_type: 'offline',
         prompt: 'consent',
-        ...deviceInfo, // Add device_id and device_name for Android
+        // Only add device_id and device_name for Android when NOT using proxy
+        // (proxy handles this automatically)
+        ...(Platform.OS === 'android' && !isExpoGo ? deviceInfo : {}),
       },
     },
     discovery
@@ -697,8 +723,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       authLogger.debug('Starting OAuth flow', {
         redirectUri: REDIRECT_URI,
         clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+        isExpoGo,
+        usingProxy: isExpoGo && Platform.OS !== 'web',
       });
-      const result = await promptAsync();
+      
+      // For Expo Go, use the proxy explicitly
+      const result = await promptAsync(
+        isExpoGo && Platform.OS !== 'web' 
+          ? { useProxy: true, showInRecents: true }
+          : undefined
+      );
       authLogger.debug('OAuth prompt completed', {
         type: result?.type,
         error: result?.type === 'error' ? result.error : undefined,
