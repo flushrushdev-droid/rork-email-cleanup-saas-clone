@@ -14,8 +14,9 @@ services:
     name: athenxmail-backend
     env: node
     plan: free  # Start with free tier, upgrade as needed
-    buildCommand: npm install && npm run backend:build
-    startCommand: npm run backend:start
+    rootDir: backend  # Only use the backend directory
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       # Supabase Configuration (set these in Render dashboard)
       - key: SUPABASE_URL

@@ -91,6 +91,9 @@ The schema includes RLS policies that use Supabase Auth. For beta testing withou
 2. Connect your Git repository
 3. Render will detect the `render.yaml` file
 4. Review the service configuration
+   - **Note:** Render is configured to only use the `backend/` directory
+   - It will use `backend/package.json` (minimal dependencies, faster builds)
+   - This keeps the frontend code out of the backend deployment
 5. Click **"Apply"**
 
 ### 2.3 Configure Environment Variables
