@@ -170,11 +170,27 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       }
       
       // If part has a filename, it's an attachment
-      if (part.filename && part.body?.size !== undefined) {
+      // Attachments can have either body.size (for inline) or body.attachmentId (for attachments)
+      if (part.filename && (part.filename.trim() !== '')) {
+        const size = part.body?.size || 0;
+        const attachmentId = part.body?.attachmentId;
+        
+        // Log for debugging
+        if (part.filename) {
+          gmailLogger.debug('Found attachment part', {
+            filename: part.filename,
+            mimeType: part.mimeType,
+            size,
+            hasAttachmentId: !!attachmentId,
+            bodyKeys: part.body ? Object.keys(part.body) : [],
+          });
+        }
+        
+        // Include attachment if it has a filename (size might be 0 for some attachments)
         attachments.push({
           filename: part.filename,
           mimeType: part.mimeType,
-          size: part.body.size,
+          size: size || 0, // Default to 0 if size is not available
         });
       }
     };
@@ -182,6 +198,12 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     if (parts) {
       parts.forEach(processPart);
     }
+    
+    gmailLogger.debug('Extracted attachments', {
+      count: attachments.length,
+      attachments: attachments.map(a => ({ filename: a.filename, size: a.size })),
+    });
+    
     return attachments;
   };
 
@@ -191,8 +213,47 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     const getHeader = (name: string) => 
       headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 
+    // Debug: Log payload structure for troubleshooting
+    if (message.payload) {
+      gmailLogger.debug('Message payload structure', {
+        emailId: message.id,
+        hasParts: !!message.payload.parts,
+        partsCount: message.payload.parts?.length || 0,
+        hasBody: !!message.payload.body,
+        bodySize: message.payload.body?.size,
+        bodyAttachmentId: message.payload.body?.attachmentId,
+      });
+    }
+
     const attachments = extractAttachments(message.payload?.parts);
     const hasAttachments = attachments.length > 0;
+    
+    // Debug log for messages with attachments
+    if (hasAttachments) {
+      gmailLogger.debug('Email with attachments parsed', {
+        emailId: message.id,
+        subject: getHeader('Subject'),
+        attachmentCount: attachments.length,
+        attachments: attachments.map(a => ({ filename: a.filename, size: a.size })),
+      });
+    } else if (message.payload?.parts && message.payload.parts.length > 0) {
+      // Debug: Log if we have parts but no attachments found
+      gmailLogger.debug('Message has parts but no attachments found', {
+        emailId: message.id,
+        subject: getHeader('Subject'),
+        partsCount: message.payload.parts.length,
+        partsInfo: message.payload.parts.map((p, i) => ({
+          index: i,
+          mimeType: p.mimeType,
+          filename: p.filename || 'no filename',
+          hasBody: !!p.body,
+          bodySize: p.body?.size,
+          bodyAttachmentId: p.body?.attachmentId,
+          hasNestedParts: !!p.parts,
+          nestedPartsCount: p.parts?.length || 0,
+        })),
+      });
+    }
 
     return {
       id: message.id,
