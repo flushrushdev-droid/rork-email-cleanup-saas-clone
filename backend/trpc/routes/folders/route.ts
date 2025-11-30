@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from '../../create-context.js';
-import { createSupabaseAdmin } from '../../lib/supabase.js';
+import { createSupabaseAdmin } from '../../../lib/supabase.js';
 
 const folderSchema = z.object({
   id: z.string().optional(),

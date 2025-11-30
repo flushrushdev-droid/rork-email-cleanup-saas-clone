@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from '../../create-context.js';
-import { createSupabaseAdmin } from '../../lib/supabase.js';
+import { createSupabaseAdmin } from '../../../lib/supabase.js';
 
 const preferencesSchema = z.object({
   user_id: z.string(),
   theme: z.string().nullable().optional(),
-  settings: z.record(z.unknown()).nullable().optional(),
+  settings: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export default createTRPCRouter({
@@ -107,7 +107,7 @@ export default createTRPCRouter({
    * Update settings only
    */
   updateSettings: publicProcedure
-    .input(z.object({ user_id: z.string(), settings: z.record(z.unknown()) }))
+    .input(z.object({ user_id: z.string(), settings: z.record(z.string(), z.unknown()) }))
     .mutation(async ({ input }: { input: { user_id: string; settings: Record<string, unknown> } }) => {
       const supabase = createSupabaseAdmin();
       if (!supabase) {

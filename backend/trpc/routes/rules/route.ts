@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { createTRPCRouter, publicProcedure } from '../../create-context.js';
-import { createSupabaseAdmin } from '../../lib/supabase.js';
+import { createSupabaseAdmin } from '../../../lib/supabase.js';
 
 const ruleSchema = z.object({
   id: z.string().optional(),
   user_id: z.string(),
   name: z.string().min(1),
-  conditions: z.record(z.unknown()),
-  actions: z.record(z.unknown()),
+  conditions: z.record(z.string(), z.unknown()),
+  actions: z.record(z.string(), z.unknown()),
   enabled: z.boolean().default(true),
 });
 
