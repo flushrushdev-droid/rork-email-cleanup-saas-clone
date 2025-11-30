@@ -68,13 +68,24 @@ export function useMailScreen() {
 
   // Process all emails
   const allEmails: EmailMessage[] = useMemo(() => {
-    const emails = isDemoMode || messages.length === 0 
-      ? mockRecentEmails.map(email => ({
-          ...email,
-          isStarred: starredEmails.has(email.id),
-          category: categorizeEmail(email),
-        }))
-      : messages.map((msg: Email): EmailMessage => {
+    // Only show demo data if explicitly in demo mode
+    // Don't show demo data if authenticated but messages haven't loaded yet (wait for cache)
+    if (isDemoMode) {
+      return mockRecentEmails.map(email => ({
+        ...email,
+        isStarred: starredEmails.has(email.id),
+        category: categorizeEmail(email),
+      }));
+    }
+    
+    // If not in demo mode but no messages, return empty array (don't show demo data)
+    // The cache will load and messages will appear
+    if (messages.length === 0) {
+      return [];
+    }
+    
+    // Map real messages to EmailMessage format
+    return messages.map((msg: Email): EmailMessage => {
           const email = {
             id: msg.id,
             threadId: msg.threadId || msg.id,

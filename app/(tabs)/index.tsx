@@ -65,15 +65,25 @@ export default function OverviewScreen() {
   
   useEffect(() => {
     if (isAuthenticated && !isDemoMode && !isSyncing && !hasSyncedThisSessionRef.current) {
-      // Always sync on login - will be incremental if historyId exists, full if not
-      hasSyncedThisSessionRef.current = true;
-      handleSync();
+      // Check if we already have cached messages - if so, don't auto-sync
+      // This prevents unnecessary syncs on page refresh/navigation
+      const hasCachedMessages = messages.length > 0;
+      
+      if (!hasCachedMessages) {
+        // Only sync if we don't have cached messages
+        // Will be incremental if historyId exists, full if not
+        hasSyncedThisSessionRef.current = true;
+        handleSync();
+      } else {
+        // We have cached messages, mark as synced to prevent duplicate syncs
+        hasSyncedThisSessionRef.current = true;
+      }
     }
     // Reset on logout
     if (!isAuthenticated) {
       hasSyncedThisSessionRef.current = false;
     }
-  }, [isAuthenticated, isDemoMode, isSyncing, handleSync]);
+  }, [isAuthenticated, isDemoMode, isSyncing, handleSync, messages.length]);
 
   // Use mock data only in demo mode, otherwise calculate from real messages
   const health = isDemoMode ? mockInboxHealth : useMemo(() => {
