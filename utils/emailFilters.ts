@@ -19,11 +19,15 @@ export function filterEmailsByFolder(
         email.subject.toLowerCase().includes('urgent')
       );
     case 'snoozed':
-    case 'sent':
     case 'drafts':
     case 'spam':
     case 'archived':
       return [];
+    case 'sent':
+      // Show emails with SENT label
+      return emails.filter(email => 
+        email.labels.includes('SENT') || email.labels.includes('sent')
+      );
     case 'trash':
       // Show emails with TRASH label
       return emails.filter(email => 
