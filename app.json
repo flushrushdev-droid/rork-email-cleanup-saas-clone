@@ -47,6 +47,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "app.athenxmail.email_cleanup_saas",
+      "usesCleartextTraffic": true,
       "intentFilters": [
         {
           "action": "android.intent.action.SEND",
