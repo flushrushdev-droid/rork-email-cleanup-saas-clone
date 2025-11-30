@@ -5,6 +5,10 @@
  * Render will run this file to start the server.
  */
 
+// Load environment variables
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import app from './hono.js';
 import { serve } from '@hono/node-server';
 
