@@ -205,26 +205,56 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const performFullSync = async (profile: GmailProfile): Promise<Email[]> => {
     gmailLogger.info('Performing full sync');
     
-    // Fetch inbox emails (primary focus - 60)
+    // Fetch inbox emails (primary focus - up to 100, but we'll prioritize)
     const inboxResponse = await makeGmailRequest(
-      '/messages?maxResults=60&q=in:inbox'
+      '/messages?maxResults=100&q=in:inbox'
     );
     const inboxMessageIds = inboxResponse.messages || [];
     
-    // Also fetch trash emails (20)
+    // Also fetch trash emails (up to 20, but only if we haven't reached 100 yet)
     const trashResponse = await makeGmailRequest(
       '/messages?maxResults=20&q=in:trash'
     );
     const trashMessageIds = trashResponse.messages || [];
     
-    // Also fetch sent emails (20)
+    // Also fetch sent emails (up to 20, but only if we haven't reached 100 yet)
     const sentResponse = await makeGmailRequest(
       '/messages?maxResults=20&q=in:sent'
     );
     const sentMessageIds = sentResponse.messages || [];
     
-    // Combine (60 + 20 + 20 = 100 total)
-    const allMessageIds = [...inboxMessageIds, ...trashMessageIds, ...sentMessageIds];
+    // Combine and limit to 100 total, prioritizing inbox
+    // Strategy: Take all inbox (up to 100), then fill remaining slots with trash/sent
+    const allMessageIds: Array<{ id: string }> = [];
+    const seenIds = new Set<string>();
+    
+    // Add inbox messages first (up to 100)
+    for (const msg of inboxMessageIds) {
+      if (allMessageIds.length >= 100) break;
+      if (!seenIds.has(msg.id)) {
+        allMessageIds.push(msg);
+        seenIds.add(msg.id);
+      }
+    }
+    
+    // Fill remaining slots with trash (up to 20 total trash)
+    for (const msg of trashMessageIds) {
+      if (allMessageIds.length >= 100) break;
+      if (!seenIds.has(msg.id)) {
+        allMessageIds.push(msg);
+        seenIds.add(msg.id);
+      }
+    }
+    
+    // Fill remaining slots with sent (up to 20 total sent)
+    for (const msg of sentMessageIds) {
+      if (allMessageIds.length >= 100) break;
+      if (!seenIds.has(msg.id)) {
+        allMessageIds.push(msg);
+        seenIds.add(msg.id);
+      }
+    }
+    
     const totalToSync = allMessageIds.length;
     setSyncProgress({ current: 0, total: totalToSync });
 
@@ -652,8 +682,8 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
         const now = Date.now();
-        // Only sync if it's been at least 1 minute since last sync
-        if (now - lastSyncTimeRef.current > 60 * 1000) {
+        // Only sync if it's been at least 1 minute since last sync AND no sync is in progress
+        if (now - lastSyncTimeRef.current > 60 * 1000 && !syncMutation.isPending) {
           gmailLogger.debug('App came to foreground, triggering incremental sync');
           syncMailbox().catch((err) => {
             gmailLogger.error('Auto-sync on app focus failed', err);
@@ -667,7 +697,8 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     // Periodic sync every 5 minutes
     syncIntervalRef.current = setInterval(() => {
       const now = Date.now();
-      if (now - lastSyncTimeRef.current > SYNC_INTERVAL_MS) {
+      // Only sync if interval has passed AND no sync is in progress
+      if (now - lastSyncTimeRef.current > SYNC_INTERVAL_MS && !syncMutation.isPending) {
         gmailLogger.debug('Periodic sync triggered');
         syncMailbox().catch((err) => {
           gmailLogger.error('Periodic sync failed', err);
@@ -681,7 +712,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         clearInterval(syncIntervalRef.current);
       }
     };
-  }, [authIsAuthenticated, authDemoMode, syncMailbox]);
+  }, [authIsAuthenticated, authDemoMode, syncMailbox, syncMutation.isPending]);
 
   // Update lastSyncTimeRef when sync completes
   useEffect(() => {
