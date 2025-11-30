@@ -139,19 +139,64 @@ app.get("/auth/callback", (c) => {
     });
     const deepLink = `${appScheme}://login?${errorParams.toString()}`;
     console.log('[OAuth Callback] Deep link:', deepLink);
-    return c.redirect(deepLink);
+    
+    // Return HTML page that redirects to deep link (works better in webviews)
+    return c.html(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    window.location.href = "${deepLink}";
+    setTimeout(function() {
+      window.location.href = "${deepLink}";
+    }, 100);
+  </script>
+</head>
+<body>
+  <p>Redirecting to app...</p>
+</body>
+</html>`);
   }
   
   if (code) {
     console.log('[OAuth Callback] OAuth success, redirecting to app with code');
     // Success - redirect back to app with code
+    // Use HTML redirect for better webview compatibility
     const params = new URLSearchParams({
       code: code,
       ...(state && { state: state }),
     });
     const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
     console.log('[OAuth Callback] Deep link:', deepLink);
-    return c.redirect(deepLink);
+    
+    // Return HTML page that redirects to deep link (works better in webviews)
+    return c.html(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // Try to open the deep link
+    window.location.href = "${deepLink}";
+    
+    // Fallback: try after a short delay
+    setTimeout(function() {
+      window.location.href = "${deepLink}";
+    }, 100);
+    
+    // Show message if still here after 2 seconds
+    setTimeout(function() {
+      document.body.innerHTML = '<p>Please return to the app to complete authentication.</p>';
+    }, 2000);
+  </script>
+</head>
+<body>
+  <p>Redirecting to app...</p>
+</body>
+</html>`);
   }
   
   console.log('[OAuth Callback] No code or error, redirecting to login');
