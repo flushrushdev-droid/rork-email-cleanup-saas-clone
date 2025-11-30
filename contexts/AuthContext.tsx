@@ -566,6 +566,44 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       setError(null);
       setIsLoading(true);
+      
+      // First, try to use stored refresh token for seamless login
+      let storedTokens: string | null = null;
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') {
+          storedTokens = window.localStorage.getItem(STORAGE_KEYS.TOKENS);
+        }
+      } else {
+        storedTokens = await SecureStore.getItemAsync(STORAGE_KEYS.TOKENS);
+      }
+      
+      if (storedTokens) {
+        try {
+          const parsedTokens: AuthTokens = JSON.parse(storedTokens);
+          if (parsedTokens.refreshToken && validateToken(parsedTokens)) {
+            authLogger.debug('Attempting seamless login with refresh token');
+            // Try to refresh the token silently
+            await refreshAccessToken(parsedTokens.refreshToken);
+            // If refresh succeeds, we're logged in - no need for OAuth flow
+            const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+            if (storedUser) {
+              const parsedUser: User = JSON.parse(storedUser);
+              const userExists = await verifyUserInDatabase(parsedUser.id);
+              if (userExists) {
+                authLogger.info('Seamless login successful with refresh token');
+                setUser(parsedUser);
+                setIsLoading(false);
+                return; // Success! No need to show OAuth consent screen
+              }
+            }
+          }
+        } catch (err) {
+          authLogger.debug('Silent refresh failed, proceeding with OAuth flow', err);
+          // Refresh failed, continue with normal OAuth flow
+        }
+      }
+      
+      // If no stored tokens or refresh failed, proceed with OAuth flow
       authLogger.debug('Starting OAuth flow', {
         redirectUri: REDIRECT_URI,
         clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
