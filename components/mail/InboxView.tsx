@@ -158,6 +158,7 @@ export function InboxView({
         onFilterChange={onFilterChange}
         smartFolders={smartFolders}
         customFolders={customFolders}
+        folderCounts={folderCounts}
         onCreateFolder={onCreateFolder}
         insets={insets}
         sidebarSlideAnim={sidebarSlideAnim}

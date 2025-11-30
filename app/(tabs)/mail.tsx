@@ -59,6 +59,7 @@ export default function MailScreen() {
     filteredEmails,
     drafts,
     smartFolders,
+    folderCounts,
     handleEmailPress,
     handleCompose,
     handleSend,
@@ -100,6 +101,7 @@ export default function MailScreen() {
           drafts={drafts}
           smartFolders={smartFolders}
           customFolders={customFolders}
+          folderCounts={folderCounts}
           onEmailPress={handleEmailPress}
           onStarEmail={handleStar}
           onLoadDraft={handleLoadDraft}

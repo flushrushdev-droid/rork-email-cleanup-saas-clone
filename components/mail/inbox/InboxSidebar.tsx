@@ -15,6 +15,7 @@ interface InboxSidebarProps {
   onFilterChange: (filter: FilterType) => void;
   smartFolders: SmartFolder[];
   customFolders: Array<{ id: string; name: string; color: string; count: number }>;
+  folderCounts: Record<string, number>;
   onCreateFolder: () => void;
   insets: { top: number; bottom: number; left: number; right: number };
   sidebarSlideAnim: Animated.Value;
@@ -27,6 +28,7 @@ export function InboxSidebar({
   onFilterChange,
   smartFolders,
   customFolders,
+  folderCounts,
   onCreateFolder,
   insets,
   sidebarSlideAnim,
@@ -72,27 +74,40 @@ export function InboxSidebar({
               <AppText style={[sidebarStyles.sectionTitle, { color: colors.text }]} dynamicTypeStyle="headline">Mail</AppText>
             </View>
             
-            {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'archived', 'trash'] as const).map((filter) => (
-              <TouchableOpacity
-                key={filter}
-                testID={`sidebar-filter-${filter}`}
-                style={[
-                  sidebarStyles.sidebarItem,
-                  { backgroundColor: activeFilter === filter ? colors.primary + '15' : 'transparent' }
-                ]}
-                onPress={() => handleFilterChange(filter)}
-              >
-                <AppText style={[
-                  sidebarStyles.sidebarItemText,
-                  { color: activeFilter === filter ? colors.primary : colors.text }
-                ]} dynamicTypeStyle="body">
-                  {filter === 'drafts-ai' ? 'Drafts By AI' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </AppText>
-                {activeFilter === filter && (
-                  <View style={[sidebarStyles.activeIndicator, { backgroundColor: colors.primary }]} />
-                )}
-              </TouchableOpacity>
-            ))}
+            {(['all', 'unread', 'starred', 'drafts', 'drafts-ai', 'sent', 'archived', 'trash'] as const).map((filter) => {
+              const count = folderCounts[filter] || 0;
+              return (
+                <TouchableOpacity
+                  key={filter}
+                  testID={`sidebar-filter-${filter}`}
+                  style={[
+                    sidebarStyles.sidebarItem,
+                    { backgroundColor: activeFilter === filter ? colors.primary + '15' : 'transparent' }
+                  ]}
+                  onPress={() => handleFilterChange(filter)}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <AppText style={[
+                      sidebarStyles.sidebarItemText,
+                      { color: activeFilter === filter ? colors.primary : colors.text }
+                    ]} dynamicTypeStyle="body">
+                      {filter === 'drafts-ai' ? 'Drafts By AI' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </AppText>
+                    {activeFilter === filter && (
+                      <View style={[sidebarStyles.activeIndicator, { backgroundColor: colors.primary, marginLeft: 8 }]} />
+                    )}
+                  </View>
+                  <View style={[sidebarStyles.folderBadge, { backgroundColor: activeFilter === filter ? colors.primary : colors.surface }]}>
+                    <AppText style={[
+                      sidebarStyles.folderBadgeText,
+                      { color: activeFilter === filter ? colors.surface : colors.textSecondary }
+                    ]} dynamicTypeStyle="caption">
+                      {count}
+                    </AppText>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* My Folders (custom) Section */}

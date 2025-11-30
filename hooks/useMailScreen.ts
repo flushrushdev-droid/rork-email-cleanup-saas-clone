@@ -265,6 +265,47 @@ export function useMailScreen() {
     return filtered.sort((a: EmailMessage, b: EmailMessage) => b.date.getTime() - a.date.getTime());
   }, [allEmails, currentFolder, currentView, selectedFolder, searchQuery, starredEmails, activeFilter, archivedEmails, trashedEmails, pendingArchive, pendingDelete]);
 
+  // Calculate folder counts
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: allEmails.filter(e => 
+        !archivedEmails.has(e.id) && 
+        !trashedEmails.has(e.id) &&
+        !e.labels.includes('TRASH') && 
+        !e.labels.includes('trash')
+      ).length,
+      unread: allEmails.filter(e => 
+        !e.isRead && 
+        !archivedEmails.has(e.id) && 
+        !trashedEmails.has(e.id) &&
+        !e.labels.includes('TRASH') && 
+        !e.labels.includes('trash')
+      ).length,
+      starred: allEmails.filter(e => 
+        starredEmails.has(e.id) && 
+        !archivedEmails.has(e.id) && 
+        !trashedEmails.has(e.id) &&
+        !e.labels.includes('TRASH') && 
+        !e.labels.includes('trash')
+      ).length,
+      drafts: drafts.filter(d => !d.isAIGenerated).length,
+      'drafts-ai': drafts.filter(d => d.isAIGenerated).length,
+      sent: allEmails.filter(e => 
+        (e.labels.includes('SENT') || e.labels.includes('sent')) &&
+        !trashedEmails.has(e.id) &&
+        !e.labels.includes('TRASH') && 
+        !e.labels.includes('trash')
+      ).length,
+      archived: archivedEmails.size,
+      trash: allEmails.filter(e => 
+        e.labels.includes('TRASH') || 
+        e.labels.includes('trash') ||
+        trashedEmails.has(e.id)
+      ).length,
+    };
+    return counts;
+  }, [allEmails, drafts, starredEmails, archivedEmails, trashedEmails]);
+
   // Handle email press
   const handleEmailPress = useCallback((email: EmailMessage) => {
     setSelectedEmail(email);
@@ -819,6 +860,7 @@ export function useMailScreen() {
     filteredEmails,
     drafts,
     smartFolders,
+    folderCounts,
     // Handlers
     handleEmailPress,
     handleCompose,

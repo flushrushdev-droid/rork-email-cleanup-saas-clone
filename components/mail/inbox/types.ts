@@ -30,6 +30,7 @@ export interface InboxViewProps {
   drafts: Draft[];
   smartFolders: SmartFolder[];
   customFolders: Array<{ id: string; name: string; color: string; count: number }>;
+  folderCounts: Record<string, number>;
   onEmailPress: (email: EmailMessage) => void;
   onStarEmail: (emailId: string) => void;
   onLoadDraft: (draft: Draft) => void;
