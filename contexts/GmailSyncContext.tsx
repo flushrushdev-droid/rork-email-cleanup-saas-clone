@@ -1,6 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AppState, AppStateStatus } from 'react-native';
 import { useAuth } from './AuthContext';
 import { trpcClient } from '@/lib/trpc';
 import type { GmailMessage, GmailProfile, Email, Sender } from '@/constants/types';
@@ -15,7 +16,7 @@ const GMAIL_API_BASE = validateSecureUrl(AppConfig.gmail.apiBase);
 const gmailLogger = createScopedLogger('GmailSync');
 
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
-  const { getValidAccessToken, user } = useAuth();
+  const { getValidAccessToken, user, isAuthenticated: authIsAuthenticated, isDemoMode: authDemoMode } = useAuth();
   const queryClient = useQueryClient();
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
@@ -253,10 +254,19 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     
     try {
       // Use Gmail History API to get changes since lastHistoryId
-      // Note: Gmail History API supports multiple historyTypes as separate query params
+      // Gmail History API accepts historyTypes as comma-separated values or multiple params
+      // We'll use multiple params for better compatibility
+      // Note: History API doesn't support labelIds filter, so we filter inbox messages in processing
       const historyResponse = await makeGmailRequest(
-        `/history?startHistoryId=${lastHistoryId}&historyTypes=messageAdded&historyTypes=messageDeleted&historyTypes=labelAdded&historyTypes=labelRemoved&maxResults=100`
+        `/history?startHistoryId=${encodeURIComponent(lastHistoryId)}&historyTypes=messageAdded&historyTypes=messageDeleted&historyTypes=labelAdded&historyTypes=labelRemoved&maxResults=100`
       );
+      
+      gmailLogger.debug('History API response', {
+        historyId: historyResponse.historyId,
+        historyCount: historyResponse.history?.length || 0,
+        hasHistory: !!historyResponse.history,
+        firstRecord: historyResponse.history?.[0] ? Object.keys(historyResponse.history[0]) : [],
+      });
 
       const historyRecords = historyResponse.history || [];
       const newMessageIds: string[] = [];
@@ -265,16 +275,21 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
       // Process history records
       for (const record of historyRecords) {
-        // New messages
+        // New messages - only include if they're in INBOX
         if (record.messagesAdded) {
           for (const msgAdded of record.messagesAdded) {
-            if (msgAdded.message?.id) {
-              newMessageIds.push(msgAdded.message.id);
+            const message = msgAdded.message;
+            if (message?.id) {
+              // Check if message is in INBOX (has INBOX label)
+              const labelIds = message.labelIds || [];
+              if (labelIds.includes('INBOX')) {
+                newMessageIds.push(message.id);
+              }
             }
           }
         }
 
-        // Deleted messages
+        // Deleted messages - include all deletions (they were in inbox before deletion)
         if (record.messagesDeleted) {
           for (const msgDeleted of record.messagesDeleted) {
             if (msgDeleted.message?.id) {
@@ -283,13 +298,27 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
           }
         }
 
-        // Label changes (read/unread, starred, etc.)
+        // Label changes (read/unread, starred, etc.) - only for INBOX messages
         if (record.labelsAdded || record.labelsRemoved) {
-          const affectedMessages = [
-            ...(record.labelsAdded || []).map((la: any) => la.message?.id),
-            ...(record.labelsRemoved || []).map((lr: any) => lr.message?.id),
-          ].filter(Boolean);
-          affectedMessages.forEach((id: string) => labelChangedMessageIds.add(id));
+          // Check labelsAdded for INBOX messages
+          if (record.labelsAdded) {
+            for (const labelAdded of record.labelsAdded) {
+              const message = labelAdded.message;
+              if (message?.id && message.labelIds?.includes('INBOX')) {
+                labelChangedMessageIds.add(message.id);
+              }
+            }
+          }
+          // Check labelsRemoved for INBOX messages
+          if (record.labelsRemoved) {
+            for (const labelRemoved of record.labelsRemoved) {
+              const message = labelRemoved.message;
+              // Include if it still has INBOX or if INBOX was just removed (was in inbox)
+              if (message?.id && (message.labelIds?.includes('INBOX') || labelRemoved.labelIds?.includes('INBOX'))) {
+                labelChangedMessageIds.add(message.id);
+              }
+            }
+          }
         }
       }
 
@@ -407,6 +436,13 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       if (user?.id) {
         try {
           const userData = await trpcClient.users.getById.query({ id: user.id });
+          // Log the full userData to debug field names
+          gmailLogger.debug('Fetched user data', { 
+            userId: user.id,
+            userDataKeys: Object.keys(userData || {}),
+            hasGmailHistoryId: !!(userData as any)?.gmail_history_id,
+            gmailHistoryId: (userData as any)?.gmail_history_id,
+          });
           storedHistoryId = (userData as any)?.gmail_history_id || null;
           gmailLogger.debug('Fetched user historyId', { 
             hasHistoryId: !!storedHistoryId,
@@ -550,6 +586,63 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const syncMailbox = useCallback(async () => {
     return syncMutation.mutateAsync();
   }, [syncMutation.mutateAsync]);
+
+  // Auto-sync on app focus and periodic sync
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSyncTimeRef = useRef<number>(0);
+  const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+  useEffect(() => {
+    if (!authIsAuthenticated || authDemoMode) {
+      // Clear interval if logged out or in demo mode
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Sync when app comes to foreground
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const now = Date.now();
+        // Only sync if it's been at least 1 minute since last sync
+        if (now - lastSyncTimeRef.current > 60 * 1000) {
+          gmailLogger.debug('App came to foreground, triggering incremental sync');
+          syncMailbox().catch((err) => {
+            gmailLogger.error('Auto-sync on app focus failed', err);
+          });
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    // Periodic sync every 5 minutes
+    syncIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      if (now - lastSyncTimeRef.current > SYNC_INTERVAL_MS) {
+        gmailLogger.debug('Periodic sync triggered');
+        syncMailbox().catch((err) => {
+          gmailLogger.error('Periodic sync failed', err);
+        });
+      }
+    }, SYNC_INTERVAL_MS);
+
+    return () => {
+      subscription.remove();
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+      }
+    };
+  }, [authIsAuthenticated, authDemoMode, syncMailbox]);
+
+  // Update lastSyncTimeRef when sync completes
+  useEffect(() => {
+    if (lastSyncedAt) {
+      lastSyncTimeRef.current = lastSyncedAt.getTime();
+    }
+  }, [lastSyncedAt]);
 
   // Memoize stable values (data) separately from frequently changing values (sync state)
   const dataValue = useMemo(() => ({

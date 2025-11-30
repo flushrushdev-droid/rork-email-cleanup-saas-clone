@@ -59,11 +59,21 @@ export default function OverviewScreen() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Auto-sync on login (first time or incremental)
+  // Use a ref to track if we've synced on this login session
+  const hasSyncedThisSessionRef = React.useRef(false);
+  
   useEffect(() => {
-    if (isAuthenticated && !isDemoMode && messages.length === 0 && !isSyncing) {
+    if (isAuthenticated && !isDemoMode && !isSyncing && !hasSyncedThisSessionRef.current) {
+      // Always sync on login - will be incremental if historyId exists, full if not
+      hasSyncedThisSessionRef.current = true;
       handleSync();
     }
-  }, [isAuthenticated, isDemoMode, messages.length, isSyncing, handleSync]);
+    // Reset on logout
+    if (!isAuthenticated) {
+      hasSyncedThisSessionRef.current = false;
+    }
+  }, [isAuthenticated, isDemoMode, isSyncing, handleSync]);
 
   // Use mock data only in demo mode, otherwise calculate from real messages
   const health = isDemoMode ? mockInboxHealth : useMemo(() => {
