@@ -144,6 +144,11 @@ export function InboxEmailList({
     return <NoEmailsEmptyState colors={colors} />;
   }, [activeFilter, colors]);
 
+  // Render sent emails with FlatList (use SentEmptyState for empty state)
+  const sentListEmptyComponent = React.useMemo(() => (
+    <SentEmptyState colors={colors} />
+  ), [colors]);
+
   // Show skeleton loader during initial load
   if (isLoading && !isRefreshing) {
     if (activeFilter === 'drafts' || activeFilter === 'drafts-ai') {
@@ -171,11 +176,6 @@ export function InboxEmailList({
       />
     );
   }
-
-  // Render sent emails with FlatList (use SentEmptyState for empty state)
-  const sentListEmptyComponent = React.useMemo(() => (
-    <SentEmptyState colors={colors} />
-  ), [colors]);
 
   return (
     <FlatList
