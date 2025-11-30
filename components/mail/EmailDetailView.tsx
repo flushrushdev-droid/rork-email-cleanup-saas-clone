@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, ScrollView, useWindowDimensions } from 'react-native';
+import { View, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { Paperclip } from 'lucide-react-native';
 import { EdgeInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { EmailAttachmentList } from './emailDetail/EmailAttachmentList';
 import { EmailActionButtons } from './emailDetail/EmailActionButtons';
 import { createEmailDetailStyles } from './emailDetail/styles';
 import RenderHTML from 'react-native-render-html';
+import { WebView } from 'react-native-webview';
 
 // Helper function to format file size
 const formatFileSize = (bytes: number): string => {
@@ -66,6 +67,24 @@ export function EmailDetailView({
     const trimmed = selectedEmail.body.trim();
     return trimmed.startsWith('<') || /<[a-z][\s\S]*>/i.test(trimmed);
   }, [selectedEmail.body]);
+
+  // Check if HTML is complex (has style tags, inline styles, or complex structure)
+  const isComplexHTML = useMemo(() => {
+    if (!isHTML || !selectedEmail.body) return false;
+    const body = selectedEmail.body.toLowerCase();
+    // Check for complex HTML features that WebView handles better
+    return (
+      body.includes('<style') ||
+      body.includes('style=') ||
+      body.includes('class=') ||
+      body.includes('@media') ||
+      body.includes('background') ||
+      body.includes('border-radius') ||
+      body.includes('box-shadow') ||
+      body.includes('flex') ||
+      body.includes('grid')
+    );
+  }, [isHTML, selectedEmail.body]);
 
   // HTML renderer configuration
   const htmlRenderConfig = useMemo(() => ({
@@ -169,24 +188,76 @@ export function EmailDetailView({
         <View style={styles.detailBody}>
           {selectedEmail.body ? (
             isHTML ? (
-              <RenderHTML
-                contentWidth={htmlRenderConfig.contentWidth}
-                source={{ html: selectedEmail.body }}
-                baseStyle={htmlRenderConfig.baseStyle}
-                tagsStyles={htmlRenderConfig.tagsStyles}
-                systemFonts={htmlRenderConfig.systemFonts}
-                defaultTextProps={{
-                  style: { color: colors.text },
-                }}
-                // Enable images but with size limits for performance
-                enableExperimentalMarginCollapsing={true}
-                // Render images inline
-                renderersProps={{
-                  img: {
-                    enableExperimentalPercentWidth: true,
-                  },
-                }}
-              />
+              isComplexHTML ? (
+                // Use WebView for complex HTML emails (better CSS support)
+                <View style={{ width: '100%', height: 600, backgroundColor: colors.background }}>
+                  <WebView
+                    source={{ html: selectedEmail.body }}
+                    style={{ backgroundColor: 'transparent', flex: 1 }}
+                    scrollEnabled={true}
+                    showsVerticalScrollIndicator={true}
+                    showsHorizontalScrollIndicator={false}
+                    // Inject CSS to match theme and ensure proper rendering
+                    injectedCSS={`
+                      body {
+                        color: ${colors.text};
+                        background-color: ${colors.background};
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        margin: 0;
+                        padding: 16px;
+                        width: 100%;
+                        box-sizing: border-box;
+                      }
+                      * {
+                        box-sizing: border-box;
+                      }
+                      a {
+                        color: ${colors.primary};
+                      }
+                      img {
+                        max-width: 100%;
+                        height: auto;
+                      }
+                    `}
+                    // Allow images and external resources
+                    originWhitelist={['*']}
+                    // Disable zoom
+                    scalesPageToFit={false}
+                    // Handle links - open in new window on web
+                    onShouldStartLoadWithRequest={(request) => {
+                      if (Platform.OS === 'web' && request.url.startsWith('http')) {
+                        if (typeof window !== 'undefined') {
+                          window.open(request.url, '_blank');
+                        }
+                        return false;
+                      }
+                      return true;
+                    }}
+                    // Set initial scale for proper rendering
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                  />
+                </View>
+              ) : (
+                // Use RenderHTML for simple HTML
+                <RenderHTML
+                  contentWidth={htmlRenderConfig.contentWidth}
+                  source={{ html: selectedEmail.body }}
+                  baseStyle={htmlRenderConfig.baseStyle}
+                  tagsStyles={htmlRenderConfig.tagsStyles}
+                  systemFonts={htmlRenderConfig.systemFonts}
+                  defaultTextProps={{
+                    style: { color: colors.text },
+                  }}
+                  enableExperimentalMarginCollapsing={true}
+                  renderersProps={{
+                    img: {
+                      enableExperimentalPercentWidth: true,
+                    },
+                  }}
+                />
+              )
             ) : (
               <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">
                 {selectedEmail.body}
