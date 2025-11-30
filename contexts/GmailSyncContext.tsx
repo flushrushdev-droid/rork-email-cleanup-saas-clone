@@ -205,26 +205,26 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const performFullSync = async (profile: GmailProfile): Promise<Email[]> => {
     gmailLogger.info('Performing full sync');
     
-    // Fetch inbox emails (primary focus)
+    // Fetch inbox emails (primary focus - 60)
     const inboxResponse = await makeGmailRequest(
-      '/messages?maxResults=70&q=in:inbox'
+      '/messages?maxResults=60&q=in:inbox'
     );
     const inboxMessageIds = inboxResponse.messages || [];
     
-    // Also fetch trash emails
+    // Also fetch trash emails (20)
     const trashResponse = await makeGmailRequest(
       '/messages?maxResults=20&q=in:trash'
     );
     const trashMessageIds = trashResponse.messages || [];
     
-    // Also fetch sent emails
+    // Also fetch sent emails (20)
     const sentResponse = await makeGmailRequest(
       '/messages?maxResults=20&q=in:sent'
     );
     const sentMessageIds = sentResponse.messages || [];
     
-    // Combine and limit to 100 total (prioritize inbox, then trash, then sent)
-    const allMessageIds = [...inboxMessageIds, ...trashMessageIds, ...sentMessageIds].slice(0, 100);
+    // Combine (60 + 20 + 20 = 100 total)
+    const allMessageIds = [...inboxMessageIds, ...trashMessageIds, ...sentMessageIds];
     const totalToSync = allMessageIds.length;
     setSyncProgress({ current: 0, total: totalToSync });
 
