@@ -17,6 +17,9 @@
       },
       "ios": {
         "simulator": true
+      },
+      "cache": {
+        "disabled": false
       }
     },
     "preview": {
@@ -41,6 +44,11 @@
   },
   "submit": {
     "production": {}
+  },
+  "hooks": {
+    "prebuild": {
+      "command": "chmod +x eas-hooks.sh && ./eas-hooks.sh"
+    }
   }
 }
 
