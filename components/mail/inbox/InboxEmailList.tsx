@@ -172,10 +172,10 @@ export function InboxEmailList({
     );
   }
 
-  // Render sent (empty state)
-  if (activeFilter === 'sent') {
-    return <SentEmptyState colors={colors} />;
-  }
+  // Render sent emails with FlatList (use SentEmptyState for empty state)
+  const sentListEmptyComponent = React.useMemo(() => (
+    <SentEmptyState colors={colors} />
+  ), [colors]);
 
   return (
     <FlatList
@@ -186,7 +186,7 @@ export function InboxEmailList({
       contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
-      ListEmptyComponent={emailListEmptyComponent}
+      ListEmptyComponent={activeFilter === 'sent' ? sentListEmptyComponent : emailListEmptyComponent}
       {...getOptimizedFlatListProps()}
     />
   );
