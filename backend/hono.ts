@@ -162,11 +162,19 @@ app.get("/auth/callback", (c) => {
   
   if (code) {
     console.log('[OAuth Callback] OAuth success, code received');
-    // Success - expo-auth-session should detect the code from the URL
-    // WebBrowser.maybeCompleteAuthSession() will detect when this page loads
-    // We don't need to redirect - just show a success message
-    // The current URL already has the code parameter, so expo-auth-session can detect it
+    // Success - try both approaches:
+    // 1. Keep code in URL for expo-auth-session to detect (WebBrowser.maybeCompleteAuthSession)
+    // 2. Also redirect to deep link as fallback (for deep link handler in app)
+    const params = new URLSearchParams({
+      code: code,
+      ...(state && { state: state }),
+    });
+    const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
+    console.log('[OAuth Callback] Deep link:', deepLink);
     
+    // Return HTML that:
+    // 1. Stays on page briefly so expo-auth-session can detect the code from URL
+    // 2. Then redirects to deep link as fallback
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
@@ -209,15 +217,37 @@ app.get("/auth/callback", (c) => {
       margin: 10px 0;
     }
   </style>
+  <script>
+    (function() {
+      const deepLink = "${deepLink}";
+      
+      // Wait a moment for expo-auth-session to detect the code from URL
+      // WebBrowser.maybeCompleteAuthSession() should detect it
+      setTimeout(function() {
+        // After 500ms, try redirecting to deep link as fallback
+        // This ensures the app receives the code even if expo-auth-session doesn't detect it
+        try {
+          window.location.href = deepLink;
+        } catch (e) {
+          console.error('Failed to redirect to deep link:', e);
+        }
+      }, 500);
+      
+      // Show message
+      setTimeout(function() {
+        document.querySelector('.container').innerHTML = 
+          '<div class="success-icon">✓</div>' +
+          '<h1>Authentication Complete</h1>' +
+          '<p>Redirecting to app...</p>';
+      }, 100);
+    })();
+  </script>
 </head>
 <body>
   <div class="container">
     <div class="success-icon">✓</div>
     <h1>Authentication Complete</h1>
-    <p>You can close this window and return to the app.</p>
-    <p style="font-size: 12px; color: #999; margin-top: 20px;">
-      The app should automatically detect the authentication.
-    </p>
+    <p>Completing authentication...</p>
   </div>
 </body>
 </html>`);
