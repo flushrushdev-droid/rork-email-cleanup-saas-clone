@@ -1,8 +1,8 @@
-import { createTRPCRouter } from "./create-context";
-import hiRoute from "./routes/example/hi/route";
-import rulesRoute from "./routes/rules/route";
-import foldersRoute from "./routes/folders/route";
-import preferencesRoute from "./routes/preferences/route";
+import { createTRPCRouter } from "./create-context.js";
+import hiRoute from "./routes/example/hi/route.js";
+import rulesRoute from "./routes/rules/route.js";
+import foldersRoute from "./routes/folders/route.js";
+import preferencesRoute from "./routes/preferences/route.js";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({

@@ -14,5 +14,9 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
 });
 
-export const createTRPCRouter = t.router as typeof t.router;
+// Create router helper function
+export const createTRPCRouter = <T extends Record<string, unknown>>(routes: T) => {
+  return t.router(routes);
+};
+
 export const publicProcedure = t.procedure;
