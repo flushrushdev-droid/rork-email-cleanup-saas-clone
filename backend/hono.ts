@@ -8,7 +8,9 @@ const app = new Hono();
 
 app.use("*", cors());
 
-app.use(
+// Mount tRPC server at /api/trpc
+// Use app.all to handle all HTTP methods (GET, POST, etc.)
+app.all(
   "/api/trpc/*",
   trpcServer({
     endpoint: "/api/trpc",
