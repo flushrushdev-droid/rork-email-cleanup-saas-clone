@@ -500,73 +500,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const refreshAccessToken = async (refreshToken: string) => {
     try {
-      const params = new URLSearchParams();
-      params.append('refresh_token', refreshToken);
-      if (GOOGLE_CLIENT_ID) {
-        params.append('client_id', GOOGLE_CLIENT_ID);
-      }
-      params.append('grant_type', 'refresh_token');
-
-      // Validate token endpoint is HTTPS in production
-      const validatedTokenEndpoint = validateSecureUrl(discovery.tokenEndpoint);
-      
-      const response = await fetch(validatedTokenEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString(),
+      // Use backend endpoint for token refresh (backend has client_secret)
+      const data = await trpcClient.auth.refreshToken.mutate({
+        refresh_token: refreshToken,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText };
-        }
-        
-        authLogger.error('Token refresh failed', {
-          status: response.status,
-          error: errorData.error || errorText,
-          errorDescription: errorData.error_description,
-          fullResponse: errorData,
-        });
-        
-        const newFailureCount = refreshFailureCount + 1;
-        setRefreshFailureCount(newFailureCount);
-        
-        // If refresh token is invalid, clear it immediately
-        if (errorData.error === 'invalid_grant' || errorData.error === 'invalid_request') {
-          authLogger.warn('Refresh token is invalid, clearing stored token');
-          if (Platform.OS === 'web') {
-            if (typeof window !== 'undefined') {
-              window.localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-            }
-          } else {
-            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
-          }
-          throw new Error('Invalid refresh token');
-        }
-        
-        // Logout after multiple consecutive failures
-        if (newFailureCount >= MAX_REFRESH_FAILURES) {
-          authLogger.warn(`Token refresh failed ${newFailureCount} times. Logging out.`);
-          await clearAuth();
-          setError('Session expired. Please sign in again.');
-          throw new Error('Token refresh failed multiple times');
-        }
-        
-        throw new Error(`Token refresh failed: ${errorData.error || errorText}`);
-      }
-
-      const data = await response.json();
       
       const newTokens: AuthTokens = {
         accessToken: data.access_token,
-        refreshToken: refreshToken,
+        refreshToken: data.refresh_token || refreshToken, // Use new refresh token if provided, otherwise keep old one
         expiresAt: Date.now() + data.expires_in * 1000,
+        idToken: data.id_token,
       };
 
       setTokens(newTokens);
@@ -596,11 +539,34 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       return newTokens.accessToken;
     } catch (err) {
-      authLogger.error('Error refreshing token', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      authLogger.error('Token refresh failed', {
+        error: errorMessage,
+        errorDetails: err,
+      });
       
-      // Only clear auth if we've exceeded max failures
-      if (refreshFailureCount >= MAX_REFRESH_FAILURES - 1) {
+      const newFailureCount = refreshFailureCount + 1;
+      setRefreshFailureCount(newFailureCount);
+      
+      // If refresh token is invalid, clear it immediately
+      if (errorMessage.includes('invalid_grant') || errorMessage.includes('invalid_request') || errorMessage.includes('invalid')) {
+        authLogger.warn('Refresh token is invalid, clearing stored token');
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') {
+            window.localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+          }
+        } else {
+          await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN).catch(() => {});
+        }
+        throw new Error('Invalid refresh token');
+      }
+      
+      // Logout after multiple consecutive failures
+      if (newFailureCount >= MAX_REFRESH_FAILURES) {
+        authLogger.warn(`Token refresh failed ${newFailureCount} times. Logging out.`);
         await clearAuth();
+        setError('Session expired. Please sign in again.');
+        throw new Error('Token refresh failed multiple times');
       }
       
       throw err;
