@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
+import { trpcClient } from '@/lib/trpc';
 import type { GmailMessage, GmailProfile, Email, Sender } from '@/constants/types';
 import { APIError, AuthError, NetworkError, normalizeError } from '@/utils/errorHandling';
 import { createScopedLogger } from '@/utils/logger';
@@ -14,7 +15,7 @@ const GMAIL_API_BASE = validateSecureUrl(AppConfig.gmail.apiBase);
 const gmailLogger = createScopedLogger('GmailSync');
 
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
-  const { getValidAccessToken } = useAuth();
+  const { getValidAccessToken, user } = useAuth();
   const queryClient = useQueryClient();
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 });
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
@@ -176,6 +177,212 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES),
   });
 
+  // Helper function to parse email from Gmail message
+  const parseEmailFromMessage = (message: GmailMessage): Email => {
+    const headers = message.payload?.headers || [];
+    const getHeader = (name: string) => 
+      headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+
+    return {
+      id: message.id,
+      threadId: message.threadId,
+      from: getHeader('From'),
+      to: getHeader('To').split(',').map(t => t.trim()),
+      subject: getHeader('Subject'),
+      snippet: message.snippet,
+      date: message.internalDate 
+        ? new Date(parseInt(message.internalDate)).toISOString()
+        : new Date().toISOString(),
+      isRead: !message.labelIds?.includes('UNREAD'),
+      hasAttachments: message.payload?.parts?.some(p => p.mimeType.startsWith('image/') || p.mimeType.startsWith('application/')) || false,
+      labels: message.labelIds || [],
+      sizeBytes: message.sizeEstimate || 0,
+    };
+  };
+
+  // Full sync (first time or when historyId is too old)
+  const performFullSync = async (profile: GmailProfile): Promise<Email[]> => {
+    gmailLogger.info('Performing full sync');
+    
+    const listResponse = await makeGmailRequest(
+      '/messages?maxResults=100&q=in:inbox'
+    );
+
+    const messageIds = listResponse.messages || [];
+    const totalToSync = Math.min(messageIds.length, 100);
+    setSyncProgress({ current: 0, total: totalToSync });
+
+    const msgs: Email[] = [];
+
+    for (let i = 0; i < totalToSync; i++) {
+      const message: GmailMessage = await makeGmailRequest(
+        `/messages/${messageIds[i].id}?format=full`
+      );
+      
+      setSyncProgress({ current: i + 1, total: totalToSync });
+      msgs.push(parseEmailFromMessage(message));
+    }
+
+    // Save the current historyId from profile
+    if (profile.historyId && user?.id) {
+      try {
+        await trpcClient.users.update.mutate({
+          id: user.id,
+          gmail_history_id: profile.historyId,
+          last_full_sync_at: new Date().toISOString(),
+        });
+        gmailLogger.debug('Saved historyId after full sync', { historyId: profile.historyId });
+      } catch (err) {
+        gmailLogger.error('Failed to save historyId', err);
+        // Non-critical, continue
+      }
+    }
+
+    // Update cache with full sync results
+    queryClient.setQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES, msgs);
+
+    return msgs;
+  };
+
+  // Incremental sync using Gmail History API
+  const performIncrementalSync = async (
+    profile: GmailProfile,
+    lastHistoryId: string
+  ): Promise<Email[]> => {
+    gmailLogger.info('Performing incremental sync', { lastHistoryId });
+    
+    try {
+      // Use Gmail History API to get changes since lastHistoryId
+      // Note: Gmail History API supports multiple historyTypes as separate query params
+      const historyResponse = await makeGmailRequest(
+        `/history?startHistoryId=${lastHistoryId}&historyTypes=messageAdded&historyTypes=messageDeleted&historyTypes=labelAdded&historyTypes=labelRemoved&maxResults=100`
+      );
+
+      const historyRecords = historyResponse.history || [];
+      const newMessageIds: string[] = [];
+      const deletedMessageIds: string[] = [];
+      const labelChangedMessageIds = new Set<string>();
+
+      // Process history records
+      for (const record of historyRecords) {
+        // New messages
+        if (record.messagesAdded) {
+          for (const msgAdded of record.messagesAdded) {
+            if (msgAdded.message?.id) {
+              newMessageIds.push(msgAdded.message.id);
+            }
+          }
+        }
+
+        // Deleted messages
+        if (record.messagesDeleted) {
+          for (const msgDeleted of record.messagesDeleted) {
+            if (msgDeleted.message?.id) {
+              deletedMessageIds.push(msgDeleted.message.id);
+            }
+          }
+        }
+
+        // Label changes (read/unread, starred, etc.)
+        if (record.labelsAdded || record.labelsRemoved) {
+          const affectedMessages = [
+            ...(record.labelsAdded || []).map((la: any) => la.message?.id),
+            ...(record.labelsRemoved || []).map((lr: any) => lr.message?.id),
+          ].filter(Boolean);
+          affectedMessages.forEach((id: string) => labelChangedMessageIds.add(id));
+        }
+      }
+
+      gmailLogger.debug('History processed', {
+        newMessages: newMessageIds.length,
+        deletedMessages: deletedMessageIds.length,
+        labelChanged: labelChangedMessageIds.size,
+      });
+
+      setSyncProgress({ current: 0, total: newMessageIds.length + labelChangedMessageIds.size });
+
+      // Fetch new messages
+      const newMessages: Email[] = [];
+      for (let i = 0; i < newMessageIds.length; i++) {
+        const message: GmailMessage = await makeGmailRequest(
+          `/messages/${newMessageIds[i]}?format=full`
+        );
+        
+        setSyncProgress({ current: i + 1, total: newMessageIds.length + labelChangedMessageIds.size });
+        newMessages.push(parseEmailFromMessage(message));
+      }
+
+      // Update messages with label changes
+      const updatedMessages: Email[] = [];
+      let updateIndex = newMessageIds.length;
+      for (const messageId of labelChangedMessageIds) {
+        // Skip if we already fetched it as a new message
+        if (newMessageIds.includes(messageId)) continue;
+        
+        try {
+          const message: GmailMessage = await makeGmailRequest(
+            `/messages/${messageId}?format=full`
+          );
+          setSyncProgress({ current: updateIndex + 1, total: newMessageIds.length + labelChangedMessageIds.size });
+          updatedMessages.push(parseEmailFromMessage(message));
+          updateIndex++;
+        } catch (err) {
+          gmailLogger.warn('Failed to fetch message for label update', { messageId, error: err });
+        }
+      }
+
+      // Remove deleted messages from cache
+      if (deletedMessageIds.length > 0) {
+        queryClient.setQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES, (oldMessages = []) => {
+          return oldMessages.filter(msg => !deletedMessageIds.includes(msg.id));
+        });
+        gmailLogger.debug('Removed deleted messages from cache', { count: deletedMessageIds.length });
+      }
+
+      // Update historyId
+      const currentHistoryId = historyResponse.historyId || profile.historyId;
+      if (currentHistoryId && user?.id) {
+        try {
+          await trpcClient.users.update.mutate({
+            id: user.id,
+            gmail_history_id: currentHistoryId,
+          });
+          gmailLogger.debug('Updated historyId after incremental sync', { historyId: currentHistoryId });
+        } catch (err) {
+          gmailLogger.error('Failed to update historyId', err);
+          // Non-critical, continue
+        }
+      }
+
+      // Merge new and updated messages with existing cache
+      queryClient.setQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES, (oldMessages = []) => {
+        const existingIds = new Set(oldMessages.map(m => m.id));
+        const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m.id));
+        
+        // Update existing messages with label changes
+        const updatedIds = new Set(updatedMessages.map(m => m.id));
+        const messagesWithoutUpdated = oldMessages.filter(m => !updatedIds.has(m.id));
+        
+        // Combine: new messages + updated messages + existing messages (excluding updated ones)
+        const combined = [...uniqueNewMessages, ...updatedMessages, ...messagesWithoutUpdated];
+        
+        // Sort by date (newest first) and keep latest 100
+        return combined
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 100);
+      });
+
+      return [...newMessages, ...updatedMessages];
+    } catch (error) {
+      // If historyId is too old (Gmail only keeps ~30 days), fall back to full sync
+      if (error instanceof APIError && error.statusCode === 404) {
+        gmailLogger.warn('HistoryId too old or invalid, falling back to full sync', { lastHistoryId });
+        return await performFullSync(profile);
+      }
+      throw error;
+    }
+  };
+
   const syncMutation = useMutation({
     mutationFn: async () => {
       gmailLogger.info('Starting Gmail sync');
@@ -189,60 +396,46 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         gcTime: getCacheTTL(CACHE_KEYS.GMAIL.PROFILE),
       });
 
-      gmailLogger.debug('Profile fetched', undefined, { emailAddress: profile.emailAddress });
-
-      const messages = await queryClient.fetchQuery({
-        queryKey: CACHE_KEYS.GMAIL.MESSAGES,
-        queryFn: async (): Promise<Email[]> => {
-          const listResponse = await makeGmailRequest(
-            '/messages?maxResults=100&q=in:inbox'
-          );
-
-          const messageIds = listResponse.messages || [];
-          const totalToSync = Math.min(messageIds.length, 100);
-          setSyncProgress({ current: 0, total: totalToSync });
-
-          const msgs: Email[] = [];
-
-          for (let i = 0; i < totalToSync; i++) {
-            const message: GmailMessage = await makeGmailRequest(
-              `/messages/${messageIds[i].id}?format=full`
-            );
-            
-            setSyncProgress({ current: i + 1, total: totalToSync });
-
-            const headers = message.payload?.headers || [];
-            const getHeader = (name: string) => 
-              headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
-
-            const email: Email = {
-              id: message.id,
-              threadId: message.threadId,
-              from: getHeader('From'),
-              to: getHeader('To').split(',').map(t => t.trim()),
-              subject: getHeader('Subject'),
-              snippet: message.snippet,
-              date: message.internalDate 
-                ? new Date(parseInt(message.internalDate)).toISOString()
-                : new Date().toISOString(),
-              isRead: !message.labelIds?.includes('UNREAD'),
-              hasAttachments: message.payload?.parts?.some(p => p.mimeType.startsWith('image/') || p.mimeType.startsWith('application/')) || false,
-              labels: message.labelIds || [],
-              sizeBytes: message.sizeEstimate || 0,
-            };
-
-            msgs.push(email);
-          }
-
-          return msgs;
-        },
+      gmailLogger.debug('Profile fetched', undefined, { 
+        emailAddress: profile.emailAddress,
+        historyId: profile.historyId,
       });
+
+      // Get user's stored historyId from Supabase
+      let storedHistoryId: string | null = null;
+      
+      if (user?.id) {
+        try {
+          const userData = await trpcClient.users.getById.query({ id: user.id });
+          storedHistoryId = (userData as any)?.gmail_history_id || null;
+          gmailLogger.debug('Fetched user historyId', { 
+            hasHistoryId: !!storedHistoryId,
+            historyId: storedHistoryId,
+          });
+        } catch (err) {
+          gmailLogger.warn('Failed to fetch user historyId, doing full sync', err);
+        }
+      }
+
+      // If no historyId exists, do full sync
+      let messages: Email[];
+      if (!storedHistoryId) {
+        gmailLogger.info('No historyId found, performing full sync');
+        messages = await performFullSync(profile);
+      } else {
+        // Otherwise, do incremental sync
+        gmailLogger.info('HistoryId found, performing incremental sync', { historyId: storedHistoryId });
+        messages = await performIncrementalSync(profile, storedHistoryId);
+      }
 
       gmailLogger.info(`Synced ${messages.length} messages`);
 
+      // Get all messages from cache (including previously synced ones) for sender calculation
+      const allCachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || messages;
+      
       const senderMap = new Map<string, Sender>();
       
-      messages.forEach((email: Email) => {
+      allCachedMessages.forEach((email: Email) => {
         const fromMatch = email.from.match(/<(.+?)>/) || [null, email.from];
         const senderEmail = fromMatch[1] || email.from;
         const domain = senderEmail.split('@')[1] || '';
@@ -278,7 +471,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       const senders = Array.from(senderMap.values()).map((sender: Sender): Sender => ({
         ...sender,
         engagementRate: (sender.engagementRate / sender.totalEmails) * 100,
-        noiseScore: calculateNoiseScore(sender, messages),
+        noiseScore: calculateNoiseScore(sender, allCachedMessages),
         frequency: sender.totalEmails / 30,
         isMarketing: sender.email.includes('marketing') || sender.email.includes('promo'),
         isNewsletter: sender.email.includes('newsletter') || sender.email.includes('news'),

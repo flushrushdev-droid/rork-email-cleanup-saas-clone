@@ -24,6 +24,8 @@ const updateUserSchema = z.object({
   limits: z.record(z.string(), z.unknown()).nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   is_active: z.boolean().optional(),
+  gmail_history_id: z.string().nullable().optional(),
+  last_full_sync_at: z.string().nullable().optional(),
 });
 
 const actionSchema = z.object({
