@@ -4,8 +4,9 @@
  * Generates environment-aware CSP policies for web platform.
  * Supports:
  * - Local development (localhost, 127.0.0.1)
- * - Rork development environment (https://rork.com)
  * - Production deployments (Vercel/Render/Supabase)
+ * 
+ * NOTE: Rork development environment support has been disabled
  */
 
 import { AppConfig } from '@/config/env';
@@ -18,12 +19,10 @@ function getConnectSrcDomains(): string[] {
   const domains: string[] = ["'self'"];
 
   if (AppConfig.env === 'development') {
-    // Development: Allow localhost and Rork
+    // Development: Allow localhost
     domains.push(
       'http://localhost:8081',
-      'http://127.0.0.1:8081',
-      'https://rork.com',
-      'https://*.rork.com'
+      'http://127.0.0.1:8081'
     );
     
     // Also allow the API base URL if it's different

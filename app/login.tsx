@@ -108,29 +108,6 @@ export default function LoginScreen() {
                 Try Demo
               </AppText>
             </AccessibleButton>
-
-            {/* Test button for Expo Go OAuth - Remove in production */}
-            {__DEV__ && (
-              <AccessibleButton
-                accessibilityLabel="Test Google OAuth (Dev Only)"
-                accessibilityHint="Opens test screen to verify Expo proxy OAuth flow"
-                style={[
-                  styles.demoButton,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.warning,
-                    paddingVertical: isSmall ? 10 : 12,
-                    marginTop: isSmall ? 4 : 6,
-                  },
-                ]}
-                onPress={() => router.push('/test-google')}
-                disabled={isLoading}
-              >
-                <AppText style={[styles.demoButtonText, { color: colors.warning, fontSize: isSmall ? 13 : 14 }]}>
-                  🧪 Test OAuth (Dev)
-                </AppText>
-              </AccessibleButton>
-            )}
           </View>
 
           <AppText style={[styles.disclaimer, { color: colors.textSecondary, fontSize: isSmall ? 10 : 11, lineHeight: isSmall ? 13 : 14, paddingHorizontal: isSmall ? 8 : 12, marginTop: isSmall ? 6 : 8 }]}>

@@ -3,10 +3,11 @@
  * 
  * Centralized configuration management using expo-constants and environment variables.
  * Supports:
- * - Rork development environment
  * - Vercel/Render/Supabase production deployments
  * - Local development
  * - Backend and frontend
+ * 
+ * NOTE: Rork development environment support has been disabled
  */
 
 import Constants from 'expo-constants';
@@ -44,15 +45,15 @@ export const AppConfig = {
   env: getEnvVar('EXPO_PUBLIC_APP_ENV', 'development') as 'development' | 'staging' | 'production',
 
   /**
-   * App scheme for deep linking (e.g., 'rork-app')
+   * App scheme for deep linking (e.g., 'athenxmail-app')
    */
-  appScheme: getEnvVar('EXPO_PUBLIC_APP_SCHEME', 'rork-app'),
+  appScheme: getEnvVar('EXPO_PUBLIC_APP_SCHEME', 'athenxmail-app'),
 
   /**
    * Base URL for redirects (used for OAuth callbacks)
    * For local dev: Uses localhost if available, otherwise falls back to configured URL
-   * For Rork: Uses https://rork.com
    * For production: Uses configured production URL
+   * NOTE: Rork support has been disabled
    */
   redirectBaseUrl: (() => {
     const configured = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
@@ -104,12 +105,20 @@ export const AppConfig = {
         }
       }
       
-      // For production or when not in dev mode, use Rork URL
-      return 'https://rork.com';
+      // For production or when not in dev mode, use configured production URL
+      const prodUrl = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
+      if (prodUrl) return prodUrl;
+      // Fallback: use API base URL if available
+      const apiUrl = getEnvVar('EXPO_PUBLIC_API_BASE_URL');
+      if (apiUrl) return apiUrl;
+      // Last resort: localhost (should not happen in production)
+      return 'http://localhost:3000';
     }
     
-    // Default fallback for production
-    return 'https://rork.com';
+    // Default fallback: use configured URL or localhost
+    const configuredUrl = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
+    if (configuredUrl) return configuredUrl;
+    return 'http://localhost:3000';
   })(),
 
   /**
@@ -118,12 +127,12 @@ export const AppConfig = {
   api: {
     /**
      * Base URL for API requests
-     * Priority: EXPO_PUBLIC_API_BASE_URL > EXPO_PUBLIC_RORK_API_BASE_URL > auto-detect
+     * Priority: EXPO_PUBLIC_API_BASE_URL > auto-detect
+     * NOTE: EXPO_PUBLIC_RORK_API_BASE_URL support has been disabled
      */
     baseUrl: (() => {
       // Check for explicit API base URL
-      const explicitUrl = getEnvVar('EXPO_PUBLIC_API_BASE_URL') || 
-                         getEnvVar('EXPO_PUBLIC_RORK_API_BASE_URL');
+      const explicitUrl = getEnvVar('EXPO_PUBLIC_API_BASE_URL');
       if (explicitUrl) return explicitUrl;
 
       // Auto-detect for web

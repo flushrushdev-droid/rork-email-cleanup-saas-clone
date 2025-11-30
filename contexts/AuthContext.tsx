@@ -33,7 +33,7 @@ function getPlatformRedirectUri(): string {
   
   // For native platforms (Android & iOS), use web-based redirect URI
   // This works because:
-  // 1. Google accepts web URIs (https://rork.com/auth/callback or http://localhost:8081/auth/callback)
+  // 1. Google accepts web URIs (e.g., https://yourdomain.com/auth/callback or http://localhost:8081/auth/callback)
   // 2. The web callback page will detect mobile and redirect back to app via deep link
   // 3. The app will receive the deep link and process the OAuth code
   return `${AppConfig.redirectBaseUrl}/auth/callback`;

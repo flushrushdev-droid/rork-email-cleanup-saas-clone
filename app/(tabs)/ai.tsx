@@ -3,6 +3,7 @@ import { View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Pl
 import { AppText } from '@/components/common/AppText';
 import { Sparkles, Send, Loader } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Uses mock SDK when Rork SDK is not available (automatic fallback)
 import { useRorkAgent, createRorkTool } from '@/lib/rork-sdk';
 import { z } from 'zod';
 
@@ -26,6 +27,8 @@ export default function AIAssistantScreen() {
   const { handleAsync } = useErrorHandler({ showAlert: true });
   const { showError: showErrorToast } = useEnhancedToast();
 
+  // Uses mock SDK automatically when Rork SDK is not available
+  // The lib/rork-sdk.ts wrapper handles the fallback
   const { messages, sendMessage } = useRorkAgent({
     tools: {
       prioritizeEmail: createRorkTool({
@@ -64,7 +67,7 @@ export default function AIAssistantScreen() {
     setInput('');
     setIsTyping(true);
     
-    const result = await handleAsync(async () => {
+    await handleAsync(async () => {
       return await sendMessage(userMessage);
     }, {
       showAlert: true,

@@ -72,7 +72,7 @@ function RootLayoutNav() {
         contentStyle: {
           backgroundColor: colors.background,
         },
-        // Rork's root-level swipe-to-go-back gesture is enabled by default (gestureEnabled defaults to true)
+        // Root-level swipe-to-go-back gesture is enabled by default (gestureEnabled defaults to true)
       }}
     >
       <Stack.Screen name="login" options={{ headerShown: false }} />

@@ -21,8 +21,6 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '500',
-          // Limit scaling for tab bar labels to prevent UI breaking
-          maxFontSizeMultiplier: 1.15,
         },
       }}
     >
@@ -32,7 +30,6 @@ export default function TabLayout() {
           title: 'Overview',
           tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
           tabBarAccessibilityLabel: 'Overview',
-          tabBarAccessibilityHint: 'Double tap to view your email overview and statistics',
         }}
       />
       <Tabs.Screen
@@ -41,7 +38,6 @@ export default function TabLayout() {
           title: 'Mail',
           tabBarIcon: ({ color, size }) => <Mail size={size} color={color} />,
           tabBarAccessibilityLabel: 'Mail',
-          tabBarAccessibilityHint: 'Double tap to view your inbox',
         }}
       />
       <Tabs.Screen
@@ -50,7 +46,6 @@ export default function TabLayout() {
           title: 'AI Assistant',
           tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
           tabBarAccessibilityLabel: 'AI Assistant',
-          tabBarAccessibilityHint: 'Double tap to open AI assistant',
         }}
       />
       <Tabs.Screen
@@ -59,7 +54,6 @@ export default function TabLayout() {
           title: 'Tools',
           tabBarIcon: ({ color, size }) => <Wrench size={size} color={color} />,
           tabBarAccessibilityLabel: 'Tools',
-          tabBarAccessibilityHint: 'Double tap to view available tools and utilities',
         }}
       />
       <Tabs.Screen
@@ -68,7 +62,6 @@ export default function TabLayout() {
           title: 'Settings',
           tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
           tabBarAccessibilityLabel: 'Settings',
-          tabBarAccessibilityHint: 'Double tap to view app settings and preferences',
         }}
       />
       <Tabs.Screen
