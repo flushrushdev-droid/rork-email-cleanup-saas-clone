@@ -148,26 +148,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         
         setSyncProgress({ current: i + 1, total: totalToSync });
 
-        const headers = message.payload?.headers || [];
-        const getHeader = (name: string) => 
-          headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
-
-        const email: Email = {
-          id: message.id,
-          threadId: message.threadId,
-          from: getHeader('From'),
-          to: getHeader('To').split(',').map(t => t.trim()),
-          subject: getHeader('Subject'),
-          snippet: message.snippet,
-          date: message.internalDate 
-            ? new Date(parseInt(message.internalDate)).toISOString()
-            : new Date().toISOString(),
-          isRead: !message.labelIds?.includes('UNREAD'),
-          hasAttachments: message.payload?.parts?.some(p => p.mimeType.startsWith('image/') || p.mimeType.startsWith('application/')) || false,
-          labels: message.labelIds || [],
-          sizeBytes: message.sizeEstimate || 0,
-        };
-
+        const email = parseEmailFromMessage(message);
         messages.push(email);
       }
 
@@ -178,11 +159,40 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES),
   });
 
+  // Helper function to extract attachments from Gmail message parts
+  const extractAttachments = (parts: GmailMessage['payload']['parts'] = []): Array<{ filename: string; mimeType: string; size: number }> => {
+    const attachments: Array<{ filename: string; mimeType: string; size: number }> = [];
+    
+    const processPart = (part: NonNullable<GmailMessage['payload']['parts']>[0]) => {
+      // If part has nested parts, process them recursively
+      if (part.parts) {
+        part.parts.forEach(processPart);
+      }
+      
+      // If part has a filename, it's an attachment
+      if (part.filename && part.body?.size !== undefined) {
+        attachments.push({
+          filename: part.filename,
+          mimeType: part.mimeType,
+          size: part.body.size,
+        });
+      }
+    };
+    
+    if (parts) {
+      parts.forEach(processPart);
+    }
+    return attachments;
+  };
+
   // Helper function to parse email from Gmail message
   const parseEmailFromMessage = (message: GmailMessage): Email => {
     const headers = message.payload?.headers || [];
     const getHeader = (name: string) => 
       headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+
+    const attachments = extractAttachments(message.payload?.parts);
+    const hasAttachments = attachments.length > 0;
 
     return {
       id: message.id,
@@ -195,7 +205,8 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         ? new Date(parseInt(message.internalDate)).toISOString()
         : new Date().toISOString(),
       isRead: !message.labelIds?.includes('UNREAD'),
-      hasAttachments: message.payload?.parts?.some(p => p.mimeType.startsWith('image/') || p.mimeType.startsWith('application/')) || false,
+      hasAttachments,
+      attachments: hasAttachments ? attachments : undefined,
       labels: message.labelIds || [],
       sizeBytes: message.sizeEstimate || 0,
     };

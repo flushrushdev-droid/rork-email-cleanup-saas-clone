@@ -73,6 +73,7 @@ export interface Email {
   labels: string[];
   priority?: 'action' | 'later' | 'fyi' | 'low';
   sizeBytes: number;
+  attachments?: Attachment[];
 }
 
 export interface GmailMessage {
@@ -87,10 +88,21 @@ export interface GmailMessage {
     }>;
     parts?: Array<{
       mimeType: string;
+      filename?: string;
       body?: {
         size: number;
         data?: string;
+        attachmentId?: string;
       };
+      parts?: Array<{
+        mimeType: string;
+        filename?: string;
+        body?: {
+          size: number;
+          data?: string;
+          attachmentId?: string;
+        };
+      }>;
     }>;
     body?: {
       size: number;

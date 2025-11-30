@@ -10,6 +10,15 @@ import { EmailAttachmentList } from './emailDetail/EmailAttachmentList';
 import { EmailActionButtons } from './emailDetail/EmailActionButtons';
 import { createEmailDetailStyles } from './emailDetail/styles';
 
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+};
+
 interface EmailDetailViewProps {
   selectedEmail: EmailMessage;
   insets: EdgeInsets;
@@ -98,9 +107,12 @@ export function EmailDetailView({
           </AppText>
         </View>
 
-        {selectedEmail.hasAttachments && (
+        {selectedEmail.hasAttachments && selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
           <EmailAttachmentList
-            attachments={[{ name: 'attachment.pdf', size: '234 KB' }]}
+            attachments={selectedEmail.attachments.map(att => ({
+              name: att.filename,
+              size: formatFileSize(att.size),
+            }))}
             colors={colors}
           />
         )}

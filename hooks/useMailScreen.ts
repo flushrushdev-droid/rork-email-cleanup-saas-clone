@@ -87,7 +87,12 @@ export function useMailScreen() {
             labels: msg.labels || [], // Ensure labels is always an array
             tags: [],
             hasAttachments: msg.hasAttachments || false,
-            attachmentCount: 0,
+            attachmentCount: msg.attachments?.length || 0,
+            attachments: msg.attachments?.map(att => ({
+              filename: att.filename,
+              mimeType: att.mimeType,
+              size: att.size,
+            })),
             isRead: msg.isRead,
             isStarred: starredEmails.has(msg.id) || msg.labels.includes('STARRED') || msg.labels.includes('starred'),
             priority: undefined,
