@@ -205,49 +205,61 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const performFullSync = async (profile: GmailProfile): Promise<Email[]> => {
     gmailLogger.info('Performing full sync');
     
-    // Fetch inbox emails (primary focus - up to 100, but we'll prioritize)
-    const inboxResponse = await makeGmailRequest(
-      '/messages?maxResults=100&q=in:inbox'
-    );
-    const inboxMessageIds = inboxResponse.messages || [];
+    // Target: 60 inbox, 20 trash, 20 sent = 100 total
+    // Strategy: Fetch trash and sent first, then calculate how many inbox we need
     
-    // Also fetch trash emails (up to 20, but only if we haven't reached 100 yet)
+    // Fetch trash emails (up to 20)
     const trashResponse = await makeGmailRequest(
       '/messages?maxResults=20&q=in:trash'
     );
     const trashMessageIds = trashResponse.messages || [];
     
-    // Also fetch sent emails (up to 20, but only if we haven't reached 100 yet)
+    // Fetch sent emails (up to 20)
     const sentResponse = await makeGmailRequest(
       '/messages?maxResults=20&q=in:sent'
     );
     const sentMessageIds = sentResponse.messages || [];
     
-    // Combine and limit to 100 total, prioritizing inbox
-    // Strategy: Take all inbox (up to 100), then fill remaining slots with trash/sent
+    // Calculate how many inbox emails we need to reach 100 total
+    const trashCount = trashMessageIds.length;
+    const sentCount = sentMessageIds.length;
+    const inboxNeeded = 100 - trashCount - sentCount;
+    
+    gmailLogger.debug('Full sync message counts', {
+      trashCount,
+      sentCount,
+      inboxNeeded,
+      totalTarget: 100,
+    });
+    
+    // Fetch inbox emails (exactly what we need to reach 100, or as many as available)
+    const inboxResponse = await makeGmailRequest(
+      `/messages?maxResults=${Math.max(inboxNeeded, 0)}&q=in:inbox`
+    );
+    const inboxMessageIds = inboxResponse.messages || [];
+    
+    // Combine all message IDs (avoid duplicates)
     const allMessageIds: Array<{ id: string }> = [];
     const seenIds = new Set<string>();
     
-    // Add inbox messages first (up to 100)
-    for (const msg of inboxMessageIds) {
-      if (allMessageIds.length >= 100) break;
-      if (!seenIds.has(msg.id)) {
-        allMessageIds.push(msg);
-        seenIds.add(msg.id);
-      }
-    }
-    
-    // Fill remaining slots with trash (up to 20 total trash)
+    // Add trash messages first
     for (const msg of trashMessageIds) {
-      if (allMessageIds.length >= 100) break;
       if (!seenIds.has(msg.id)) {
         allMessageIds.push(msg);
         seenIds.add(msg.id);
       }
     }
     
-    // Fill remaining slots with sent (up to 20 total sent)
+    // Add sent messages
     for (const msg of sentMessageIds) {
+      if (!seenIds.has(msg.id)) {
+        allMessageIds.push(msg);
+        seenIds.add(msg.id);
+      }
+    }
+    
+    // Add inbox messages (fill remaining slots)
+    for (const msg of inboxMessageIds) {
       if (allMessageIds.length >= 100) break;
       if (!seenIds.has(msg.id)) {
         allMessageIds.push(msg);
