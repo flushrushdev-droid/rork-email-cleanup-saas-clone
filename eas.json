@@ -12,7 +12,8 @@
         "NPM_CONFIG_LEGACY_PEER_DEPS": "1"
       },
       "android": {
-        "gradleCommand": ":app:assembleDebug"
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk"
       },
       "ios": {
         "simulator": true
