@@ -453,14 +453,28 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         }
       }
 
-      // If no historyId exists, do full sync
+      // Check if cache is empty - if so, we need a full sync to restore messages
+      const cachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || [];
+      const isCacheEmpty = cachedMessages.length === 0;
+      
+      gmailLogger.debug('Cache state check', {
+        cachedMessageCount: cachedMessages.length,
+        isCacheEmpty,
+        hasHistoryId: !!storedHistoryId,
+      });
+
+      // If no historyId exists OR cache is empty, do full sync
       let messages: Email[];
-      if (!storedHistoryId) {
-        gmailLogger.info('No historyId found, performing full sync');
+      if (!storedHistoryId || isCacheEmpty) {
+        if (isCacheEmpty && storedHistoryId) {
+          gmailLogger.info('Cache is empty but historyId exists, performing full sync to restore messages', { historyId: storedHistoryId });
+        } else {
+          gmailLogger.info('No historyId found, performing full sync');
+        }
         messages = await performFullSync(profile);
       } else {
         // Otherwise, do incremental sync
-        gmailLogger.info('HistoryId found, performing incremental sync', { historyId: storedHistoryId });
+        gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { historyId: storedHistoryId });
         messages = await performIncrementalSync(profile, storedHistoryId);
       }
 
