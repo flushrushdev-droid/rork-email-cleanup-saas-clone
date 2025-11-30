@@ -18,6 +18,16 @@ app.get("/", (c) => {
   return c.json({ status: "ok", message: "API is running" });
 });
 
+// Test endpoint to verify OAuth callback route is accessible
+app.get("/auth/callback/test", (c) => {
+  return c.json({ 
+    status: "ok", 
+    message: "OAuth callback route is accessible",
+    appScheme: process.env.EXPO_PUBLIC_APP_SCHEME || "athenxmail-app",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Privacy Policy page (required for Google OAuth)
 app.get("/privacy", (c) => {
   return c.html(`<!DOCTYPE html>
@@ -106,29 +116,45 @@ app.get("/auth/callback", (c) => {
   const state = c.req.query("state");
   const errorDescription = c.req.query("error_description");
   
+  // Log the callback request for debugging
+  console.log('[OAuth Callback] Received request', {
+    hasCode: !!code,
+    hasError: !!error,
+    error: error,
+    state: state,
+    userAgent: c.req.header('user-agent'),
+    referer: c.req.header('referer'),
+  });
+  
   // App scheme for deep linking back to the app
   const appScheme = process.env.EXPO_PUBLIC_APP_SCHEME || "athenxmail-app";
+  console.log('[OAuth Callback] Using app scheme:', appScheme);
   
   if (error) {
+    console.log('[OAuth Callback] OAuth error, redirecting to app with error');
     // OAuth error - redirect back to app with error
     const errorParams = new URLSearchParams({
       error: error,
       ...(errorDescription && { error_description: errorDescription }),
     });
     const deepLink = `${appScheme}://login?${errorParams.toString()}`;
+    console.log('[OAuth Callback] Deep link:', deepLink);
     return c.redirect(deepLink);
   }
   
   if (code) {
+    console.log('[OAuth Callback] OAuth success, redirecting to app with code');
     // Success - redirect back to app with code
     const params = new URLSearchParams({
       code: code,
       ...(state && { state: state }),
     });
     const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
+    console.log('[OAuth Callback] Deep link:', deepLink);
     return c.redirect(deepLink);
   }
   
+  console.log('[OAuth Callback] No code or error, redirecting to login');
   // No code or error - redirect to login
   return c.redirect(`${appScheme}://login`);
 });
