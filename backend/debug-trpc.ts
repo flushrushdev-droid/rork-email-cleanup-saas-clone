@@ -17,7 +17,7 @@ const testRequest = new Request('http://localhost:10000/api/trpc/users.getById?i
 });
 
 console.log('\n3. Testing app.fetch with tRPC request...');
-app.fetch(testRequest)
+Promise.resolve(app.fetch(testRequest))
   .then(async (response: Response) => {
     console.log('   Status:', response.status);
     const text = await response.text();
