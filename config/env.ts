@@ -56,86 +56,45 @@ export const AppConfig = {
    * NOTE: Rork support has been disabled
    */
   redirectBaseUrl: (() => {
+    // Check if we're in development mode first
+    const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
+    const env = getEnvVar('EXPO_PUBLIC_APP_ENV', 'development');
+    const isDevelopmentEnv = env === 'development';
+    
+    // For development, always use localhost (already in Google Console)
+    // This works with tunnel mode because the tunnel proxies localhost
+    if (isDev || isDevelopmentEnv) {
+      // Check if explicitly configured (allow override)
+      const configured = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
+      if (configured && !configured.includes('athenxmail-backend.onrender.com')) {
+        // Use configured URL if it's not the production backend
+        return configured;
+      }
+      
+      // For web platform: detect localhost from window.location
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const origin = window.location.origin;
+        if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          return origin;
+        }
+      }
+      
+      // For native platforms in development: always use localhost
+      // Tunnel mode will proxy this correctly
+      return 'http://localhost:8081';
+    }
+    
+    // For production: use configured URL
     const configured = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
     if (configured) {
       return configured;
     }
     
-    // For web platform: detect localhost from window.location
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const origin = window.location.origin;
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return origin;
-      }
-    }
+    // Fallback: use API base URL for production
+    const apiUrl = getEnvVar('EXPO_PUBLIC_API_BASE_URL');
+    if (apiUrl) return apiUrl;
     
-    // For native platforms: detect local development server IP
-    // Mobile devices can't access localhost, so we need the network IP
-    if (Platform.OS !== 'web') {
-      // Check if we're in development mode
-      const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
-      const env = getEnvVar('EXPO_PUBLIC_APP_ENV', 'development');
-      const isDevelopmentEnv = env === 'development';
-      
-      if (isDev || isDevelopmentEnv) {
-        // Try to get the Metro bundler URL from Constants
-        // This contains the IP address the mobile device uses to connect
-        const hostUri = Constants.expoConfig?.hostUri;
-        
-        if (hostUri) {
-          // Check if we're using tunnel mode (hostUri contains tunnel domains)
-          const isTunnel = hostUri.includes('.exp.direct') || 
-                          hostUri.includes('ngrok') || 
-                          hostUri.includes('tunnel') ||
-                          hostUri.includes('exp.host');
-          if (isTunnel) {
-            // For tunnel mode, use localhost (already in Google Console)
-            // The tunnel will proxy this correctly
-            return 'http://localhost:8081';
-          }
-          
-          // hostUri format: "192.168.1.100:8081" or "localhost:8081"
-          const [host, port] = hostUri.split(':');
-          if (host && port) {
-            // If it's not localhost, use the network IP (mobile can access this)
-            if (host !== 'localhost' && host !== '127.0.0.1') {
-              return `http://${host}:${port}`;
-            }
-            // If it's localhost, we need the network IP - check for environment variable
-            const networkIp = getEnvVar('EXPO_PUBLIC_LOCAL_DEV_IP');
-            if (networkIp) {
-              return `http://${networkIp}:${port}`;
-            }
-          }
-        }
-        
-        // Fallback: try to use environment variable for local dev IP
-        const networkIp = getEnvVar('EXPO_PUBLIC_LOCAL_DEV_IP');
-        if (networkIp) {
-          return `http://${networkIp}:8081`;
-        }
-        
-        // Default for development: use localhost (already in Google Console)
-        return 'http://localhost:8081';
-      }
-      
-      // For production or when not in dev mode, use configured production URL
-      const prodUrl = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
-      if (prodUrl) return prodUrl;
-      // Fallback: use API base URL if available
-      const apiUrl = getEnvVar('EXPO_PUBLIC_API_BASE_URL');
-      if (apiUrl) return apiUrl;
-      // For development, default to localhost (already in Google Console)
-      if (isDev || isDevelopmentEnv) {
-        return 'http://localhost:8081';
-      }
-      // Last resort: localhost (should not happen in production)
-      return 'http://localhost:3000';
-    }
-    
-    // Default fallback: use configured URL or localhost
-    const configuredUrl = getEnvVar('EXPO_PUBLIC_REDIRECT_BASE_URL');
-    if (configuredUrl) return configuredUrl;
+    // Last resort
     return 'http://localhost:3000';
   })(),
 
