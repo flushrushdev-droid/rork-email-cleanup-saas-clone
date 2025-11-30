@@ -163,7 +163,6 @@ app.get("/auth/callback", (c) => {
   if (code) {
     console.log('[OAuth Callback] OAuth success, redirecting to app with code');
     // Success - redirect back to app with code
-    // Use HTML redirect for better webview compatibility
     const params = new URLSearchParams({
       code: code,
       ...(state && { state: state }),
@@ -171,30 +170,85 @@ app.get("/auth/callback", (c) => {
     const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
     console.log('[OAuth Callback] Deep link:', deepLink);
     
-    // Return HTML page that redirects to deep link (works better in webviews)
+    // Return HTML page that attempts multiple methods to open the deep link
+    // expo-auth-session uses WebBrowser which should handle this
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirecting...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    .container {
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007AFF;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
   <script>
-    // Try to open the deep link
-    window.location.href = "${deepLink}";
-    
-    // Fallback: try after a short delay
-    setTimeout(function() {
-      window.location.href = "${deepLink}";
-    }, 100);
-    
-    // Show message if still here after 2 seconds
-    setTimeout(function() {
-      document.body.innerHTML = '<p>Please return to the app to complete authentication.</p>';
-    }, 2000);
+    (function() {
+      const deepLink = "${deepLink}";
+      
+      // Method 1: Direct location change (works in most cases)
+      try {
+        window.location.href = deepLink;
+      } catch (e) {
+        console.error('Failed to redirect:', e);
+      }
+      
+      // Method 2: Try with setTimeout (fallback)
+      setTimeout(function() {
+        try {
+          window.location.href = deepLink;
+        } catch (e) {
+          console.error('Failed to redirect (timeout):', e);
+        }
+      }, 100);
+      
+      // Method 3: Try using window.open (some webviews prefer this)
+      setTimeout(function() {
+        try {
+          window.open(deepLink, '_self');
+        } catch (e) {
+          console.error('Failed to open:', e);
+        }
+      }, 200);
+      
+      // Show message if still here after 3 seconds
+      setTimeout(function() {
+        document.querySelector('.container').innerHTML = 
+          '<p>If you are not redirected automatically, please return to the app.</p>' +
+          '<p style="font-size: 12px; color: #666; margin-top: 20px;">The app should open automatically. If not, close this window and check the app.</p>';
+      }, 3000);
+    })();
   </script>
 </head>
 <body>
-  <p>Redirecting to app...</p>
+  <div class="container">
+    <div class="spinner"></div>
+    <p>Redirecting to app...</p>
+  </div>
 </body>
 </html>`);
   }
