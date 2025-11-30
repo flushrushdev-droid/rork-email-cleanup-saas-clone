@@ -205,19 +205,28 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const performFullSync = async (profile: GmailProfile): Promise<Email[]> => {
     gmailLogger.info('Performing full sync');
     
-    const listResponse = await makeGmailRequest(
+    // Fetch inbox emails
+    const inboxResponse = await makeGmailRequest(
       '/messages?maxResults=100&q=in:inbox'
     );
-
-    const messageIds = listResponse.messages || [];
-    const totalToSync = Math.min(messageIds.length, 100);
+    const inboxMessageIds = inboxResponse.messages || [];
+    
+    // Also fetch trash emails (limit to 50 to keep total under 100)
+    const trashResponse = await makeGmailRequest(
+      '/messages?maxResults=50&q=in:trash'
+    );
+    const trashMessageIds = trashResponse.messages || [];
+    
+    // Combine and limit to 100 total
+    const allMessageIds = [...inboxMessageIds, ...trashMessageIds].slice(0, 100);
+    const totalToSync = allMessageIds.length;
     setSyncProgress({ current: 0, total: totalToSync });
 
     const msgs: Email[] = [];
 
     for (let i = 0; i < totalToSync; i++) {
       const message: GmailMessage = await makeGmailRequest(
-        `/messages/${messageIds[i].id}?format=full`
+        `/messages/${allMessageIds[i].id}?format=full`
       );
       
       setSyncProgress({ current: i + 1, total: totalToSync });
@@ -275,14 +284,14 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
       // Process history records
       for (const record of historyRecords) {
-        // New messages - only include if they're in INBOX
+        // New messages - include if they're in INBOX or TRASH
         if (record.messagesAdded) {
           for (const msgAdded of record.messagesAdded) {
             const message = msgAdded.message;
             if (message?.id) {
-              // Check if message is in INBOX (has INBOX label)
+              // Check if message is in INBOX or TRASH
               const labelIds = message.labelIds || [];
-              if (labelIds.includes('INBOX')) {
+              if (labelIds.includes('INBOX') || labelIds.includes('TRASH')) {
                 newMessageIds.push(message.id);
               }
             }
@@ -298,23 +307,26 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
           }
         }
 
-        // Label changes (read/unread, starred, etc.) - only for INBOX messages
+        // Label changes (read/unread, starred, TRASH, etc.) - for INBOX and TRASH messages
         if (record.labelsAdded || record.labelsRemoved) {
-          // Check labelsAdded for INBOX messages
+          // Check labelsAdded for INBOX or TRASH messages
           if (record.labelsAdded) {
             for (const labelAdded of record.labelsAdded) {
               const message = labelAdded.message;
-              if (message?.id && message.labelIds?.includes('INBOX')) {
+              const labelIds = message?.labelIds || [];
+              // Track if message is in INBOX or TRASH (or was moved to/from these)
+              if (message?.id && (labelIds.includes('INBOX') || labelIds.includes('TRASH') || labelAdded.labelIds?.includes('INBOX') || labelAdded.labelIds?.includes('TRASH'))) {
                 labelChangedMessageIds.add(message.id);
               }
             }
           }
-          // Check labelsRemoved for INBOX messages
+          // Check labelsRemoved for INBOX or TRASH messages
           if (record.labelsRemoved) {
             for (const labelRemoved of record.labelsRemoved) {
               const message = labelRemoved.message;
-              // Include if it still has INBOX or if INBOX was just removed (was in inbox)
-              if (message?.id && (message.labelIds?.includes('INBOX') || labelRemoved.labelIds?.includes('INBOX'))) {
+              const labelIds = message?.labelIds || [];
+              // Include if it still has INBOX/TRASH or if INBOX/TRASH was just removed (was in inbox/trash)
+              if (message?.id && (labelIds.includes('INBOX') || labelIds.includes('TRASH') || labelRemoved.labelIds?.includes('INBOX') || labelRemoved.labelIds?.includes('TRASH'))) {
                 labelChangedMessageIds.add(message.id);
               }
             }

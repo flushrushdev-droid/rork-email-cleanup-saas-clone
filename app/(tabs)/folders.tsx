@@ -57,8 +57,13 @@ export default function FoldersScreen() {
   }, [messages, isDemoMode]);
 
   const smartFolders = useMemo(() => {
-    if (isDemoMode || messages.length === 0) {
+    if (isDemoMode) {
       return mockSmartFolders;
+    }
+    
+    // If no messages, return empty folders instead of demo data
+    if (messages.length === 0) {
+      return [];
     }
 
     const actionRequiredEmails = messages.filter(email => 

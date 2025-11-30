@@ -22,9 +22,13 @@ export function filterEmailsByFolder(
     case 'sent':
     case 'drafts':
     case 'spam':
-    case 'trash':
     case 'archived':
       return [];
+    case 'trash':
+      // Show emails with TRASH label
+      return emails.filter(email => 
+        email.labels.includes('TRASH') || email.labels.includes('trash')
+      );
     default:
       return emails.filter(email => email.labels.includes('inbox') || email.labels.includes('INBOX'));
   }
