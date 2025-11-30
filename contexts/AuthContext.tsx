@@ -12,6 +12,8 @@ import { createScopedLogger } from '@/utils/logger';
 import { AppConfig, getRedirectUri, validateSecureUrl } from '@/config/env';
 import { isValidOAuthCode } from '@/utils/security';
 import { setSentryUser, addBreadcrumb } from '@/lib/sentry';
+import { trpcClient } from '@/lib/trpc';
+import Constants from 'expo-constants';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -114,17 +116,36 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const deepLinkProcessedRef = useRef(false);
 
   useEffect(() => {
+    if (response) {
+      authLogger.debug('OAuth response received', {
+        type: response.type,
+        error: response.type === 'error' ? response.error : undefined,
+        params: response.type === 'success' ? Object.keys(response.params || {}) : undefined,
+      });
+    }
+
     if (!isDemoMode && response?.type === 'success') {
       const { code } = response.params;
       // Validate OAuth code before processing
       if (!code || !isValidOAuthCode(code)) {
+        authLogger.error('Invalid authorization code', { code: code ? `${code.substring(0, 10)}...` : 'missing' });
         setError('Invalid authorization code');
         setIsLoading(false);
         return;
       }
+      authLogger.debug('Exchanging code for tokens', { codeLength: code.length });
       exchangeCodeForTokens(code, request?.codeVerifier);
     } else if (!isDemoMode && response?.type === 'error') {
-      setError(response.error?.message || 'Authentication failed');
+      const errorMessage = response.error?.message || response.error?.code || 'Authentication failed';
+      authLogger.error('OAuth error response', {
+        error: response.error,
+        errorMessage,
+      });
+      setError(errorMessage);
+      setIsLoading(false);
+    } else if (!isDemoMode && response?.type === 'dismiss') {
+      authLogger.debug('OAuth popup dismissed by user');
+      setError('Sign in cancelled');
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,6 +197,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemoMode, request]);
 
+  // Verify user exists in database
+  const verifyUserInDatabase = async (userId: string): Promise<boolean> => {
+    try {
+      const userData = await trpcClient.users.getById.query({ id: userId });
+      return !!userData;
+    } catch (err) {
+      // If user doesn't exist or there's an error, return false
+      authLogger.debug('User verification failed', err);
+      return false;
+    }
+  };
+
   const loadStoredAuth = async () => {
     try {
       // Load non-sensitive data from AsyncStorage
@@ -196,21 +229,83 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return;
       }
 
-      // Load sensitive tokens from SecureStore
-      const storedTokens = await SecureStore.getItemAsync(STORAGE_KEYS.TOKENS);
+      // Load sensitive tokens from SecureStore (native) or localStorage (web)
+      let storedTokens: string | null = null;
+      if (Platform.OS === 'web') {
+        // On web, use localStorage (SecureStore doesn't work on web)
+        storedTokens = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEYS.TOKENS) : null;
+      } else {
+        // On native, use SecureStore
+        storedTokens = await SecureStore.getItemAsync(STORAGE_KEYS.TOKENS);
+      }
 
       if (storedTokens && storedUser) {
         const parsedTokens: AuthTokens = JSON.parse(storedTokens);
         const parsedUser: User = JSON.parse(storedUser);
 
-        if (parsedTokens.expiresAt > Date.now()) {
-          setTokens(parsedTokens);
-          setUser(parsedUser);
-        } else if (parsedTokens.refreshToken) {
-          await refreshAccessToken(parsedTokens.refreshToken);
-        } else {
-          await clearAuth();
+        // Check if tokens are expired
+        if (parsedTokens.expiresAt <= Date.now()) {
+          // Tokens expired - try to refresh
+          if (parsedTokens.refreshToken) {
+            try {
+              await refreshAccessToken(parsedTokens.refreshToken);
+              // After refresh, verify user exists in database
+              const userExists = await verifyUserInDatabase(parsedUser.id);
+              if (!userExists) {
+                authLogger.info('User not found in database after token refresh, clearing auth');
+                await clearAuth();
+                setIsLoading(false);
+                return;
+              }
+              // Check session timeout
+              const lastActivity = lastActivityRef.current;
+              const now = Date.now();
+              if (now - lastActivity > SESSION_TIMEOUT_MS) {
+                authLogger.info('Session timed out, clearing auth');
+                await clearAuth();
+                setIsLoading(false);
+                return;
+              }
+              lastActivityRef.current = now;
+              return;
+            } catch (err) {
+              authLogger.error('Failed to refresh token on load', err);
+              await clearAuth();
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            // No refresh token - clear auth
+            await clearAuth();
+            setIsLoading(false);
+            return;
+          }
         }
+
+        // Tokens are valid - verify user exists in database before auto-login
+        const userExists = await verifyUserInDatabase(parsedUser.id);
+        
+        if (!userExists) {
+          authLogger.info('User not found in database, clearing stored auth');
+          await clearAuth();
+          setIsLoading(false);
+          return;
+        }
+
+        // Check session timeout (30 minutes of inactivity)
+        const lastActivity = lastActivityRef.current;
+        const now = Date.now();
+        if (now - lastActivity > SESSION_TIMEOUT_MS) {
+          authLogger.info('Session timed out, clearing auth');
+          await clearAuth();
+          setIsLoading(false);
+          return;
+        }
+
+        // User exists and session is valid - restore auth
+        setTokens(parsedTokens);
+        setUser(parsedUser);
+        lastActivityRef.current = now; // Update last activity
       }
     } catch (err) {
       authLogger.error('Error loading stored auth', err);
@@ -255,8 +350,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error_description || 'Token exchange failed');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const errorMessage = errorData.error_description || errorData.error || 'Token exchange failed';
+        authLogger.error('Token exchange failed', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          redirectUri: REDIRECT_URI,
+          clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+        });
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -270,11 +373,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       await fetchUserInfo(newTokens.accessToken);
       setTokens(newTokens);
-      // Store tokens securely in SecureStore
-      await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      // Store tokens securely in SecureStore (native) or localStorage (web)
+      if (Platform.OS === 'web') {
+        // On web, use localStorage (SecureStore doesn't work on web)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+        }
+      } else {
+        // On native, use SecureStore
+        await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+      }
     } catch (err) {
-      authLogger.error('Error exchanging code for tokens', err);
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+      authLogger.error('Error exchanging code for tokens', err, {
+        errorMessage,
+        redirectUri: REDIRECT_URI,
+        platform: Platform.OS,
+      });
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -304,6 +420,38 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
       setUser(newUser);
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+      
+      // Create or update user in database
+      try {
+        await trpcClient.users.upsert.mutate({
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name || null,
+          picture: newUser.picture || null,
+          provider: 'google',
+        });
+        authLogger.debug('User created/updated in database');
+      } catch (err) {
+        authLogger.error('Failed to create/update user in database', err);
+        // Don't throw - user creation failure shouldn't block login
+      }
+
+      // Track login action
+      try {
+        const appVersion = Constants.expoConfig?.version || 'unknown';
+        await trpcClient.users.trackAction.mutate({
+          user_id: newUser.id,
+          action_type: 'login',
+          action_category: 'auth',
+          action_data: {},
+          screen_name: null,
+          device_type: Platform.OS === 'web' ? 'web' : Platform.OS === 'ios' ? 'ios' : 'android',
+          app_version: appVersion,
+        });
+      } catch (err) {
+        authLogger.error('Failed to track login action', err);
+        // Don't throw - tracking failure shouldn't block login
+      }
       
       // Update Sentry user context
       setSentryUser({
@@ -387,7 +535,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     try {
       setError(null);
       setIsLoading(true);
-      await promptAsync();
+      authLogger.debug('Starting OAuth flow', {
+        redirectUri: REDIRECT_URI,
+        clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+      });
+      const result = await promptAsync();
+      authLogger.debug('OAuth prompt completed', {
+        type: result?.type,
+        error: result?.type === 'error' ? result.error : undefined,
+      });
+      // Note: The response will be handled by the useEffect hook above
     } catch (err) {
       authLogger.error('Error signing in', err);
       setError(err instanceof Error ? err.message : 'Sign in failed');
@@ -432,35 +589,99 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   };
 
   const signOut = async () => {
-    try {
-      if (tokens?.accessToken) {
-        await fetch(`${discovery.revocationEndpoint}?token=${tokens.accessToken}`, {
+    // Start clearing auth immediately (don't wait for token revocation)
+    // Token revocation is best-effort and shouldn't block logout
+    const clearAuthPromise = clearAuth();
+    
+    // Try to revoke token in parallel (non-blocking)
+    if (tokens?.accessToken) {
+      try {
+        // Use POST with proper form data for token revocation
+        const params = new URLSearchParams();
+        params.append('token', tokens.accessToken);
+        
+        await fetch(discovery.revocationEndpoint, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: params.toString(),
         });
+      } catch (err) {
+        // Silently fail - token revocation is best-effort
+        authLogger.debug('Token revocation failed (non-critical)', err);
       }
-    } catch (err) {
-      authLogger.error('Error revoking token', err);
-    } finally {
-      await clearAuth();
     }
+    
+    // Wait for auth clearing to complete
+    await clearAuthPromise;
   };
 
   const clearAuth = async () => {
-    // Clear Sentry user context before clearing auth state
+    // Store user ID before clearing (for tracking)
+    const userIdToTrack = user?.id;
+    const isDemo = isDemoMode;
+    
+    // Clear auth state immediately (don't wait for tracking)
     setSentryUser(null);
     addBreadcrumb('User signed out', 'auth');
     
     setUser(null);
     setTokens(null);
     setIsDemoMode(false);
-    // Remove tokens from SecureStore
-    await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKENS).catch(() => {
-      // Ignore errors if item doesn't exist
-    });
+    
+    // Clear tokens from SecureStore (native) or localStorage (web)
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(STORAGE_KEYS.TOKENS);
+      }
+    } else {
+      await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKENS).catch(() => {
+        // Ignore errors if item doesn't exist
+      });
+    }
     // Remove non-sensitive data from AsyncStorage
     await AsyncStorage.multiRemove([STORAGE_KEYS.USER, STORAGE_KEYS.DEMO_MODE]);
+    
+    // Track logout action in background (non-blocking, fire-and-forget)
+    if (userIdToTrack && !isDemo) {
+      // Don't await - let it run in background
+      Promise.all([
+        trpcClient.users.update.mutate({
+          id: userIdToTrack,
+          last_logout_at: new Date().toISOString(),
+        }).catch((err) => {
+          // Silently fail - tracking is best-effort
+          authLogger.debug('Failed to update last_logout_at (non-critical)', err);
+        }),
+        trpcClient.users.trackAction.mutate({
+          user_id: userIdToTrack,
+          action_type: 'logout',
+          action_category: 'auth',
+          action_data: {},
+          screen_name: null,
+          device_type: Platform.OS === 'web' ? 'web' : Platform.OS === 'ios' ? 'ios' : 'android',
+          app_version: Constants.expoConfig?.version || 'unknown',
+        }).catch((err) => {
+          // Silently fail - tracking is best-effort
+          authLogger.debug('Failed to track logout action (non-critical)', err);
+        }),
+      ]).catch(() => {
+        // Ignore all tracking errors
+      });
+    }
   };
 
+
+  // Validate token structure
+  const validateToken = (tokens: AuthTokens | null): tokens is AuthTokens => {
+    if (!tokens) return false;
+    if (!tokens.accessToken || typeof tokens.accessToken !== 'string') return false;
+    if (!tokens.expiresAt || typeof tokens.expiresAt !== 'number') return false;
+    if (tokens.refreshToken && typeof tokens.refreshToken !== 'string') return false;
+    if (tokens.idToken && typeof tokens.idToken !== 'string') return false;
+    return true;
+  };
 
   const getValidAccessToken = async (): Promise<string | null> => {
     if (!tokens) return null;
@@ -474,9 +695,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
     const now = Date.now();
     const timeUntilExpiration = tokens.expiresAt - now;
-    
-    // Check expiration and set warnings
-    checkTokenExpiration(tokens.expiresAt);
 
     // If token expires in more than 1 minute, return it
     if (timeUntilExpiration > 60000) {

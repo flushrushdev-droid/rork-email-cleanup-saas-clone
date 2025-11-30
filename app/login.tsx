@@ -37,8 +37,10 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      loginLogger.debug('Authenticated, navigating to home');
-      router.replace('/');
+      loginLogger.debug('Authenticated, checking if first-time sync needed');
+      // For first-time users, go to syncing screen
+      // Otherwise go directly to overview
+      router.replace('/syncing');
     }
   }, [isAuthenticated, isLoading, router]);
 

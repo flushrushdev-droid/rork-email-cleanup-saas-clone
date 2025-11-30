@@ -9,7 +9,6 @@ import { mockSmartFolders, mockRecentEmails } from '@/mocks/emailData';
 import { useGmailSync } from '@/contexts/GmailSyncContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Email, EmailCategory } from '@/constants/types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CreateFolderModal } from '@/components/mail/CreateFolderModal';
 import { createFoldersStyles } from '@/styles/app/folders';
 import { categorizeEmail, folderIconMap } from '@/utils/emailCategories';
@@ -18,6 +17,7 @@ import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { EmptyState } from '@/components/common/EmptyState';
 import type { SmartFolder } from '@/hooks/useSmartFolders';
+import { useSupabaseFolders } from '@/hooks/useSupabaseFolders';
 
 const foldersLogger = createScopedLogger('Folders');
 
@@ -32,15 +32,12 @@ export default function FoldersScreen() {
   const [folderName, setFolderName] = useState<string>('');
   const [folderRule, setFolderRule] = useState<string>('');
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  
+  // Use Supabase hook for folders
+  const { folders: customFolders, loading: foldersLoading, createFolder: createSupabaseFolder } = useSupabaseFolders();
+  
   type CustomFolder = { id: string; name: string; color: string; count: number; isCustom: true };
   type FolderWithCustom = SmartFolder | CustomFolder;
-  const [customFolders, setCustomFolders] = useState<Array<{ id: string; name: string; color: string; count: number }>>([]);
-  // No persistence for demo mode - folders reset on refresh
-  
-  // One-time cleanup: remove persisted folders
-  React.useEffect(() => {
-    AsyncStorage.removeItem('custom-folders-v1').catch(() => {});
-  }, []);
 
   const emailsWithCategories = useMemo(() => {
     if (isDemoMode || messages.length === 0) {
@@ -177,14 +174,14 @@ export default function FoldersScreen() {
     setIsCreating(true);
     
     await handleAsync(async () => {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       foldersLogger.debug('Creating folder', undefined, { folderName, folderRule });
       
-      // Add to custom list (no persistence for demo mode)
-      const newFolder = { id: Date.now().toString(), name: folderName.trim(), color: colors.primary, count: 0 };
-      const updatedFolders = [newFolder, ...customFolders];
-      setCustomFolders(updatedFolders);
+      // Use Supabase hook to create folder
+      await createSupabaseFolder({
+        name: folderName.trim(),
+        color: colors.primary,
+        rule: folderRule.trim(),
+      });
       
       showSuccess(`Folder "${folderName}" created successfully!`);
       
@@ -221,7 +218,12 @@ export default function FoldersScreen() {
           <AppText style={[styles.createButtonText, { color: colors.primary }]} dynamicTypeStyle="headline">Create Custom Folder</AppText>
         </TouchableOpacity>
 
-        {smartFolders.length === 0 && customFolders.length === 0 ? (
+        {foldersLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <AppText style={[styles.loadingText, { color: colors.textSecondary }]} dynamicTypeStyle="body">Loading folders...</AppText>
+          </View>
+        ) : smartFolders.length === 0 && customFolders.length === 0 ? (
           <EmptyState
             icon={FolderOpen}
             title="No folders yet"

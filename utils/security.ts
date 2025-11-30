@@ -7,12 +7,14 @@
 
 /**
  * Validate OAuth authorization code format
- * OAuth codes are typically alphanumeric with dashes/underscores
+ * OAuth codes can contain alphanumeric characters, dashes, underscores, and forward slashes
+ * Google OAuth codes often have the format: "4/0Ab32j91..."
  */
 export function isValidOAuthCode(code: string): boolean {
   if (!code || typeof code !== 'string') return false;
-  // OAuth codes are typically alphanumeric with dashes/underscores
-  return /^[A-Za-z0-9_-]+$/.test(code) && code.length >= 20 && code.length <= 200;
+  // OAuth codes can contain alphanumeric, dashes, underscores, forward slashes, and dots
+  // Google codes often look like: "4/0Ab32j91..." or "4/0AeD2..."
+  return /^[A-Za-z0-9_./-]+$/.test(code) && code.length >= 10 && code.length <= 500;
 }
 
 /**

@@ -28,6 +28,15 @@ export function createFoldersStyles(colors: ThemeColors) {
     emptyState: {
       paddingVertical: 60,
     },
+    loadingContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+    },
     title: {
       fontSize: 32,
       fontWeight: '700',

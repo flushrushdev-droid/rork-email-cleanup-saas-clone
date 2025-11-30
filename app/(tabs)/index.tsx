@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { Text, View, ScrollView, ActivityIndicator } from 'react-native';
 import { TrendingUp, TrendingDown, Mail, Archive, Clock, HardDrive, Sparkles, AlertCircle, RefreshCw, ChevronRight, Trash2, FolderOpen } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -65,7 +65,12 @@ export default function OverviewScreen() {
     }
   }, [isAuthenticated, isDemoMode, messages.length, isSyncing, handleSync]);
 
-  const health = mockInboxHealth;
+  // Use mock data only in demo mode, otherwise calculate from real messages
+  const health = isDemoMode ? mockInboxHealth : useMemo(() => {
+    // TODO: Calculate real inbox health from messages
+    // For now, return mock data structure but this should be calculated from actual messages
+    return mockInboxHealth;
+  }, [messages, isDemoMode]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -174,12 +179,30 @@ export default function OverviewScreen() {
           </>
         )}
 
-        <ActionRequiredSection
-          emails={(messages.length > 0 ? messages.filter((email) => email.priority === 'action') : mockRecentEmails.filter((email) => email.priority === 'action'))
-            .filter((email) => !trashedEmails.has(email.id))}
-          colors={colors}
-          router={router}
-        />
+        {/* Show loading state during first sync instead of mock data */}
+        {!isDemoMode && isSyncing && messages.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              Syncing your inbox... {syncProgress.current > 0 ? `${syncProgress.current}/${syncProgress.total} messages` : 'Please wait...'}
+            </Text>
+            <Text style={[styles.loadingText, { color: colors.textSecondary, fontSize: 14, marginTop: 8 }]}>
+              This may take a few moments
+            </Text>
+          </View>
+        ) : (
+          /* Only show Action Required section if we have real data or are in demo mode */
+          (isDemoMode || messages.length > 0) && (
+            <ActionRequiredSection
+              emails={isDemoMode
+                ? mockRecentEmails.filter((email) => email.priority === 'action')
+                : messages.filter((email) => email.priority === 'action')
+                  .filter((email) => !trashedEmails.has(email.id))}
+              colors={colors}
+              router={router}
+            />
+          )
+        )}
 
 
       </ScrollView>

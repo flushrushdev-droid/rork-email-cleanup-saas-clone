@@ -285,6 +285,16 @@ export function createOverviewStyles(colors: ThemeColors) {
       flex: 1,
       fontSize: 14,
     },
+    loadingContainer: {
+      paddingVertical: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      textAlign: 'center',
+    },
   });
 }
 

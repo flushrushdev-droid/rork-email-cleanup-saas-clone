@@ -62,12 +62,31 @@ export default function AuthCallback() {
           router.replace('/login?error=invalid_code');
           return;
         }
-        // Desktop web: AuthContext will handle via expo-auth-session
-        // Just redirect to home after a short delay
-        const timer = setTimeout(() => {
-          router.replace('/');
-        }, 2000);
-        return () => clearTimeout(timer);
+        // Desktop web: Check if we're in a popup window
+        // If so, expo-auth-session will handle it via WebBrowser.maybeCompleteAuthSession()
+        // We need to wait a bit for the session to complete before redirecting
+        const isPopup = window.opener !== null;
+        
+        if (isPopup) {
+          // We're in a popup - expo-auth-session will handle closing it
+          // Just wait a moment for the session to complete
+          const timer = setTimeout(() => {
+            // Close the popup if it's still open
+            if (window.opener) {
+              window.close();
+            } else {
+              // If popup was already closed, redirect to home
+              router.replace('/');
+            }
+          }, 1000);
+          return () => clearTimeout(timer);
+        } else {
+          // Not in a popup - redirect normally
+          const timer = setTimeout(() => {
+            router.replace('/');
+          }, 2000);
+          return () => clearTimeout(timer);
+        }
       } else if (error && isMobileBrowser) {
         // Mobile browser with error: redirect to app
         const appScheme = AppConfig.appScheme;

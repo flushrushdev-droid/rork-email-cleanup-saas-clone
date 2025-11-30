@@ -65,6 +65,7 @@ function RootLayoutNav() {
       }}
     >
       <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="syncing" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="storybook" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
     </Stack>

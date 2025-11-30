@@ -3,6 +3,7 @@ import hiRoute from "./routes/example/hi/route.js";
 import rulesRoute from "./routes/rules/route.js";
 import foldersRoute from "./routes/folders/route.js";
 import preferencesRoute from "./routes/preferences/route.js";
+import usersRoute from "./routes/users/route.js";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
   rules: rulesRoute,
   folders: foldersRoute,
   preferences: preferencesRoute,
+  users: usersRoute,
 });
 
 export type AppRouter = typeof appRouter;
