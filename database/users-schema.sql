@@ -102,6 +102,13 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_actions ENABLE ROW LEVEL SECURITY;
 
 -- Users Policies (Beta - allows user_id-based access)
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own record" ON users;
+DROP POLICY IF EXISTS "Users can insert their own record" ON users;
+DROP POLICY IF EXISTS "Users can update their own record" ON users;
+DROP POLICY IF EXISTS "Users can view their own actions" ON user_actions;
+DROP POLICY IF EXISTS "Users can insert their own actions" ON user_actions;
+
 -- Users can view their own record
 CREATE POLICY "Users can view their own record"
   ON users FOR SELECT
