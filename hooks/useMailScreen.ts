@@ -89,7 +89,7 @@ export function useMailScreen() {
             hasAttachments: msg.hasAttachments || false,
             attachmentCount: 0,
             isRead: msg.isRead,
-            isStarred: starredEmails.has(msg.id),
+            isStarred: starredEmails.has(msg.id) || msg.labels.includes('STARRED') || msg.labels.includes('starred'),
             priority: undefined,
             confidence: 1,
             category: undefined as EmailCategory | undefined,
@@ -233,7 +233,11 @@ export function useMailScreen() {
           filtered = filtered.filter((email: EmailMessage) => !email.isRead);
           break;
         case 'starred':
-          filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
+          filtered = filtered.filter((email: EmailMessage) => 
+            starredEmails.has(email.id) || 
+            email.labels.includes('STARRED') || 
+            email.labels.includes('starred')
+          );
           break;
         case 'archived':
           filtered = filtered.filter((email: EmailMessage) => archivedEmails.has(email.id));
@@ -282,7 +286,7 @@ export function useMailScreen() {
         !e.labels.includes('trash')
       ).length,
       starred: allEmails.filter(e => 
-        starredEmails.has(e.id) && 
+        (starredEmails.has(e.id) || e.labels.includes('STARRED') || e.labels.includes('starred')) &&
         !archivedEmails.has(e.id) && 
         !trashedEmails.has(e.id) &&
         !e.labels.includes('TRASH') && 
