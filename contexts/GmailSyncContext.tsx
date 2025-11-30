@@ -478,27 +478,34 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         }
       }
 
-      // Check cache state for logging (but don't use it to decide sync type)
+      // Check cache state - if empty, we need full sync to restore messages
       const cachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || [];
+      const isCacheEmpty = cachedMessages.length === 0;
       
       gmailLogger.debug('Cache state check', {
         cachedMessageCount: cachedMessages.length,
+        isCacheEmpty,
         hasHistoryId: !!storedHistoryId,
       });
 
-      // Decision logic: Only do full sync if we don't have a historyId
-      // If we have a historyId, always do incremental sync (it will fall back to full sync if historyId is too old)
-      // This prevents unnecessary full syncs when cache is empty but we have a valid historyId
+      // Decision logic:
+      // 1. If no historyId -> full sync (first time)
+      // 2. If historyId exists BUT cache is empty -> full sync (restore after cache clear)
+      // 3. If historyId exists AND cache has messages -> incremental sync (update existing)
+      // Incremental sync will automatically fall back to full sync if historyId is too old (404 error)
       let messages: Email[];
       if (!storedHistoryId) {
         gmailLogger.info('No historyId found, performing full sync');
         messages = await performFullSync(profile);
-      } else {
-        // We have a historyId - do incremental sync
-        // The incremental sync will automatically fall back to full sync if historyId is too old (404 error)
-        gmailLogger.info('HistoryId found, performing incremental sync', { 
+      } else if (isCacheEmpty) {
+        gmailLogger.info('HistoryId exists but cache is empty, performing full sync to restore messages', { 
           historyId: storedHistoryId,
-          cacheEmpty: cachedMessages.length === 0,
+        });
+        messages = await performFullSync(profile);
+      } else {
+        // We have a historyId AND cache has messages - do incremental sync
+        gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { 
+          historyId: storedHistoryId,
         });
         messages = await performIncrementalSync(profile, storedHistoryId);
       }
