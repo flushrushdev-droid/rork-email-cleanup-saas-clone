@@ -86,7 +86,11 @@ export default function OverviewScreen() {
   }, [isAuthenticated, isDemoMode, isSyncing, handleSync, messages.length]);
 
   // Use mock data only in demo mode, otherwise calculate from real messages
-  const health = isDemoMode ? mockInboxHealth : useMemo(() => {
+  // Always call useMemo (Rules of Hooks), but conditionally return mock data
+  const health = useMemo(() => {
+    if (isDemoMode) {
+      return mockInboxHealth;
+    }
     // TODO: Calculate real inbox health from messages
     // For now, return mock data structure but this should be calculated from actual messages
     return mockInboxHealth;
