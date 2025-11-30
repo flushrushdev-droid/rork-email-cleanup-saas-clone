@@ -83,6 +83,17 @@ export const AppConfig = {
         const hostUri = Constants.expoConfig?.hostUri;
         
         if (hostUri) {
+          // Check if we're using tunnel mode (hostUri contains tunnel domains)
+          const isTunnel = hostUri.includes('.exp.direct') || 
+                          hostUri.includes('ngrok') || 
+                          hostUri.includes('tunnel') ||
+                          hostUri.includes('exp.host');
+          if (isTunnel) {
+            // For tunnel mode, use localhost (already in Google Console)
+            // The tunnel will proxy this correctly
+            return 'http://localhost:8081';
+          }
+          
           // hostUri format: "192.168.1.100:8081" or "localhost:8081"
           const [host, port] = hostUri.split(':');
           if (host && port) {
@@ -103,6 +114,9 @@ export const AppConfig = {
         if (networkIp) {
           return `http://${networkIp}:8081`;
         }
+        
+        // Default for development: use localhost (already in Google Console)
+        return 'http://localhost:8081';
       }
       
       // For production or when not in dev mode, use configured production URL
@@ -111,6 +125,10 @@ export const AppConfig = {
       // Fallback: use API base URL if available
       const apiUrl = getEnvVar('EXPO_PUBLIC_API_BASE_URL');
       if (apiUrl) return apiUrl;
+      // For development, default to localhost (already in Google Console)
+      if (isDev || isDevelopmentEnv) {
+        return 'http://localhost:8081';
+      }
       // Last resort: localhost (should not happen in production)
       return 'http://localhost:3000';
     }
