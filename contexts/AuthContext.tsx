@@ -203,9 +203,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       const userData = await trpcClient.users.getById.query({ id: userId });
       return !!userData;
     } catch (err) {
-      // If user doesn't exist or there's an error, return false
-      authLogger.debug('User verification failed', err);
-      return false;
+      // Log the error for debugging
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      authLogger.debug('User verification failed', err, {
+        userId,
+        errorMessage,
+        // Check if it's a 404 (route not found) vs user not found
+        is404: errorMessage.includes('404') || errorMessage.includes('Not Found'),
+      });
+      
+      // If it's a 404, the route might not be deployed yet - allow login anyway for now
+      // This is a temporary workaround until the backend is fully deployed
+      if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+        authLogger.warn('Backend route not found - allowing login (backend may not be deployed yet)');
+        return true; // Allow login if route doesn't exist yet
+      }
+      
+      return false; // User doesn't exist
     }
   };
 
@@ -423,17 +437,34 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       // Create or update user in database
       try {
-        await trpcClient.users.upsert.mutate({
+        const result = await trpcClient.users.upsert.mutate({
           id: newUser.id,
           email: newUser.email,
           name: newUser.name || null,
           picture: newUser.picture || null,
           provider: 'google',
         });
-        authLogger.debug('User created/updated in database');
+        authLogger.info('User created/updated in database', { userId: newUser.id, email: newUser.email });
       } catch (err) {
-        authLogger.error('Failed to create/update user in database', err);
+        // Log detailed error information
+        const errorDetails = err instanceof Error ? {
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+        } : err;
+        authLogger.error('Failed to create/update user in database', err, {
+          userId: newUser.id,
+          email: newUser.email,
+          errorDetails,
+        });
         // Don't throw - user creation failure shouldn't block login
+        // But we should still show a warning in development
+        if (__DEV__) {
+          console.warn('[Auth] User creation failed - this may be because:');
+          console.warn('1. The users table doesn\'t exist in Supabase (run database/users-schema.sql)');
+          console.warn('2. The backend route isn\'t deployed yet');
+          console.warn('3. There\'s a network/connection issue');
+        }
       }
 
       // Track login action
