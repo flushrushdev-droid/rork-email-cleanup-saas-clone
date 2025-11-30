@@ -20,6 +20,12 @@ You need to provide URLs for:
 - **Privacy Policy URL**: `https://athenxmail-backend.onrender.com/privacy` (or your actual privacy policy URL)
 - **Terms of Service URL**: `https://athenxmail-backend.onrender.com/terms` (or your actual terms URL)
 
+**Where to find these fields:**
+- Scroll down to the "App domain" section
+- Look for "Privacy Policy URL" and "Terms of Service URL" fields
+- They might be under "Application home page" or in a separate section
+- If you don't see them, make sure you're on the "OAuth consent screen" page, not the "Credentials" page
+
 ### Option A: Create Simple Pages on Your Backend
 Add these routes to your backend (`backend/hono.ts`):
 
