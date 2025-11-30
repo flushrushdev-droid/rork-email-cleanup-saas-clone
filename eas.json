@@ -39,6 +39,11 @@
       }
     }
   },
+  "hooks": {
+    "prebuild": {
+      "command": "npm install --legacy-peer-deps"
+    }
+  },
   "submit": {
     "production": {}
   }
