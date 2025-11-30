@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { trpcServer } from "@hono/trpc-server";
 import { cors } from "hono/cors";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./trpc/app-router.js";
 import { createContext } from "./trpc/create-context.js";
 
@@ -18,14 +18,15 @@ app.get("/", (c) => {
   return c.json({ status: "ok", message: "API is running" });
 });
 
-// Mount tRPC server - THE PATH MUST MATCH WHERE REQUESTS GO
-// Requests go to /api/trpc/*, so we mount at /api/trpc
-app.use(
-  "/api/trpc/*",
-  trpcServer({
+// Mount tRPC server using native fetch adapter
+// This handles ALL /api/trpc/* requests
+app.all("/api/trpc/*", async (c) => {
+  return fetchRequestHandler({
+    endpoint: "/api/trpc",
+    req: c.req.raw,
     router: appRouter,
     createContext,
-  })
-);
+  });
+});
 
 export default app;
