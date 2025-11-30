@@ -168,33 +168,39 @@ export function useMailScreen() {
       });
     }
 
-    if (currentView === 'folder-detail' && selectedFolder) {
-      if (selectedFolder.name === 'Action Required') {
-        filtered = filtered.filter((email: EmailMessage) => 
-          email.priority === 'action' || 
-          email.subject.toLowerCase().includes('action required') ||
-          email.subject.toLowerCase().includes('urgent')
-        );
-      } else if (selectedFolder.category) {
-        filtered = filtered.filter((email: EmailMessage) => email.category === selectedFolder.category);
-      }
-    } else {
-      switch (currentFolder) {
-        case 'unread':
-          filtered = filtered.filter((email: EmailMessage) => !email.isRead);
-          break;
-        case 'starred':
-          filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
-          break;
-        case 'important':
+    // Skip currentFolder filtering if activeFilter is 'sent' or 'trash' (they're already filtered above)
+    if (activeFilter !== 'sent' && activeFilter !== 'trash') {
+      if (currentView === 'folder-detail' && selectedFolder) {
+        if (selectedFolder.name === 'Action Required') {
           filtered = filtered.filter((email: EmailMessage) => 
-            email.labels.includes('IMPORTANT') || 
-            email.priority === 'action' ||
+            email.priority === 'action' || 
+            email.subject.toLowerCase().includes('action required') ||
             email.subject.toLowerCase().includes('urgent')
           );
-          break;
-        default:
-          filtered = filtered.filter((email: EmailMessage) => email.labels.includes('inbox') || email.labels.includes('INBOX'));
+        } else if (selectedFolder.category) {
+          filtered = filtered.filter((email: EmailMessage) => email.category === selectedFolder.category);
+        }
+      } else {
+        switch (currentFolder) {
+          case 'unread':
+            filtered = filtered.filter((email: EmailMessage) => !email.isRead);
+            break;
+          case 'starred':
+            filtered = filtered.filter((email: EmailMessage) => starredEmails.has(email.id));
+            break;
+          case 'important':
+            filtered = filtered.filter((email: EmailMessage) => 
+              email.labels.includes('IMPORTANT') || 
+              email.priority === 'action' ||
+              email.subject.toLowerCase().includes('urgent')
+            );
+            break;
+          default:
+            // Only filter for INBOX if not viewing sent/trash
+            filtered = filtered.filter((email: EmailMessage) => 
+              email.labels.includes('inbox') || email.labels.includes('INBOX')
+            );
+        }
       }
     }
 
