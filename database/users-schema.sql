@@ -188,8 +188,25 @@ CREATE TRIGGER track_user_login
 -- Real-time Subscriptions
 -- ============================================
 -- Enable real-time for users table (optional - for admin dashboards)
-ALTER PUBLICATION supabase_realtime ADD TABLE users;
-ALTER PUBLICATION supabase_realtime ADD TABLE user_actions;
+-- Note: These commands will fail if tables are already in the publication, which is fine
+DO $$
+BEGIN
+  -- Try to add users table to realtime publication (ignore if already exists)
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE users;
+  EXCEPTION WHEN duplicate_object THEN
+    -- Table already in publication, that's fine
+    NULL;
+  END;
+  
+  -- Try to add user_actions table to realtime publication (ignore if already exists)
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE user_actions;
+  EXCEPTION WHEN duplicate_object THEN
+    -- Table already in publication, that's fine
+    NULL;
+  END;
+END $$;
 
 -- ============================================
 -- Helper Views (Optional - for analytics)
