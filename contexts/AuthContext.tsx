@@ -119,6 +119,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const redirectUri = getCurrentRedirectUri();
   
+  // For Web application OAuth clients, Google doesn't accept device_id and device_name
+  // These parameters are only for Android/iOS OAuth clients
+  // Since we're using a Web application client with web redirect URIs, exclude them
+  const extraParams: Record<string, string> = {
+    access_type: 'offline',
+    prompt: 'consent',
+  };
+  
+  // Only include device info if using an Android/iOS OAuth client (not Web application)
+  // For now, we're using Web application client, so exclude device parameters
+  // If you switch to Android/iOS client type, uncomment the line below:
+  // ...deviceInfo,
+  
   // Log the exact OAuth request parameters for debugging
   authLogger.debug('OAuth request configuration', {
     clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 20)}...` : 'MISSING',
@@ -132,7 +145,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       'https://www.googleapis.com/auth/gmail.labels',
     ],
     usePKCE: true,
-    deviceInfo,
+    extraParams,
   });
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
@@ -149,11 +162,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       redirectUri: redirectUri,
       responseType: AuthSession.ResponseType.Code,
       usePKCE: true,
-      extraParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-        ...deviceInfo, // Add device_id and device_name for Android
-      },
+      extraParams,
     },
     discovery
   );
