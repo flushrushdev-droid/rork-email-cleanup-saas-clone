@@ -17,9 +17,6 @@
       },
       "ios": {
         "simulator": true
-      },
-      "cache": {
-        "disabled": false
       }
     },
     "preview": {
