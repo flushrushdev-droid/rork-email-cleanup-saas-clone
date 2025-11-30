@@ -159,7 +159,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES),
   });
 
-  // Helper function to decode base64url encoded data
+  // Helper function to decode base64url encoded data to UTF-8 string
   const decodeBase64Url = (data: string): string => {
     if (!data) return '';
     
@@ -171,14 +171,12 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
     
     try {
-      // Decode base64 to string
-      // For both web and React Native, we can use the global atob if available
-      // or fall back to a manual implementation
+      // Decode base64 to binary string
+      let binaryString: string;
       if (typeof atob !== 'undefined') {
-        return atob(padded);
+        binaryString = atob(padded);
       } else {
-        // Fallback for environments without atob (shouldn't happen in Expo/React Native Web)
-        // This is a simple base64 decoder
+        // Fallback for environments without atob
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
         let result = '';
         let i = 0;
@@ -191,6 +189,83 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
           result += String.fromCharCode((bitmap >> 16) & 255);
           if (encoded3 !== 64) result += String.fromCharCode((bitmap >> 8) & 255);
           if (encoded4 !== 64) result += String.fromCharCode(bitmap & 255);
+        }
+        binaryString = result;
+      }
+      
+      // Convert binary string to UTF-8
+      // atob returns a binary string (Latin-1), but Gmail uses UTF-8
+      // We need to convert bytes to UTF-8 string
+      if (Platform.OS === 'web' && typeof TextDecoder !== 'undefined') {
+        // For web: Use TextDecoder for proper UTF-8 decoding
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return new TextDecoder('utf-8').decode(bytes);
+      } else {
+        // For React Native: Use TextDecoder if available, otherwise manual UTF-8 decode
+        if (typeof TextDecoder !== 'undefined') {
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          return new TextDecoder('utf-8').decode(bytes);
+        }
+        
+        // Manual UTF-8 decoder for environments without TextDecoder
+        let result = '';
+        let i = 0;
+        while (i < binaryString.length) {
+          const byte1 = binaryString.charCodeAt(i++);
+          if (byte1 < 0x80) {
+            // ASCII character (0xxxxxxx)
+            result += String.fromCharCode(byte1);
+          } else if ((byte1 & 0xE0) === 0xC0) {
+            // 2-byte UTF-8 character (110xxxxx 10xxxxxx)
+            if (i >= binaryString.length) break;
+            const byte2 = binaryString.charCodeAt(i++);
+            if ((byte2 & 0xC0) !== 0x80) {
+              result += String.fromCharCode(0xFFFD); // Replacement character
+              i--; // Back up to retry
+              continue;
+            }
+            result += String.fromCharCode(((byte1 & 0x1F) << 6) | (byte2 & 0x3F));
+          } else if ((byte1 & 0xF0) === 0xE0) {
+            // 3-byte UTF-8 character (1110xxxx 10xxxxxx 10xxxxxx)
+            if (i + 1 >= binaryString.length) break;
+            const byte2 = binaryString.charCodeAt(i++);
+            const byte3 = binaryString.charCodeAt(i++);
+            if ((byte2 & 0xC0) !== 0x80 || (byte3 & 0xC0) !== 0x80) {
+              result += String.fromCharCode(0xFFFD);
+              i -= 2;
+              continue;
+            }
+            result += String.fromCharCode(((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F));
+          } else if ((byte1 & 0xF8) === 0xF0) {
+            // 4-byte UTF-8 character (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+            if (i + 2 >= binaryString.length) break;
+            const byte2 = binaryString.charCodeAt(i++);
+            const byte3 = binaryString.charCodeAt(i++);
+            const byte4 = binaryString.charCodeAt(i++);
+            if ((byte2 & 0xC0) !== 0x80 || (byte3 & 0xC0) !== 0x80 || (byte4 & 0xC0) !== 0x80) {
+              result += String.fromCharCode(0xFFFD);
+              i -= 3;
+              continue;
+            }
+            const codePoint = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
+            // Handle surrogate pairs for code points > 0xFFFF
+            if (codePoint > 0xFFFF) {
+              const surrogate1 = 0xD800 + ((codePoint - 0x10000) >> 10);
+              const surrogate2 = 0xDC00 + ((codePoint - 0x10000) & 0x3FF);
+              result += String.fromCharCode(surrogate1, surrogate2);
+            } else {
+              result += String.fromCharCode(codePoint);
+            }
+          } else {
+            // Invalid UTF-8 sequence
+            result += String.fromCharCode(0xFFFD); // Replacement character
+          }
         }
         return result;
       }
