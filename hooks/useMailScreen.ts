@@ -82,6 +82,7 @@ export function useMailScreen() {
             to: msg.to,
             subject: msg.subject,
             snippet: msg.snippet,
+            body: msg.body, // Pass through the email body
             date: new Date(msg.date),
             size: msg.sizeBytes || 0,
             labels: msg.labels || [], // Ensure labels is always an array

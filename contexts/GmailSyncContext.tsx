@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import { useAuth } from './AuthContext';
 import { trpcClient } from '@/lib/trpc';
 import type { GmailMessage, GmailProfile, Email, Sender } from '@/constants/types';
@@ -159,8 +159,94 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES),
   });
 
+  // Helper function to decode base64url encoded data
+  const decodeBase64Url = (data: string): string => {
+    if (!data) return '';
+    
+    // Gmail API uses base64url encoding (RFC 4648)
+    // Replace URL-safe characters with standard base64 characters
+    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+    
+    // Add padding if needed
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    
+    try {
+      // Decode base64 to string
+      // For both web and React Native, we can use the global atob if available
+      // or fall back to a manual implementation
+      if (typeof atob !== 'undefined') {
+        return atob(padded);
+      } else {
+        // Fallback for environments without atob (shouldn't happen in Expo/React Native Web)
+        // This is a simple base64 decoder
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        let result = '';
+        let i = 0;
+        while (i < padded.length) {
+          const encoded1 = chars.indexOf(padded.charAt(i++));
+          const encoded2 = chars.indexOf(padded.charAt(i++));
+          const encoded3 = chars.indexOf(padded.charAt(i++));
+          const encoded4 = chars.indexOf(padded.charAt(i++));
+          const bitmap = (encoded1 << 18) | (encoded2 << 12) | (encoded3 << 6) | encoded4;
+          result += String.fromCharCode((bitmap >> 16) & 255);
+          if (encoded3 !== 64) result += String.fromCharCode((bitmap >> 8) & 255);
+          if (encoded4 !== 64) result += String.fromCharCode(bitmap & 255);
+        }
+        return result;
+      }
+    } catch (error) {
+      gmailLogger.warn('Failed to decode base64url data', { error, dataLength: data.length });
+      return '';
+    }
+  };
+
+  // Helper function to extract email body from Gmail message parts
+  const extractEmailBody = (payload: GmailMessage['payload']): { html?: string; text?: string } => {
+    const result: { html?: string; text?: string } = {};
+    
+    // If message has a simple body (no parts), extract it directly
+    if (payload?.body?.data) {
+      const decoded = decodeBase64Url(payload.body.data);
+      // Try to determine if it's HTML or plain text
+      if (decoded.trim().startsWith('<')) {
+        result.html = decoded;
+      } else {
+        result.text = decoded;
+      }
+      return result;
+    }
+    
+    // If message has parts, search for text/html and text/plain
+    const findBodyInParts = (parts: GmailMessage['payload']['parts'] = []): void => {
+      for (const part of parts) {
+        // If this part has nested parts, recurse
+        if (part.parts && part.parts.length > 0) {
+          findBodyInParts(part.parts);
+        }
+        
+        // Skip if this is an attachment (has filename)
+        if (part.filename) {
+          continue;
+        }
+        
+        // Extract text/html or text/plain
+        if (part.mimeType === 'text/html' && part.body?.data && !result.html) {
+          result.html = decodeBase64Url(part.body.data);
+        } else if (part.mimeType === 'text/plain' && part.body?.data && !result.text) {
+          result.text = decodeBase64Url(part.body.data);
+        }
+      }
+    };
+    
+    if (payload?.parts) {
+      findBodyInParts(payload.parts);
+    }
+    
+    return result;
+  };
+
   // Helper function to extract attachments from Gmail message parts
-  const extractAttachments = (parts: GmailMessage['payload']['parts'] = []): Array<{ filename: string; mimeType: string; size: number }> => {
+  const extractAttachments = (parts: GmailMessage['payload']['parts'] = []): Array<{ filename: string; mimeType: string; size: number; attachmentId?: string }> => {
     const attachments: Array<{ filename: string; mimeType: string; size: number }> = [];
     
     const processPart = (part: NonNullable<GmailMessage['payload']['parts']>[0]) => {
@@ -229,6 +315,11 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     const attachments = extractAttachments(message.payload?.parts);
     const hasAttachments = attachments.length > 0;
     
+    // Extract email body (HTML or plain text)
+    const bodyData = extractEmailBody(message.payload);
+    // Prefer HTML over plain text, fallback to snippet if no body found
+    const emailBody = bodyData.html || bodyData.text || message.snippet;
+    
     // Debug log for messages with attachments
     if (hasAttachments) {
       gmailLogger.debug('Email with attachments parsed', {
@@ -237,22 +328,15 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         attachmentCount: attachments.length,
         attachments: attachments.map(a => ({ filename: a.filename, size: a.size })),
       });
-    } else if (message.payload?.parts && message.payload.parts.length > 0) {
-      // Debug: Log if we have parts but no attachments found
-      gmailLogger.debug('Message has parts but no attachments found', {
+    }
+    
+    // Debug log for body extraction
+    if (bodyData.html || bodyData.text) {
+      gmailLogger.debug('Email body extracted', {
         emailId: message.id,
-        subject: getHeader('Subject'),
-        partsCount: message.payload.parts.length,
-        partsInfo: message.payload.parts.map((p, i) => ({
-          index: i,
-          mimeType: p.mimeType,
-          filename: p.filename || 'no filename',
-          hasBody: !!p.body,
-          bodySize: p.body?.size,
-          bodyAttachmentId: p.body?.attachmentId,
-          hasNestedParts: !!p.parts,
-          nestedPartsCount: p.parts?.length || 0,
-        })),
+        hasHtml: !!bodyData.html,
+        hasText: !!bodyData.text,
+        bodyLength: emailBody.length,
       });
     }
 
@@ -263,6 +347,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       to: getHeader('To').split(',').map(t => t.trim()),
       subject: getHeader('Subject'),
       snippet: message.snippet,
+      body: emailBody, // Store the actual email body
       date: message.internalDate 
         ? new Date(parseInt(message.internalDate)).toISOString()
         : new Date().toISOString(),

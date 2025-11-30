@@ -192,6 +192,7 @@ export interface EmailMessage {
   to: string[];
   subject: string;
   snippet: string;
+  body?: string; // Email body content (HTML or plain text)
   date: Date;
   size: number;
   labels: string[];

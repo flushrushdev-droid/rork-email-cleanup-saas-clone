@@ -120,11 +120,15 @@ export function EmailDetailView({
         )}
 
         <View style={styles.detailBody}>
-          <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">{selectedEmail.snippet}</AppText>
-          <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">
-            {'\n\n'}Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-            {'\n\n'}Best regards,{'\n'}{selectedEmail.from.split('<')[0].trim()}
-          </AppText>
+          {selectedEmail.body ? (
+            <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">
+              {selectedEmail.body}
+            </AppText>
+          ) : (
+            <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">
+              {selectedEmail.snippet}
+            </AppText>
+          )}
         </View>
       </ScrollView>
 
