@@ -14,6 +14,10 @@ import { UndoToast } from '@/components/common/UndoToast';
 import { useMailScreen } from '@/hooks/useMailScreen';
 import { createMailStyles } from '@/styles/app/mail';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { useGmailSync } from '@/contexts/GmailSyncContext';
+import { createScopedLogger } from '@/utils/logger';
+
+const mailLogger = createScopedLogger('MailScreen');
 
 export default function MailScreen() {
   const router = useRouter();
@@ -143,8 +147,16 @@ export default function MailScreen() {
         />
       )}
       {currentView === 'detail' && selectedEmail && (() => {
-        const currentIndex = filteredEmails.findIndex(e => e.id === selectedEmail.id);
-        const hasNext = currentIndex !== -1 && currentIndex < filteredEmails.length - 1;
+        // Use allEmails for navigation to ensure email is always found
+        // This prevents navigation buttons from disappearing if email gets filtered out
+        const currentIndexInAll = allEmails.findIndex(e => e.id === selectedEmail.id);
+        const currentIndexInFiltered = filteredEmails.findIndex(e => e.id === selectedEmail.id);
+        
+        // If email is not in filtered list, use allEmails for navigation
+        const navigationList = currentIndexInFiltered !== -1 ? filteredEmails : allEmails;
+        const currentIndex = currentIndexInFiltered !== -1 ? currentIndexInFiltered : currentIndexInAll;
+        
+        const hasNext = currentIndex !== -1 && currentIndex < navigationList.length - 1;
         const hasPrev = currentIndex > 0;
         
         return (
@@ -158,12 +170,32 @@ export default function MailScreen() {
           onReply={handleReply}
           onReplyAll={handleReplyAll}
           onForward={handleForward}
-            onNext={hasNext ? handleNextEmail : undefined}
-            onPrev={hasPrev ? handlePrevEmail : undefined}
+            onNext={hasNext ? () => {
+              const nextEmail = navigationList[currentIndex + 1];
+              if (nextEmail) {
+                setSelectedEmail(nextEmail);
+                if (!nextEmail.isRead && !isDemoMode) {
+                  markAsRead(nextEmail.id).catch((error) => {
+                    mailScreenLogger.error('Failed to mark as read', error);
+                  });
+                }
+              }
+            } : undefined}
+            onPrev={hasPrev ? () => {
+              const prevEmail = navigationList[currentIndex - 1];
+              if (prevEmail) {
+                setSelectedEmail(prevEmail);
+                if (!prevEmail.isRead && !isDemoMode) {
+                  markAsRead(prevEmail.id).catch((error) => {
+                    mailScreenLogger.error('Failed to mark as read', error);
+                  });
+                }
+              }
+            } : undefined}
             hasNext={hasNext}
             hasPrev={hasPrev}
-            currentIndex={currentIndex !== -1 ? currentIndex : undefined}
-            totalCount={filteredEmails.length}
+            currentIndex={currentIndex !== -1 ? currentIndex + 1 : undefined}
+            totalCount={navigationList.length}
         />
         );
       })()}

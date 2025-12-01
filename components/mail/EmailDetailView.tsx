@@ -143,40 +143,55 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
               const body = document.body;
               const html = document.documentElement;
               
-              // Get all elements to find the actual content bounds
-              const allElements = body.querySelectorAll('*');
-              let maxBottom = 0;
-              
-              // Find the bottom-most element
-              allElements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const bottom = rect.bottom + window.scrollY;
-                if (bottom > maxBottom) {
-                  maxBottom = bottom;
-                }
-              });
-              
-              // Use the maximum of:
-              // 1. The bottom-most element position
-              // 2. Body scrollHeight (content height)
-              // 3. Body offsetHeight (visible height)
-              const height = Math.max(
-                maxBottom || 0,
+              // Method 1: Use scrollHeight (most reliable for content height)
+              let scrollHeight = Math.max(
                 body.scrollHeight,
                 body.offsetHeight,
+                html.clientHeight,
                 html.scrollHeight,
                 html.offsetHeight
               );
               
-              // Remove any extra padding/margin from the calculated height
-              const computedStyle = window.getComputedStyle(body);
-              const paddingTop = parseInt(computedStyle.paddingTop) || 0;
-              const paddingBottom = parseInt(computedStyle.paddingBottom) || 0;
-              const marginTop = parseInt(computedStyle.marginTop) || 0;
-              const marginBottom = parseInt(computedStyle.marginBottom) || 0;
+              // Method 2: Find the actual last element's position
+              let maxBottom = 0;
+              const allElements = body.querySelectorAll('*');
+              allElements.forEach(el => {
+                // Skip hidden elements
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden') return;
+                
+                const rect = el.getBoundingClientRect();
+                const bottom = rect.bottom + window.scrollY;
+                if (bottom > maxBottom && bottom < 100000) { // Sanity check
+                  maxBottom = bottom;
+                }
+              });
               
-              // Return the actual content height (excluding extra padding)
-              return Math.max(height - paddingTop - paddingBottom - marginTop - marginBottom, body.scrollHeight);
+              // Method 3: Check for common email elements that might extend beyond scrollHeight
+              const lastElement = body.lastElementChild;
+              let lastElementBottom = 0;
+              if (lastElement) {
+                const rect = lastElement.getBoundingClientRect();
+                lastElementBottom = rect.bottom + window.scrollY;
+              }
+              
+              // Use the maximum of all methods, but prefer scrollHeight as it's most accurate
+              const height = Math.max(
+                scrollHeight,
+                maxBottom,
+                lastElementBottom
+              );
+              
+              // Get body padding (we already set it to 16px in CSS, but check actual)
+              const computedStyle = window.getComputedStyle(body);
+              const paddingTop = parseInt(computedStyle.paddingTop) || 16;
+              const paddingBottom = parseInt(computedStyle.paddingBottom) || 16;
+              
+              // Return height minus only the bottom padding (top padding is needed for content start)
+              // This prevents extra whitespace at the bottom
+              const finalHeight = height - paddingBottom;
+              
+              return Math.max(finalHeight, scrollHeight - paddingBottom, 100);
             }
             
             function updateHeight() {
@@ -186,7 +201,7 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
               if (height > 0 && height < 50000) {
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   type: 'contentHeight',
-                  height: height
+                  height: Math.ceil(height) // Round up to avoid fractional pixels
                 }));
               }
             }
@@ -203,14 +218,14 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
             
             // Measure after images load (but limit retries)
             let retryCount = 0;
-            const maxRetries = 5;
+            const maxRetries = 8; // Increased retries for complex emails
             const retryInterval = setInterval(() => {
               updateHeight();
               retryCount++;
               if (retryCount >= maxRetries) {
                 clearInterval(retryInterval);
               }
-            }, 200);
+            }, 300); // Slightly longer interval for complex emails
           })();
           true; // Required for injected JavaScript
         `}
