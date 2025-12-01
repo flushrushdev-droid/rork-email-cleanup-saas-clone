@@ -422,30 +422,18 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         
         const newTokens: AuthTokens = {
           accessToken: backendData.access_token,
-          refreshToken: backendData.refresh_token || null,
+          refreshToken: backendData.refresh_token ? backendData.refresh_token : null,
           expiresAt: Date.now() + backendData.expires_in * 1000,
           idToken: backendData.id_token || undefined,
         };
         
         await fetchUserInfo(newTokens.accessToken);
         setTokens(newTokens);
-        // Store tokens securely in SecureStore (native) or localStorage (web)
-        if (Platform.OS === 'web') {
-          // On web, use localStorage (SecureStore doesn't work on web)
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
-            // Also save refresh token separately for seamless re-login
-            if (newTokens.refreshToken) {
-              window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
-            }
-          }
-        } else {
-          // On native, use SecureStore
-          await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
-          // Also save refresh token separately for seamless re-login
-          if (newTokens.refreshToken) {
-            await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
-          }
+        // Store tokens securely in SecureStore (native apps only - we're in native branch)
+        await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+        // Also save refresh token separately for seamless re-login
+        if (newTokens.refreshToken) {
+          await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
         }
         
         if (!backendData.refresh_token) {
