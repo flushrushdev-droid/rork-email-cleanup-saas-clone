@@ -34,7 +34,7 @@ export default function EmailDetailScreen() {
   const { colors } = useTheme();
   const styles = React.useMemo(() => createEmailDetailStyles(colors), [colors]);
   const { isDemoMode } = useAuth();
-  const { messages, markAsRead, archiveMessage } = useGmailSync();
+  const { messages, markAsRead, archiveMessage, fetchFullMessageBody } = useGmailSync();
   const { handleAsync } = useErrorHandler({ showAlert: true });
   const { showError: showErrorToast } = useEnhancedToast();
   const [pendingArchive, setPendingArchive] = useState<Set<string>>(new Set());
@@ -99,6 +99,46 @@ export default function EmailDetailScreen() {
   const selectedEmail = useMemo(() => {
     return allEmails.find(e => e.id === params.emailId) || null;
   }, [params.emailId, allEmails]);
+
+  // Full body state for the currently selected email
+  const [fullBody, setFullBody] = useState<string | null>(null);
+  const [isLoadingBody, setIsLoadingBody] = useState(false);
+
+  // Fetch full body when selected email changes
+  useEffect(() => {
+    if (!selectedEmail) {
+      setFullBody(null);
+      setIsLoadingBody(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingBody(true);
+    setFullBody(null);
+
+    fetchFullMessageBody(selectedEmail.id)
+      .then((body) => {
+        if (!cancelled) {
+          setFullBody(body);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          emailDetailLogger.error('Failed to fetch full message body', undefined, { error, emailId: selectedEmail.id });
+          // Fallback: keep body null so component can use snippet
+          setFullBody(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingBody(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedEmail?.id, fetchFullMessageBody]);
 
   const currentIndex = useMemo(() => {
     return allEmails.findIndex(e => e.id === params.emailId);
@@ -463,6 +503,8 @@ export default function EmailDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <EmailDetailView
         selectedEmail={selectedEmail}
+        fullBody={fullBody}
+        isLoadingBody={isLoadingBody}
         insets={insets}
         onBack={handleBack}
         onStar={handleStar}

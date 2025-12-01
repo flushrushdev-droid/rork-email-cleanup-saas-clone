@@ -19,11 +19,6 @@ const gmailLogger = createScopedLogger('GmailSync');
 // Local storage key for historyId (fallback if backend is unavailable)
 const LOCAL_HISTORY_ID_KEY = '@gmail_history_id';
 
-// To keep persisted cache size manageable and avoid SQLite limits,
-// cap the stored email body length per message. The full body can be
-// re-fetched on demand in a future enhancement if needed.
-const MAX_EMAIL_BODY_CHARS_FOR_CACHE = 4000;
-
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const { getValidAccessToken, user, isAuthenticated: authIsAuthenticated, isDemoMode: authDemoMode } = useAuth();
   const queryClient = useQueryClient();
@@ -368,10 +363,34 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     return attachments;
   };
 
-  // Helper function to parse email from Gmail message
+  // Fetch full email body on-demand for the detail screen
+  // This avoids storing large HTML bodies in the main messages cache.
+  const fetchFullMessageBody = useCallback(
+    async (messageId: string): Promise<string> => {
+      gmailLogger.debug('Fetching full message body', { messageId });
+      const gmailMessage = await makeGmailRequest(`/messages/${messageId}?format=full`) as GmailMessage;
+      const bodyData = extractEmailBody(gmailMessage.payload);
+      const fullBody = bodyData.html || bodyData.text || gmailMessage.snippet || '';
+
+      gmailLogger.debug('Full message body fetched', {
+        messageId,
+        hasHtml: !!bodyData.html,
+        hasText: !!bodyData.text,
+        bodyLength: fullBody.length,
+      });
+
+      return fullBody;
+    },
+    [],
+  );
+
+  // Helper function to parse email from Gmail message for the inbox list
+  // IMPORTANT: This intentionally does NOT include the full body content to keep
+  // the persisted cache small. The full body is fetched on-demand in the
+  // email-detail screen using a separate API call.
   const parseEmailFromMessage = (message: GmailMessage): Email => {
     const headers = message.payload?.headers || [];
-    const getHeader = (name: string) => 
+    const getHeader = (name: string) =>
       headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
 
     // Debug: Log payload structure for troubleshooting
@@ -382,40 +401,19 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         partsCount: message.payload.parts?.length || 0,
         hasBody: !!message.payload.body,
         bodySize: message.payload.body?.size,
-        bodyAttachmentId: message.payload.body?.attachmentId,
+        bodyAttachmentId: (message.payload as any).body?.attachmentId,
       });
     }
 
     const attachments = extractAttachments(message.payload?.parts);
     const hasAttachments = attachments.length > 0;
-    
-    // Extract email body (HTML or plain text)
-    const bodyData = extractEmailBody(message.payload);
-    // Prefer HTML over plain text, fallback to snippet if no body found
-    const fullBody = bodyData.html || bodyData.text || message.snippet;
-    // Truncate body to keep persisted cache small enough for AsyncStorage/SQLite
-    const emailBody =
-      fullBody && fullBody.length > MAX_EMAIL_BODY_CHARS_FOR_CACHE
-        ? fullBody.slice(0, MAX_EMAIL_BODY_CHARS_FOR_CACHE)
-        : fullBody;
-    
-    // Debug log for messages with attachments
+
     if (hasAttachments) {
       gmailLogger.debug('Email with attachments parsed', {
         emailId: message.id,
         subject: getHeader('Subject'),
         attachmentCount: attachments.length,
         attachments: attachments.map(a => ({ filename: a.filename, size: a.size })),
-      });
-    }
-    
-    // Debug log for body extraction
-    if (bodyData.html || bodyData.text) {
-      gmailLogger.debug('Email body extracted', {
-        emailId: message.id,
-        hasHtml: !!bodyData.html,
-        hasText: !!bodyData.text,
-        bodyLength: emailBody.length,
       });
     }
 
@@ -426,9 +424,9 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       to: getHeader('To').split(',').map(t => t.trim()),
       subject: getHeader('Subject'),
       snippet: message.snippet,
-      body: emailBody, // Store the actual email body
-      date: message.internalDate 
-        ? new Date(parseInt(message.internalDate)).toISOString()
+      // No body here – full content is fetched on-demand in detail screen
+      date: message.internalDate
+        ? new Date(parseInt(message.internalDate, 10)).toISOString()
         : new Date().toISOString(),
       isRead: !message.labelIds?.includes('UNREAD'),
       hasAttachments,
@@ -1092,7 +1090,8 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     syncMailbox,
     markAsRead: markAsReadMutation.mutateAsync,
     archiveMessage: archiveMessageMutation.mutateAsync,
-  }), [syncMailbox, markAsReadMutation.mutateAsync, archiveMessageMutation.mutateAsync]);
+    fetchFullMessageBody,
+  }), [syncMailbox, markAsReadMutation.mutateAsync, archiveMessageMutation.mutateAsync, fetchFullMessageBody]);
 
   // Combine into final context value with stable structure
   return useMemo(() => ({

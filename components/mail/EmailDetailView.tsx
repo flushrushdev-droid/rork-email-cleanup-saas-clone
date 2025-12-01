@@ -310,6 +310,8 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
 
 interface EmailDetailViewProps {
   selectedEmail: EmailMessage;
+  fullBody?: string | null;
+  isLoadingBody?: boolean;
   insets: EdgeInsets;
   onBack: () => void;
   onStar: (emailId: string) => void;
@@ -328,6 +330,8 @@ interface EmailDetailViewProps {
 
 export function EmailDetailView({
   selectedEmail,
+  fullBody,
+  isLoadingBody = false,
   insets,
   onBack,
   onStar,
@@ -354,17 +358,26 @@ export function EmailDetailView({
     scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   }, [selectedEmail.id]);
 
+  // Use fullBody if provided, otherwise fall back to any existing body, then snippet
+  const bodySource = useMemo(() => {
+    if (fullBody && fullBody.trim().length > 0) return fullBody;
+    if ((selectedEmail as any).body && (selectedEmail as any).body.trim().length > 0) {
+      return (selectedEmail as any).body as string;
+    }
+    return selectedEmail.snippet;
+  }, [fullBody, (selectedEmail as any).body, selectedEmail.snippet]);
+
   // Check if body is HTML (starts with < or contains HTML tags)
   const isHTML = useMemo(() => {
-    if (!selectedEmail.body) return false;
-    const trimmed = selectedEmail.body.trim();
+    if (!bodySource) return false;
+    const trimmed = bodySource.trim();
     return trimmed.startsWith('<') || /<[a-z][\s\S]*>/i.test(trimmed);
-  }, [selectedEmail.body]);
+  }, [bodySource]);
 
   // Check if HTML is complex (has style tags, inline styles, or complex structure)
   const isComplexHTML = useMemo(() => {
-    if (!isHTML || !selectedEmail.body) return false;
-    const body = selectedEmail.body.toLowerCase();
+    if (!isHTML || !bodySource) return false;
+    const body = bodySource.toLowerCase();
     // Check for complex HTML features that WebView handles better
     return (
       body.includes('<style') ||
@@ -377,7 +390,7 @@ export function EmailDetailView({
       body.includes('flex') ||
       body.includes('grid')
     );
-  }, [isHTML, selectedEmail.body]);
+  }, [isHTML, bodySource]);
 
   // HTML renderer configuration
   const htmlRenderConfig = useMemo(() => ({
@@ -480,7 +493,16 @@ export function EmailDetailView({
         )}
 
         <View style={styles.detailBody}>
-          {selectedEmail.body ? (
+          {/* Skeleton while full body is loading */}
+          {isLoadingBody && (
+            <View style={{ gap: 10, marginBottom: 16 }}>
+              <View style={{ height: 14, borderRadius: 7, backgroundColor: colors.surface }} />
+              <View style={{ height: 14, borderRadius: 7, backgroundColor: colors.surface }} />
+              <View style={{ height: 14, borderRadius: 7, width: '80%', backgroundColor: colors.surface }} />
+            </View>
+          )}
+
+          {bodySource ? (
             isHTML ? (
               isComplexHTML ? (
                 Platform.OS === 'web' ? (
@@ -520,7 +542,7 @@ export function EmailDetailView({
                             </style>
                           </head>
                           <body>
-                            ${selectedEmail.body.replace(/<script/gi, '&lt;script').replace(/<\/script>/gi, '&lt;/script&gt;')}
+                            ${bodySource.replace(/<script/gi, '&lt;script').replace(/<\/script>/gi, '&lt;/script&gt;')}
                           </body>
                         </html>
                       `}
@@ -537,7 +559,7 @@ export function EmailDetailView({
                 ) : WebView ? (
                   // For native: Use WebView with dynamic height
                   <EmailWebView
-                    html={selectedEmail.body}
+                    html={bodySource}
                     colors={colors}
                     width={width}
                   />
@@ -545,7 +567,7 @@ export function EmailDetailView({
                   // Fallback: Use RenderHTML if WebView not available
                   <RenderHTML
                     contentWidth={htmlRenderConfig.contentWidth}
-                    source={{ html: selectedEmail.body }}
+                    source={{ html: bodySource }}
                     baseStyle={htmlRenderConfig.baseStyle}
                     tagsStyles={htmlRenderConfig.tagsStyles}
                     systemFonts={htmlRenderConfig.systemFonts}
@@ -564,7 +586,7 @@ export function EmailDetailView({
                 // Use RenderHTML for simple HTML
                 <RenderHTML
                   contentWidth={htmlRenderConfig.contentWidth}
-                  source={{ html: selectedEmail.body }}
+                  source={{ html: bodySource }}
                   baseStyle={htmlRenderConfig.baseStyle}
                   tagsStyles={htmlRenderConfig.tagsStyles}
                   systemFonts={htmlRenderConfig.systemFonts}
@@ -581,7 +603,7 @@ export function EmailDetailView({
               )
             ) : (
               <AppText style={[styles.detailBodyText, { color: colors.text }]} dynamicTypeStyle="body">
-                {selectedEmail.body}
+                {bodySource}
               </AppText>
             )
           ) : (
