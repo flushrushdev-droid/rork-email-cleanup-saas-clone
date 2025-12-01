@@ -19,6 +19,11 @@ const gmailLogger = createScopedLogger('GmailSync');
 // Local storage key for historyId (fallback if backend is unavailable)
 const LOCAL_HISTORY_ID_KEY = '@gmail_history_id';
 
+// To keep persisted cache size manageable and avoid SQLite limits,
+// cap the stored email body length per message. The full body can be
+// re-fetched on demand in a future enhancement if needed.
+const MAX_EMAIL_BODY_CHARS_FOR_CACHE = 4000;
+
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const { getValidAccessToken, user, isAuthenticated: authIsAuthenticated, isDemoMode: authDemoMode } = useAuth();
   const queryClient = useQueryClient();
@@ -387,7 +392,12 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     // Extract email body (HTML or plain text)
     const bodyData = extractEmailBody(message.payload);
     // Prefer HTML over plain text, fallback to snippet if no body found
-    const emailBody = bodyData.html || bodyData.text || message.snippet;
+    const fullBody = bodyData.html || bodyData.text || message.snippet;
+    // Truncate body to keep persisted cache small enough for AsyncStorage/SQLite
+    const emailBody =
+      fullBody && fullBody.length > MAX_EMAIL_BODY_CHARS_FOR_CACHE
+        ? fullBody.slice(0, MAX_EMAIL_BODY_CHARS_FOR_CACHE)
+        : fullBody;
     
     // Debug log for messages with attachments
     if (hasAttachments) {
