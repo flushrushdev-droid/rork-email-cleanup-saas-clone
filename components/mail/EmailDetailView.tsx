@@ -30,6 +30,107 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 };
 
+// WebView component with dynamic height for email content
+interface EmailWebViewProps {
+  html: string;
+  colors: any;
+  width: number;
+}
+
+const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
+  const [webViewHeight, setWebViewHeight] = useState(600); // Start with a reasonable default
+
+  if (!WebView) {
+    return null;
+  }
+
+  return (
+    <View style={{ width: '100%', backgroundColor: colors.background }}>
+      <WebView
+        source={{ html }}
+        style={{ 
+          backgroundColor: 'transparent', 
+          width: '100%',
+          height: webViewHeight,
+        }}
+        scrollEnabled={false} // Disable WebView scrolling - let parent ScrollView handle it
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        // Inject CSS to match theme and ensure proper rendering
+        injectedCSS={`
+          body {
+            color: ${colors.text};
+            background-color: ${colors.background};
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 16px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          * {
+            box-sizing: border-box;
+          }
+          a {
+            color: ${colors.primary};
+          }
+          img {
+            max-width: 100%;
+            height: auto;
+          }
+        `}
+        // Allow images and external resources
+        originWhitelist={['*']}
+        // Disable zoom
+        scalesPageToFit={false}
+        // Set initial scale for proper rendering
+        startInLoadingState={true}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        // Get content height and update WebView height
+        onMessage={(event) => {
+          try {
+            const data = JSON.parse(event.nativeEvent.data);
+            if (data.type === 'contentHeight' && data.height) {
+              // Add some padding and ensure minimum height
+              const newHeight = Math.max(data.height + 50, 300);
+              setWebViewHeight(newHeight);
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }}
+        // Inject script to measure content height
+        injectedJavaScript={`
+          (function() {
+            function updateHeight() {
+              const height = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.clientHeight,
+                document.documentElement.scrollHeight,
+                document.documentElement.offsetHeight
+              );
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'contentHeight',
+                height: height
+              }));
+            }
+            updateHeight();
+            // Update on resize
+            window.addEventListener('resize', updateHeight);
+            // Update after images load
+            window.addEventListener('load', updateHeight);
+            // Update after a short delay to catch dynamic content
+            setTimeout(updateHeight, 500);
+            setTimeout(updateHeight, 1000);
+          })();
+          true; // Required for injected JavaScript
+        `}
+      />
+    </View>
+  );
+};
+
 interface EmailDetailViewProps {
   selectedEmail: EmailMessage;
   insets: EdgeInsets;
@@ -250,46 +351,12 @@ export function EmailDetailView({
                     />
                   </View>
                 ) : WebView ? (
-                  // For native: Use WebView
-                  <View style={{ width: '100%', height: 600, backgroundColor: colors.background }}>
-                    <WebView
-                      source={{ html: selectedEmail.body }}
-                      style={{ backgroundColor: 'transparent', flex: 1 }}
-                      scrollEnabled={true}
-                      showsVerticalScrollIndicator={true}
-                      showsHorizontalScrollIndicator={false}
-                      // Inject CSS to match theme and ensure proper rendering
-                      injectedCSS={`
-                        body {
-                          color: ${colors.text};
-                          background-color: ${colors.background};
-                          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                          margin: 0;
-                          padding: 16px;
-                          width: 100%;
-                          box-sizing: border-box;
-                        }
-                        * {
-                          box-sizing: border-box;
-                        }
-                        a {
-                          color: ${colors.primary};
-                        }
-                        img {
-                          max-width: 100%;
-                          height: auto;
-                        }
-                      `}
-                      // Allow images and external resources
-                      originWhitelist={['*']}
-                      // Disable zoom
-                      scalesPageToFit={false}
-                      // Set initial scale for proper rendering
-                      startInLoadingState={true}
-                      javaScriptEnabled={true}
-                      domStorageEnabled={true}
-                    />
-                  </View>
+                  // For native: Use WebView with dynamic height
+                  <EmailWebView
+                    html={selectedEmail.body}
+                    colors={colors}
+                    width={width}
+                  />
                 ) : (
                   // Fallback: Use RenderHTML if WebView not available
                   <RenderHTML
