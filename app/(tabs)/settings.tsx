@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { AppText } from '@/components/common/AppText';
-import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Moon, History, Lightbulb, Check, BookOpen } from 'lucide-react-native';
+import { Mail, Bell, Database, FileText, HelpCircle, LogOut, ChevronRight, Moon, History, Lightbulb, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -231,26 +231,6 @@ export default function SettingsScreen() {
             <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">Terms & Privacy Policy</AppText>
             <ChevronRight size={20} color={colors.textSecondary} />
           </TouchableOpacity>
-
-          {/* Storybook - Development Only */}
-          {__DEV__ && (
-            <TouchableOpacity 
-              testID="menu-storybook"
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Open Storybook"
-              accessibilityHint="Double tap to open Storybook component library"
-              style={[styles.menuItem, { backgroundColor: colors.surface }]} 
-              onPress={() => router.push('/storybook')}
-            >
-              <View style={[styles.menuIcon, { backgroundColor: colors.info + '20' }]}>
-                <BookOpen size={20} color={colors.info} />
-              </View>
-              <AppText style={[styles.menuLabel, { color: colors.text }]} dynamicTypeStyle="body">Storybook</AppText>
-              <AppText style={[styles.menuLabel, { color: colors.textSecondary, fontSize: 12, marginLeft: 8 }]} dynamicTypeStyle="caption">Dev</AppText>
-              <ChevronRight size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
         </View>
 
         <LinearGradient
