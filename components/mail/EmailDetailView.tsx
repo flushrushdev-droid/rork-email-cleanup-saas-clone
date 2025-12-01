@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { Paperclip } from 'lucide-react-native';
@@ -40,6 +40,16 @@ interface EmailWebViewProps {
 const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
   const [webViewHeight, setWebViewHeight] = useState(300); // Start with smaller default
   const [isMeasuring, setIsMeasuring] = useState(true);
+  const htmlRef = useRef(html);
+
+  // Reset height when HTML changes (new email)
+  useEffect(() => {
+    if (htmlRef.current !== html) {
+      htmlRef.current = html;
+      setWebViewHeight(300); // Reset to default
+      setIsMeasuring(true);
+    }
+  }, [html]);
 
   if (!WebView) {
     return null;
@@ -48,6 +58,7 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
   return (
     <View style={{ width: '100%', backgroundColor: colors.background }}>
       <WebView
+        key={html} // Force remount when HTML changes
         source={{ html }}
         style={{ 
           backgroundColor: 'transparent', 
@@ -59,6 +70,18 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
         showsHorizontalScrollIndicator={false}
         // Inject CSS to match theme and ensure proper rendering
         injectedCSS={`
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: auto;
+            overflow: hidden;
+          }
           body {
             color: ${colors.text};
             background-color: ${colors.background};
@@ -66,18 +89,9 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
             margin: 0;
             padding: 16px;
             width: 100%;
+            height: auto;
             box-sizing: border-box;
             overflow: hidden;
-          }
-          html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            box-sizing: border-box;
-            overflow: hidden;
-          }
-          * {
-            box-sizing: border-box;
           }
           a {
             color: ${colors.primary};
@@ -85,6 +99,15 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
           img {
             max-width: 100%;
             height: auto;
+            display: block;
+          }
+          /* Remove any extra whitespace from common email elements */
+          table {
+            border-collapse: collapse;
+            border-spacing: 0;
+          }
+          p:last-child, div:last-child {
+            margin-bottom: 0;
           }
         `}
         // Allow images and external resources
@@ -100,11 +123,14 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
           try {
             const data = JSON.parse(event.nativeEvent.data);
             if (data.type === 'contentHeight' && data.height) {
-              // Use the actual content height with minimal padding (just 10px for safety)
+              // Use the actual content height with minimal padding (just 5px for safety)
               // Don't add too much extra space
-              const newHeight = Math.max(data.height + 10, 100);
-              setWebViewHeight(newHeight);
-              setIsMeasuring(false);
+              const newHeight = Math.max(data.height + 5, 100);
+              // Only update if significantly different to avoid constant re-renders
+              if (Math.abs(newHeight - webViewHeight) > 10) {
+                setWebViewHeight(newHeight);
+                setIsMeasuring(false);
+              }
             }
           } catch (e) {
             // Ignore parse errors
@@ -113,19 +139,48 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
         // Inject script to measure content height more accurately
         injectedJavaScript={`
           (function() {
-            function updateHeight() {
-              // Get the actual content height more accurately
+            function getActualContentHeight() {
               const body = document.body;
               const html = document.documentElement;
               
-              // Use the maximum of scrollHeight and offsetHeight, but be more precise
+              // Get all elements to find the actual content bounds
+              const allElements = body.querySelectorAll('*');
+              let maxBottom = 0;
+              
+              // Find the bottom-most element
+              allElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const bottom = rect.bottom + window.scrollY;
+                if (bottom > maxBottom) {
+                  maxBottom = bottom;
+                }
+              });
+              
+              // Use the maximum of:
+              // 1. The bottom-most element position
+              // 2. Body scrollHeight (content height)
+              // 3. Body offsetHeight (visible height)
               const height = Math.max(
+                maxBottom || 0,
                 body.scrollHeight,
                 body.offsetHeight,
-                html.clientHeight,
                 html.scrollHeight,
                 html.offsetHeight
               );
+              
+              // Remove any extra padding/margin from the calculated height
+              const computedStyle = window.getComputedStyle(body);
+              const paddingTop = parseInt(computedStyle.paddingTop) || 0;
+              const paddingBottom = parseInt(computedStyle.paddingBottom) || 0;
+              const marginTop = parseInt(computedStyle.marginTop) || 0;
+              const marginBottom = parseInt(computedStyle.marginBottom) || 0;
+              
+              // Return the actual content height (excluding extra padding)
+              return Math.max(height - paddingTop - paddingBottom - marginTop - marginBottom, body.scrollHeight);
+            }
+            
+            function updateHeight() {
+              const height = getActualContentHeight();
               
               // Only send if height is reasonable (not 0 or extremely large)
               if (height > 0 && height < 50000) {
@@ -148,14 +203,14 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
             
             // Measure after images load (but limit retries)
             let retryCount = 0;
-            const maxRetries = 3;
+            const maxRetries = 5;
             const retryInterval = setInterval(() => {
               updateHeight();
               retryCount++;
               if (retryCount >= maxRetries) {
                 clearInterval(retryInterval);
               }
-            }, 300);
+            }, 200);
           })();
           true; // Required for injected JavaScript
         `}
@@ -203,6 +258,12 @@ export function EmailDetailView({
   const { width } = useWindowDimensions();
   const hasMultipleRecipients = selectedEmail.to.length > 1;
   const styles = createEmailDetailStyles(colors);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Reset scroll position when email changes
+  useEffect(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+  }, [selectedEmail.id]);
 
   // Check if body is HTML (starts with < or contains HTML tags)
   const isHTML = useMemo(() => {
@@ -285,7 +346,8 @@ export function EmailDetailView({
         colors={colors}
       />
 
-      <ScrollView 
+          <ScrollView 
+        ref={scrollViewRef}
         style={styles.detailContent} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}

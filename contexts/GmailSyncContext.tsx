@@ -777,7 +777,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
       // Decision logic:
       // 1. If no historyId -> full sync (first time)
-      // 2. If historyId exists BUT cache is empty -> full sync (restore after cache clear)
+      // 2. If historyId exists BUT cache is empty -> Try incremental sync first (faster), fall back to full sync if needed
       // 3. If historyId exists AND cache has messages -> incremental sync (update existing)
       // Incremental sync will automatically fall back to full sync if historyId is too old (404 error)
       let messages: Email[];
@@ -785,10 +785,24 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         gmailLogger.info('No historyId found, performing full sync');
         messages = await performFullSync(profile);
       } else if (isCacheEmpty) {
-        gmailLogger.info('HistoryId exists but cache is empty, performing full sync to restore messages', { 
+        // Even if cache is empty, try incremental sync first (it's faster)
+        // This handles the case where cache was cleared but historyId is still valid
+        // If incremental sync fails (404), it will fall back to full sync automatically
+        gmailLogger.info('HistoryId exists but cache is empty, attempting incremental sync first (will fall back to full sync if needed)', { 
           historyId: storedHistoryId,
         });
-        messages = await performFullSync(profile);
+        try {
+          messages = await performIncrementalSync(profile, storedHistoryId);
+          gmailLogger.info('Incremental sync succeeded despite empty cache');
+        } catch (error) {
+          // If incremental sync fails (e.g., historyId too old), fall back to full sync
+          if (error instanceof APIError && error.statusCode === 404) {
+            gmailLogger.info('Incremental sync failed (historyId too old), performing full sync to restore messages');
+            messages = await performFullSync(profile);
+          } else {
+            throw error; // Re-throw other errors
+          }
+        }
       } else {
         // We have a historyId AND cache has messages - do incremental sync
         gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { 
