@@ -56,12 +56,12 @@ const authLogger = createScopedLogger('Auth');
 
   // Log OAuth configuration in development only (computed dynamically)
   const currentRedirectUri = getPlatformRedirectUri();
-  authLogger.debug('OAuth configuration', {
+authLogger.debug('OAuth configuration', {
     redirectUri: currentRedirectUri,
-    clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
-    platform: Platform.OS,
+  clientId: GOOGLE_CLIENT_ID ? `${GOOGLE_CLIENT_ID.substring(0, 10)}...` : 'not set',
+  platform: Platform.OS,
     hostUri: Constants.expoConfig?.hostUri,
-  });
+});
 
 const STORAGE_KEYS = {
   TOKENS: 'auth_tokens', // Used with SecureStore (no @ prefix needed)
@@ -403,6 +403,59 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       setIsLoading(true);
       setError(null);
 
+      // For native apps: use backend endpoint (backend has client_secret for Web OAuth client)
+      // For web: can use direct Google endpoint with client_secret from env
+      if (Platform.OS !== 'web') {
+        // Use backend endpoint for native apps - backend has client_secret
+        authLogger.debug('Exchanging code via backend endpoint');
+        const backendData = await trpcClient.auth.exchangeToken.mutate({
+          code,
+          redirect_uri: getCurrentRedirectUri(),
+          code_verifier: codeVerifier,
+        });
+        
+        authLogger.debug('Token exchange response', {
+          hasRefreshToken: !!backendData.refresh_token,
+          hasAccessToken: !!backendData.access_token,
+          expiresIn: backendData.expires_in,
+        });
+        
+        const newTokens: AuthTokens = {
+          accessToken: backendData.access_token,
+          refreshToken: backendData.refresh_token || null,
+          expiresAt: Date.now() + backendData.expires_in * 1000,
+          idToken: backendData.id_token,
+        };
+        
+        await fetchUserInfo(newTokens.accessToken);
+        setTokens(newTokens);
+        // Store tokens securely in SecureStore (native) or localStorage (web)
+        if (Platform.OS === 'web') {
+          // On web, use localStorage (SecureStore doesn't work on web)
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+            // Also save refresh token separately for seamless re-login
+            if (newTokens.refreshToken) {
+              window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
+            }
+          }
+        } else {
+          // On native, use SecureStore
+          await SecureStore.setItemAsync(STORAGE_KEYS.TOKENS, JSON.stringify(newTokens));
+          // Also save refresh token separately for seamless re-login
+          if (newTokens.refreshToken) {
+            await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newTokens.refreshToken);
+          }
+        }
+        
+        if (!backendData.refresh_token) {
+          authLogger.warn('No refresh token received from Google - seamless re-login will not be possible');
+        }
+        
+        return; // Exit early for native apps
+      }
+
+      // For web: use direct Google endpoint with client_secret from env
       const params = new URLSearchParams();
       params.append('code', code);
       if (GOOGLE_CLIENT_ID) {
@@ -412,7 +465,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       params.append('grant_type', 'authorization_code');
 
       // For web OAuth, Google requires client_secret even with PKCE
-      // For native apps (Android/iOS), PKCE alone is sufficient
       if (Platform.OS === 'web' && AppConfig.google.clientSecret) {
         params.append('client_secret', AppConfig.google.clientSecret);
       }

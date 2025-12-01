@@ -6,6 +6,67 @@ const GOOGLE_CLIENT_SECRET = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET;
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 
 export default createTRPCRouter({
+  // Exchange OAuth code for tokens (initial authentication)
+  exchangeToken: publicProcedure
+    .input(z.object({ 
+      code: z.string(),
+      redirect_uri: z.string(),
+      code_verifier: z.string().optional(),
+    }))
+    .mutation(async ({ input }: { input: { code: string; redirect_uri: string; code_verifier?: string } }) => {
+      if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+        throw new Error('Google OAuth credentials not configured on server');
+      }
+
+      const params = new URLSearchParams();
+      params.append('code', input.code);
+      params.append('client_id', GOOGLE_CLIENT_ID);
+      params.append('client_secret', GOOGLE_CLIENT_SECRET);
+      params.append('redirect_uri', input.redirect_uri);
+      params.append('grant_type', 'authorization_code');
+
+      // Add PKCE code_verifier if provided
+      if (input.code_verifier) {
+        params.append('code_verifier', input.code_verifier);
+      }
+
+      const response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+
+        throw new Error(
+          `Token exchange failed: ${errorData.error || errorText} - ${errorData.error_description || ''}`
+        );
+      }
+
+      const data = await response.json() as {
+        access_token: string;
+        refresh_token?: string;
+        expires_in: number;
+        id_token?: string;
+      };
+
+      return {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || null,
+        expires_in: data.expires_in,
+        id_token: data.id_token,
+      };
+    }),
+
   // Refresh access token using refresh token
   refreshToken: publicProcedure
     .input(z.object({ refresh_token: z.string() }))
