@@ -298,10 +298,12 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
           continue;
         }
         
+        const mime = (part.mimeType || '').toLowerCase();
+
         // Extract text/html or text/plain
-        if (part.mimeType === 'text/html' && part.body?.data && !result.html) {
+        if (mime.startsWith('text/html') && part.body?.data && !result.html) {
           result.html = decodeBase64Url(part.body.data);
-        } else if (part.mimeType === 'text/plain' && part.body?.data && !result.text) {
+        } else if (mime.startsWith('text/plain') && part.body?.data && !result.text) {
           result.text = decodeBase64Url(part.body.data);
         }
       }
