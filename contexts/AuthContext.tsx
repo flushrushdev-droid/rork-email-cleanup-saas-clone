@@ -422,7 +422,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         
         const newTokens: AuthTokens = {
           accessToken: backendData.access_token,
-          refreshToken: backendData.refresh_token ? backendData.refresh_token : null,
+          refreshToken: backendData.refresh_token || undefined,
           expiresAt: Date.now() + backendData.expires_in * 1000,
           idToken: backendData.id_token || undefined,
         };
