@@ -160,6 +160,20 @@ export default function RootLayout() {
             const subKey = query.queryKey[1];
             // Persist Gmail messages and senders
             if (key === 'gmail' && (subKey === 'messages' || subKey === 'senders')) {
+              // Check if query data is too large (prevent SQLite CursorWindow errors)
+              try {
+                const serialized = JSON.stringify(query.state.data);
+                const sizeInMB = serialized.length / 1024 / 1024;
+                // Skip if larger than 1.5MB (SQLite CursorWindow limit is ~2MB)
+                if (sizeInMB > 1.5) {
+                  console.warn(`[QueryCache] Skipping persistence for ${key}/${subKey}: size ${sizeInMB.toFixed(2)}MB exceeds limit`);
+                  return false;
+                }
+              } catch (error) {
+                // If serialization fails, don't persist
+                console.warn(`[QueryCache] Error checking query size for ${key}/${subKey}:`, error);
+                return false;
+              }
               return true;
             }
             // Don't persist other queries (they can be refetched)
