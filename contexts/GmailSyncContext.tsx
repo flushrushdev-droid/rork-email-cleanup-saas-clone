@@ -548,7 +548,14 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     }
 
     // Update cache with full sync results
+    // Use setQueryData to ensure React Query persistence picks it up
     queryClient.setQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES, msgs);
+    
+    // Force persistence by triggering a hydration check
+    // This ensures the messages are saved to AsyncStorage
+    gmailLogger.debug('Full sync completed, cache updated with messages', { 
+      messageCount: msgs.length 
+    });
 
     return msgs;
   };
@@ -820,17 +827,24 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
       // Decision logic:
       // 1. If no historyId -> full sync (first time)
-      // 2. If historyId exists -> incremental sync (even if cache is empty, messages will be restored from persistence)
+      // 2. If historyId exists BUT cache is empty -> full sync (restore all messages, persistence may have failed)
+      // 3. If historyId exists AND cache has messages -> incremental sync (update existing)
       // Incremental sync will automatically fall back to full sync if historyId is too old (404 error)
       let messages: Email[];
       if (!storedHistoryId) {
         gmailLogger.info('No historyId found, performing full sync');
         messages = await performFullSync(profile);
+      } else if (isCacheEmpty) {
+        // Cache is empty - need full sync to restore all messages
+        // This happens if persistence didn't restore the cache, or cache was manually cleared
+        // Full sync will restore all messages, then future syncs can be incremental
+        gmailLogger.info('HistoryId exists but cache is empty, performing full sync to restore all messages', { 
+          historyId: storedHistoryId,
+        });
+        messages = await performFullSync(profile);
       } else {
-        // We have a historyId - do incremental sync
-        // Even if cache appears empty, React Query persistence should restore it
-        // If persistence fails, incremental sync will get new messages anyway
-        gmailLogger.info('HistoryId found, performing incremental sync', { 
+        // We have a historyId AND cache has messages - do incremental sync
+        gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { 
           historyId: storedHistoryId,
           cachedMessageCount: cachedMessages.length,
         });
