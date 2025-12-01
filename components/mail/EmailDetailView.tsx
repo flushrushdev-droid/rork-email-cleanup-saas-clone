@@ -90,6 +90,7 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
             padding: 16px;
             width: 100%;
             height: auto;
+            min-height: auto;
             box-sizing: border-box;
             overflow: hidden;
           }
@@ -105,9 +106,19 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
           table {
             border-collapse: collapse;
             border-spacing: 0;
+            width: 100%;
+            max-width: 100%;
           }
           p:last-child, div:last-child {
             margin-bottom: 0;
+          }
+          /* Remove extra spacing from email footers and unsubscribe links */
+          a[href*="unsubscribe"], a[href*="preferences"] {
+            display: inline;
+          }
+          /* Ensure images don't add extra height */
+          img[width="1"][height="1"] {
+            display: none !important;
           }
         `}
         // Allow images and external resources
@@ -139,69 +150,105 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
         // Inject script to measure content height more accurately
         injectedJavaScript={`
           (function() {
+            let lastReportedHeight = 0;
+            
             function getActualContentHeight() {
               const body = document.body;
               const html = document.documentElement;
               
+              // Wait for images to load before measuring
+              const images = body.querySelectorAll('img');
+              let imagesLoaded = true;
+              images.forEach(img => {
+                if (!img.complete || img.naturalHeight === 0) {
+                  imagesLoaded = false;
+                }
+              });
+              
               // Method 1: Use scrollHeight (most reliable for content height)
+              // Force a reflow to ensure accurate measurement
+              body.style.display = 'none';
+              body.offsetHeight; // Trigger reflow
+              body.style.display = '';
+              
               let scrollHeight = Math.max(
                 body.scrollHeight,
                 body.offsetHeight,
-                html.clientHeight,
                 html.scrollHeight,
                 html.offsetHeight
               );
               
-              // Method 2: Find the actual last element's position
+              // Method 2: Find the actual last visible element's position
               let maxBottom = 0;
               const allElements = body.querySelectorAll('*');
               allElements.forEach(el => {
-                // Skip hidden elements
+                // Skip hidden elements and tracking pixels
                 const style = window.getComputedStyle(el);
                 if (style.display === 'none' || style.visibility === 'hidden') return;
                 
+                // Skip 1x1 tracking images
+                if (el.tagName === 'IMG') {
+                  const img = el;
+                  if (img.width <= 1 && img.height <= 1) return;
+                }
+                
                 const rect = el.getBoundingClientRect();
-                const bottom = rect.bottom + window.scrollY;
-                if (bottom > maxBottom && bottom < 100000) { // Sanity check
-                  maxBottom = bottom;
+                // Only count elements that are actually visible
+                if (rect.width > 0 && rect.height > 0) {
+                  const bottom = rect.bottom + window.scrollY;
+                  if (bottom > maxBottom && bottom < 100000) { // Sanity check
+                    maxBottom = bottom;
+                  }
                 }
               });
               
-              // Method 3: Check for common email elements that might extend beyond scrollHeight
-              const lastElement = body.lastElementChild;
-              let lastElementBottom = 0;
-              if (lastElement) {
-                const rect = lastElement.getBoundingClientRect();
-                lastElementBottom = rect.bottom + window.scrollY;
+              // Method 3: Check last visible element
+              let lastVisibleBottom = 0;
+              let current = body.lastElementChild;
+              while (current) {
+                const style = window.getComputedStyle(current);
+                if (style.display !== 'none' && style.visibility !== 'hidden') {
+                  const rect = current.getBoundingClientRect();
+                  if (rect.width > 0 && rect.height > 0) {
+                    lastVisibleBottom = rect.bottom + window.scrollY;
+                    break;
+                  }
+                }
+                current = current.previousElementSibling;
               }
               
-              // Use the maximum of all methods, but prefer scrollHeight as it's most accurate
+              // Use the maximum of all methods
               const height = Math.max(
                 scrollHeight,
                 maxBottom,
-                lastElementBottom
+                lastVisibleBottom
               );
               
-              // Get body padding (we already set it to 16px in CSS, but check actual)
+              // Get body padding
               const computedStyle = window.getComputedStyle(body);
               const paddingTop = parseInt(computedStyle.paddingTop) || 16;
               const paddingBottom = parseInt(computedStyle.paddingBottom) || 16;
               
-              // Return height minus only the bottom padding (top padding is needed for content start)
-              // This prevents extra whitespace at the bottom
-              const finalHeight = height - paddingBottom;
+              // Calculate final height: content height minus bottom padding
+              // Add a small buffer (5px) to account for any rounding issues
+              const finalHeight = Math.max(
+                height - paddingBottom + 5,
+                scrollHeight - paddingBottom + 5,
+                100
+              );
               
-              return Math.max(finalHeight, scrollHeight - paddingBottom, 100);
+              return Math.ceil(finalHeight);
             }
             
             function updateHeight() {
               const height = getActualContentHeight();
               
-              // Only send if height is reasonable (not 0 or extremely large)
-              if (height > 0 && height < 50000) {
+              // Only send if height is reasonable and different from last reported
+              if (height > 0 && height < 50000 && Math.abs(height - lastReportedHeight) > 2) {
+                lastReportedHeight = height;
                 window.ReactNativeWebView.postMessage(JSON.stringify({
                   type: 'contentHeight',
-                  height: Math.ceil(height) // Round up to avoid fractional pixels
+                  height: height
                 }));
               }
             }
@@ -216,16 +263,43 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
               window.addEventListener('load', updateHeight);
             }
             
-            // Measure after images load (but limit retries)
+            // Measure after all images load
+            const images = document.querySelectorAll('img');
+            let imagesToLoad = images.length;
+            if (imagesToLoad > 0) {
+              images.forEach(img => {
+                if (img.complete) {
+                  imagesToLoad--;
+                } else {
+                  img.addEventListener('load', () => {
+                    imagesToLoad--;
+                    if (imagesToLoad === 0) {
+                      setTimeout(updateHeight, 100);
+                    }
+                  });
+                  img.addEventListener('error', () => {
+                    imagesToLoad--;
+                    if (imagesToLoad === 0) {
+                      setTimeout(updateHeight, 100);
+                    }
+                  });
+                }
+              });
+              if (imagesToLoad === 0) {
+                setTimeout(updateHeight, 100);
+              }
+            }
+            
+            // Measure periodically for complex emails (but limit retries)
             let retryCount = 0;
-            const maxRetries = 8; // Increased retries for complex emails
+            const maxRetries = 10; // Increased for complex emails with async content
             const retryInterval = setInterval(() => {
               updateHeight();
               retryCount++;
               if (retryCount >= maxRetries) {
                 clearInterval(retryInterval);
               }
-            }, 300); // Slightly longer interval for complex emails
+            }, 400); // Longer interval to allow content to settle
           })();
           true; // Required for injected JavaScript
         `}

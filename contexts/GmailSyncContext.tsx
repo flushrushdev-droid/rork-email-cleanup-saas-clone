@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AppState, AppStateStatus, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 import { trpcClient } from '@/lib/trpc';
 import type { GmailMessage, GmailProfile, Email, Sender } from '@/constants/types';
@@ -14,6 +15,9 @@ import { rateLimiter, retryWithBackoff, shouldRetryError, DEFAULT_RATE_LIMIT, DE
 // Validate Gmail API base URL is HTTPS in production
 const GMAIL_API_BASE = validateSecureUrl(AppConfig.gmail.apiBase);
 const gmailLogger = createScopedLogger('GmailSync');
+
+// Local storage key for historyId (fallback if backend is unavailable)
+const LOCAL_HISTORY_ID_KEY = '@gmail_history_id';
 
 export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
   const { getValidAccessToken, user, isAuthenticated: authIsAuthenticated, isDemoMode: authDemoMode } = useAuth();
@@ -516,17 +520,29 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
       msgs.push(parsedEmail);
     }
 
-    // Save the current historyId from profile
-    if (profile.historyId && user?.id) {
+    // Save the current historyId from profile (both backend and local storage)
+    if (profile.historyId) {
+      // Save to backend if user is available
+      if (user?.id) {
+        try {
+          await trpcClient.users.update.mutate({
+            id: user.id,
+            gmail_history_id: profile.historyId,
+            last_full_sync_at: new Date().toISOString(),
+          });
+          gmailLogger.debug('Saved historyId to backend after full sync', { historyId: profile.historyId });
+        } catch (err) {
+          gmailLogger.error('Failed to save historyId to backend', err);
+          // Non-critical, continue
+        }
+      }
+      
+      // Always save to local storage as fallback
       try {
-        await trpcClient.users.update.mutate({
-          id: user.id,
-          gmail_history_id: profile.historyId,
-          last_full_sync_at: new Date().toISOString(),
-        });
-        gmailLogger.debug('Saved historyId after full sync', { historyId: profile.historyId });
+        await AsyncStorage.setItem(LOCAL_HISTORY_ID_KEY, profile.historyId);
+        gmailLogger.debug('Saved historyId to local storage after full sync', { historyId: profile.historyId });
       } catch (err) {
-        gmailLogger.error('Failed to save historyId', err);
+        gmailLogger.error('Failed to save historyId to local storage', err);
         // Non-critical, continue
       }
     }
@@ -670,17 +686,29 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         gmailLogger.debug('Removed deleted messages from cache', { count: deletedMessageIds.length });
       }
 
-      // Update historyId
+      // Update historyId (both backend and local storage)
       const currentHistoryId = historyResponse.historyId || profile.historyId;
-      if (currentHistoryId && user?.id) {
+      if (currentHistoryId) {
+        // Save to backend if user is available
+        if (user?.id) {
+          try {
+            await trpcClient.users.update.mutate({
+              id: user.id,
+              gmail_history_id: currentHistoryId,
+            });
+            gmailLogger.debug('Updated historyId in backend after incremental sync', { historyId: currentHistoryId });
+          } catch (err) {
+            gmailLogger.error('Failed to update historyId in backend', err);
+            // Non-critical, continue
+          }
+        }
+        
+        // Always save to local storage as fallback
         try {
-          await trpcClient.users.update.mutate({
-            id: user.id,
-            gmail_history_id: currentHistoryId,
-          });
-          gmailLogger.debug('Updated historyId after incremental sync', { historyId: currentHistoryId });
+          await AsyncStorage.setItem(LOCAL_HISTORY_ID_KEY, currentHistoryId);
+          gmailLogger.debug('Updated historyId in local storage after incremental sync', { historyId: currentHistoryId });
         } catch (err) {
-          gmailLogger.error('Failed to update historyId', err);
+          gmailLogger.error('Failed to update historyId in local storage', err);
           // Non-critical, continue
         }
       }
@@ -732,9 +760,10 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         historyId: profile.historyId,
       });
 
-      // Get user's stored historyId from Supabase
+      // Get user's stored historyId (try backend first, then local storage as fallback)
       let storedHistoryId: string | null = null;
       
+      // Try backend first
       if (user?.id) {
         try {
           const userData = await trpcClient.users.getById.query({ id: user.id });
@@ -746,12 +775,36 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
             gmailHistoryId: (userData as any)?.gmail_history_id,
           });
           storedHistoryId = (userData as any)?.gmail_history_id || null;
-          gmailLogger.debug('Fetched user historyId', { 
-            hasHistoryId: !!storedHistoryId,
-            historyId: storedHistoryId,
-          });
+          if (storedHistoryId) {
+            gmailLogger.debug('Fetched historyId from backend', { 
+              hasHistoryId: !!storedHistoryId,
+              historyId: storedHistoryId,
+            });
+            // Also update local storage with backend value
+            try {
+              await AsyncStorage.setItem(LOCAL_HISTORY_ID_KEY, storedHistoryId);
+            } catch (err) {
+              gmailLogger.warn('Failed to sync historyId to local storage', err);
+            }
+          }
         } catch (err) {
-          gmailLogger.warn('Failed to fetch user historyId, doing full sync', err);
+          gmailLogger.warn('Failed to fetch user historyId from backend, trying local storage', err);
+        }
+      }
+      
+      // Fallback to local storage if backend doesn't have it
+      if (!storedHistoryId) {
+        try {
+          const localHistoryId = await AsyncStorage.getItem(LOCAL_HISTORY_ID_KEY);
+          if (localHistoryId) {
+            storedHistoryId = localHistoryId;
+            gmailLogger.debug('Fetched historyId from local storage', { 
+              hasHistoryId: !!storedHistoryId,
+              historyId: storedHistoryId,
+            });
+          }
+        } catch (err) {
+          gmailLogger.warn('Failed to fetch historyId from local storage', err);
         }
       }
 
@@ -767,24 +820,17 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
       // Decision logic:
       // 1. If no historyId -> full sync (first time)
-      // 2. If historyId exists BUT cache is empty -> full sync (restore all messages from cache persistence)
-      // 3. If historyId exists AND cache has messages -> incremental sync (update existing)
+      // 2. If historyId exists -> incremental sync (even if cache is empty, messages will be restored from persistence)
       // Incremental sync will automatically fall back to full sync if historyId is too old (404 error)
       let messages: Email[];
       if (!storedHistoryId) {
         gmailLogger.info('No historyId found, performing full sync');
         messages = await performFullSync(profile);
-      } else if (isCacheEmpty) {
-        // Cache is empty - need full sync to restore all messages
-        // This should only happen on first sync or if cache was manually cleared
-        // If cache persistence is working, this should be rare
-        gmailLogger.info('HistoryId exists but cache is empty, performing full sync to restore all messages', { 
-          historyId: storedHistoryId,
-        });
-        messages = await performFullSync(profile);
       } else {
-        // We have a historyId AND cache has messages - do incremental sync
-        gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { 
+        // We have a historyId - do incremental sync
+        // Even if cache appears empty, React Query persistence should restore it
+        // If persistence fails, incremental sync will get new messages anyway
+        gmailLogger.info('HistoryId found, performing incremental sync', { 
           historyId: storedHistoryId,
           cachedMessageCount: cachedMessages.length,
         });
