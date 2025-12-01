@@ -564,6 +564,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         platform: Platform.OS,
       });
       setError(errorMessage);
+      // Reset deep link processed ref on error so user can retry
+      deepLinkProcessedRef.current = false;
     } finally {
       setIsLoading(false);
     }
