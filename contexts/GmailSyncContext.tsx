@@ -548,16 +548,21 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     }
 
     // Update cache with full sync results
+    // To keep persisted cache size manageable (and avoid SQLite size limits),
+    // only keep the latest 100 messages (sorted by date, newest first)
+    const sortedLimitedMessages = msgs
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 100);
+
     // Use setQueryData to ensure React Query persistence picks it up
-    queryClient.setQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES, msgs);
+    queryClient.setQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES, sortedLimitedMessages);
     
-    // Force persistence by triggering a hydration check
-    // This ensures the messages are saved to AsyncStorage
     gmailLogger.debug('Full sync completed, cache updated with messages', { 
-      messageCount: msgs.length 
+      totalMessages: msgs.length,
+      persistedMessages: sortedLimitedMessages.length,
     });
 
-    return msgs;
+    return sortedLimitedMessages;
   };
 
   // Incremental sync using Gmail History API
