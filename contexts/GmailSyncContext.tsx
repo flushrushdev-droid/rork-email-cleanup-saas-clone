@@ -815,9 +815,34 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         }
       }
 
-      // Check cache state - if empty, we need full sync to restore messages
-      const cachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || [];
-      const isCacheEmpty = cachedMessages.length === 0;
+      // Check cache state - if empty, wait a bit for persistence to hydrate
+      // React Query persistence is asynchronous and may not have restored the cache yet
+      let cachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || [];
+      let isCacheEmpty = cachedMessages.length === 0;
+      
+      // If we have a historyId but cache is empty, wait for persistence to hydrate
+      // This gives React Query persistence time to restore the cache from AsyncStorage
+      if (storedHistoryId && isCacheEmpty) {
+        gmailLogger.debug('HistoryId exists but cache is empty, waiting for persistence to hydrate...');
+        
+        // Wait up to 2 seconds for persistence to hydrate (check every 200ms)
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+          cachedMessages = queryClient.getQueryData<Email[]>(CACHE_KEYS.GMAIL.MESSAGES) || [];
+          if (cachedMessages.length > 0) {
+            gmailLogger.debug('Cache restored from persistence', { 
+              cachedMessageCount: cachedMessages.length,
+              attempts: attempt + 1 
+            });
+            isCacheEmpty = false;
+            break;
+          }
+        }
+        
+        if (isCacheEmpty) {
+          gmailLogger.warn('Cache still empty after waiting for persistence, will do full sync');
+        }
+      }
       
       gmailLogger.debug('Cache state check', {
         cachedMessageCount: cachedMessages.length,
