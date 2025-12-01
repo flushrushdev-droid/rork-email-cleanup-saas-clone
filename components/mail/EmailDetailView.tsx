@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { AppText } from '@/components/common/AppText';
 import { Paperclip } from 'lucide-react-native';
