@@ -38,7 +38,8 @@ interface EmailWebViewProps {
 }
 
 const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
-  const [webViewHeight, setWebViewHeight] = useState(600); // Start with a reasonable default
+  const [webViewHeight, setWebViewHeight] = useState(300); // Start with smaller default
+  const [isMeasuring, setIsMeasuring] = useState(true);
 
   if (!WebView) {
     return null;
@@ -66,6 +67,14 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
             padding: 16px;
             width: 100%;
             box-sizing: border-box;
+            overflow: hidden;
+          }
+          html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
           }
           * {
             box-sizing: border-box;
@@ -91,38 +100,62 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
           try {
             const data = JSON.parse(event.nativeEvent.data);
             if (data.type === 'contentHeight' && data.height) {
-              // Add some padding and ensure minimum height
-              const newHeight = Math.max(data.height + 50, 300);
+              // Use the actual content height with minimal padding (just 10px for safety)
+              // Don't add too much extra space
+              const newHeight = Math.max(data.height + 10, 100);
               setWebViewHeight(newHeight);
+              setIsMeasuring(false);
             }
           } catch (e) {
             // Ignore parse errors
           }
         }}
-        // Inject script to measure content height
+        // Inject script to measure content height more accurately
         injectedJavaScript={`
           (function() {
             function updateHeight() {
+              // Get the actual content height more accurately
+              const body = document.body;
+              const html = document.documentElement;
+              
+              // Use the maximum of scrollHeight and offsetHeight, but be more precise
               const height = Math.max(
-                document.body.scrollHeight,
-                document.body.offsetHeight,
-                document.documentElement.clientHeight,
-                document.documentElement.scrollHeight,
-                document.documentElement.offsetHeight
+                body.scrollHeight,
+                body.offsetHeight,
+                html.clientHeight,
+                html.scrollHeight,
+                html.offsetHeight
               );
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'contentHeight',
-                height: height
-              }));
+              
+              // Only send if height is reasonable (not 0 or extremely large)
+              if (height > 0 && height < 50000) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'contentHeight',
+                  height: height
+                }));
+              }
             }
+            
+            // Measure immediately
             updateHeight();
-            // Update on resize
-            window.addEventListener('resize', updateHeight);
-            // Update after images load
-            window.addEventListener('load', updateHeight);
-            // Update after a short delay to catch dynamic content
-            setTimeout(updateHeight, 500);
-            setTimeout(updateHeight, 1000);
+            
+            // Measure after DOM is ready
+            if (document.readyState === 'complete') {
+              updateHeight();
+            } else {
+              window.addEventListener('load', updateHeight);
+            }
+            
+            // Measure after images load (but limit retries)
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryInterval = setInterval(() => {
+              updateHeight();
+              retryCount++;
+              if (retryCount >= maxRetries) {
+                clearInterval(retryInterval);
+              }
+            }, 300);
           })();
           true; // Required for injected JavaScript
         `}
@@ -255,7 +288,7 @@ export function EmailDetailView({
       <ScrollView 
         style={styles.detailContent} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
       >
         <AppText style={[styles.detailSubject, { color: colors.text }]} dynamicTypeStyle="title2">{selectedEmail.subject}</AppText>
         
