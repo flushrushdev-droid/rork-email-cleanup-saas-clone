@@ -128,35 +128,25 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     gcTime: getCacheTTL(CACHE_KEYS.GMAIL.PROFILE),
   });
 
+  // Messages query - automatically restores from persistence on app startup
+  // This ensures emails persist across app reloads
   const messagesQuery = useQuery({
     queryKey: CACHE_KEYS.GMAIL.MESSAGES,
     queryFn: async (): Promise<Email[]> => {
-      const listResponse = await makeGmailRequest(
-        '/messages?maxResults=100&q=in:inbox'
-      );
-
-      const messageIds = listResponse.messages || [];
-      const totalToSync = Math.min(messageIds.length, 100);
-      setSyncProgress({ current: 0, total: totalToSync });
-
-      const messages: Email[] = [];
-
-      for (let i = 0; i < totalToSync; i++) {
-        const message: GmailMessage = await makeGmailRequest(
-          `/messages/${messageIds[i].id}?format=full`
-        );
-        
-        setSyncProgress({ current: i + 1, total: totalToSync });
-
-        const email = parseEmailFromMessage(message);
-        messages.push(email);
-      }
-
-      return messages;
+      // This function should not be called if cache is persisted
+      // It's only a fallback if cache is empty and sync hasn't run yet
+      gmailLogger.debug('Messages query function called - this should only happen if cache is empty and sync hasn\'t run');
+      return [];
     },
-    enabled: false,
+    enabled: authIsAuthenticated && !authDemoMode,
     staleTime: getStaleTime(CACHE_KEYS.GMAIL.MESSAGES),
-    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES),
+    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES), // Infinity for messages
+    // Don't refetch on mount if we have cached data (from persistence)
+    refetchOnMount: false,
+    // Don't refetch on window focus if we have cached data
+    refetchOnWindowFocus: false,
+    // Use persisted data if available - this ensures emails are restored on app startup
+    placeholderData: (previousData) => previousData,
   });
 
   // Helper function to decode base64url encoded data to UTF-8 string
@@ -777,7 +767,7 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
 
       // Decision logic:
       // 1. If no historyId -> full sync (first time)
-      // 2. If historyId exists BUT cache is empty -> Try incremental sync first (faster), fall back to full sync if needed
+      // 2. If historyId exists BUT cache is empty -> full sync (restore all messages from cache persistence)
       // 3. If historyId exists AND cache has messages -> incremental sync (update existing)
       // Incremental sync will automatically fall back to full sync if historyId is too old (404 error)
       let messages: Email[];
@@ -785,28 +775,18 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
         gmailLogger.info('No historyId found, performing full sync');
         messages = await performFullSync(profile);
       } else if (isCacheEmpty) {
-        // Even if cache is empty, try incremental sync first (it's faster)
-        // This handles the case where cache was cleared but historyId is still valid
-        // If incremental sync fails (404), it will fall back to full sync automatically
-        gmailLogger.info('HistoryId exists but cache is empty, attempting incremental sync first (will fall back to full sync if needed)', { 
+        // Cache is empty - need full sync to restore all messages
+        // This should only happen on first sync or if cache was manually cleared
+        // If cache persistence is working, this should be rare
+        gmailLogger.info('HistoryId exists but cache is empty, performing full sync to restore all messages', { 
           historyId: storedHistoryId,
         });
-        try {
-          messages = await performIncrementalSync(profile, storedHistoryId);
-          gmailLogger.info('Incremental sync succeeded despite empty cache');
-        } catch (error) {
-          // If incremental sync fails (e.g., historyId too old), fall back to full sync
-          if (error instanceof APIError && error.statusCode === 404) {
-            gmailLogger.info('Incremental sync failed (historyId too old), performing full sync to restore messages');
-            messages = await performFullSync(profile);
-          } else {
-            throw error; // Re-throw other errors
-          }
-        }
+        messages = await performFullSync(profile);
       } else {
         // We have a historyId AND cache has messages - do incremental sync
         gmailLogger.info('HistoryId found and cache has messages, performing incremental sync', { 
           historyId: storedHistoryId,
+          cachedMessageCount: cachedMessages.length,
         });
         messages = await performIncrementalSync(profile, storedHistoryId);
       }
@@ -883,6 +863,30 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     
     return Math.min(10, volumeScore + engagementScore + unreadRatio * 3);
   };
+
+  // Messages query - automatically restores from persistence on app startup
+  // This ensures emails persist across app reloads
+  const messagesQuery = useQuery<Email[]>({
+    queryKey: CACHE_KEYS.GMAIL.MESSAGES,
+    queryFn: async () => {
+      // This function should not be called if cache is persisted
+      // It's only a fallback if cache is empty and sync hasn't run yet
+      gmailLogger.debug('Messages query function called - this should only happen if cache is empty');
+      return [];
+    },
+    enabled: authIsAuthenticated && !authDemoMode,
+    staleTime: getStaleTime(CACHE_KEYS.GMAIL.MESSAGES),
+    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES), // Infinity for messages
+    // Don't refetch on mount if we have cached data (from persistence)
+    refetchOnMount: false,
+    // Don't refetch on window focus if we have cached data
+    refetchOnWindowFocus: false,
+    // Use persisted data if available
+    placeholderData: (previousData) => previousData,
+  });
+
+  // Get messages from query (will be restored from persistence automatically)
+  const messages = messagesQuery.data || [];
 
   const sendersQuery = useQuery<Sender[]>({
     queryKey: CACHE_KEYS.GMAIL.SENDERS,
