@@ -864,30 +864,6 @@ export const [GmailSyncProvider, useGmailSync] = createContextHook(() => {
     return Math.min(10, volumeScore + engagementScore + unreadRatio * 3);
   };
 
-  // Messages query - automatically restores from persistence on app startup
-  // This ensures emails persist across app reloads
-  const messagesQuery = useQuery<Email[]>({
-    queryKey: CACHE_KEYS.GMAIL.MESSAGES,
-    queryFn: async () => {
-      // This function should not be called if cache is persisted
-      // It's only a fallback if cache is empty and sync hasn't run yet
-      gmailLogger.debug('Messages query function called - this should only happen if cache is empty');
-      return [];
-    },
-    enabled: authIsAuthenticated && !authDemoMode,
-    staleTime: getStaleTime(CACHE_KEYS.GMAIL.MESSAGES),
-    gcTime: getCacheTTL(CACHE_KEYS.GMAIL.MESSAGES), // Infinity for messages
-    // Don't refetch on mount if we have cached data (from persistence)
-    refetchOnMount: false,
-    // Don't refetch on window focus if we have cached data
-    refetchOnWindowFocus: false,
-    // Use persisted data if available
-    placeholderData: (previousData) => previousData,
-  });
-
-  // Get messages from query (will be restored from persistence automatically)
-  const messages = messagesQuery.data || [];
-
   const sendersQuery = useQuery<Sender[]>({
     queryKey: CACHE_KEYS.GMAIL.SENDERS,
     queryFn: async () => {
