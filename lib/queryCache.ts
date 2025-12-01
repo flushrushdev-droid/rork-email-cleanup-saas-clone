@@ -156,8 +156,12 @@ export function getStaleTime(queryKey: readonly unknown[]): number {
 /**
  * Create persister for React Query cache
  * Uses AsyncStorage on native, localStorage on web
+ * Includes error handling for SQLite CursorWindow size limits on Android
  */
 const createPersister = () => {
+  // Maximum size for a single persisted query (1.5MB to stay under SQLite's ~2MB limit)
+  const MAX_QUERY_SIZE = 1.5 * 1024 * 1024; // 1.5MB
+  
   if (Platform.OS === 'web') {
     // For web, create a localStorage persister that matches the async storage API
     const webStorage = {
@@ -170,6 +174,11 @@ const createPersister = () => {
       },
       setItem: (key: string, value: string): Promise<void> => {
         if (typeof window !== 'undefined' && window.localStorage) {
+          // Check size before storing (web localStorage has ~5-10MB limit)
+          if (value.length > MAX_QUERY_SIZE) {
+            console.warn(`[QueryCache] Skipping persistence for ${key}: size ${(value.length / 1024 / 1024).toFixed(2)}MB exceeds limit`);
+            return Promise.resolve();
+          }
           window.localStorage.setItem(key, value);
         }
         return Promise.resolve();
@@ -188,9 +197,55 @@ const createPersister = () => {
     });
   }
   
-  // For native, use AsyncStorage persister
+  // For native, use AsyncStorage persister with error handling
+  const nativeStorage = {
+    getItem: async (key: string): Promise<string | null> => {
+      try {
+        return await AsyncStorage.getItem(key);
+      } catch (error) {
+        // Handle "Row too big" errors gracefully
+        if (error instanceof Error && error.message.includes('CursorWindow')) {
+          console.warn(`[QueryCache] Error reading ${key}: ${error.message}. Clearing cache entry.`);
+          // Try to clear the problematic entry
+          try {
+            await AsyncStorage.removeItem(key);
+          } catch {
+            // Ignore errors when clearing
+          }
+          return null;
+        }
+        throw error;
+      }
+    },
+    setItem: async (key: string, value: string): Promise<void> => {
+      try {
+        // Check size before storing to prevent CursorWindow errors
+        if (value.length > MAX_QUERY_SIZE) {
+          console.warn(`[QueryCache] Skipping persistence for ${key}: size ${(value.length / 1024 / 1024).toFixed(2)}MB exceeds limit`);
+          return;
+        }
+        await AsyncStorage.setItem(key, value);
+      } catch (error) {
+        // Handle "Row too big" errors gracefully
+        if (error instanceof Error && error.message.includes('CursorWindow')) {
+          console.warn(`[QueryCache] Error persisting ${key}: ${error.message}. Query too large, skipping persistence.`);
+          return; // Don't throw - just skip persisting this query
+        }
+        throw error;
+      }
+    },
+    removeItem: async (key: string): Promise<void> => {
+      try {
+        await AsyncStorage.removeItem(key);
+      } catch (error) {
+        // Ignore errors when removing
+        console.warn(`[QueryCache] Error removing ${key}:`, error);
+      }
+    },
+  };
+  
   return createAsyncStoragePersister({
-    storage: AsyncStorage,
+    storage: nativeStorage,
     key: 'REACT_QUERY_OFFLINE_CACHE',
   });
 };
