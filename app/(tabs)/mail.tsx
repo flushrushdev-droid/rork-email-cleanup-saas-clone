@@ -26,6 +26,7 @@ export default function MailScreen() {
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(() => createMailStyles(colors), [colors]);
   const { showInfo } = useEnhancedToast();
+  const { markAsRead } = useGmailSync();
   
   const {
     currentView,
@@ -176,7 +177,7 @@ export default function MailScreen() {
                 setSelectedEmail(nextEmail);
                 if (!nextEmail.isRead && !isDemoMode) {
                   markAsRead(nextEmail.id).catch((error) => {
-                    mailScreenLogger.error('Failed to mark as read', error);
+                    mailLogger.error('Failed to mark as read', error);
                   });
                 }
               }
@@ -187,7 +188,7 @@ export default function MailScreen() {
                 setSelectedEmail(prevEmail);
                 if (!prevEmail.isRead && !isDemoMode) {
                   markAsRead(prevEmail.id).catch((error) => {
-                    mailScreenLogger.error('Failed to mark as read', error);
+                    mailLogger.error('Failed to mark as read', error);
                   });
                 }
               }

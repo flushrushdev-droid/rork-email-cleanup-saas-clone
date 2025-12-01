@@ -123,11 +123,11 @@ const EmailWebView: React.FC<EmailWebViewProps> = ({ html, colors, width }) => {
           try {
             const data = JSON.parse(event.nativeEvent.data);
             if (data.type === 'contentHeight' && data.height) {
-              // Use the actual content height with minimal padding (just 5px for safety)
+              // Use the actual content height with minimal padding (just 2px for safety)
               // Don't add too much extra space
-              const newHeight = Math.max(data.height + 5, 100);
-              // Only update if significantly different to avoid constant re-renders
-              if (Math.abs(newHeight - webViewHeight) > 10) {
+              const newHeight = Math.max(data.height + 2, 100);
+              // Always update if we're still measuring, or if significantly different
+              if (isMeasuring || Math.abs(newHeight - webViewHeight) > 5) {
                 setWebViewHeight(newHeight);
                 setIsMeasuring(false);
               }
