@@ -424,7 +424,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           accessToken: backendData.access_token,
           refreshToken: backendData.refresh_token || null,
           expiresAt: Date.now() + backendData.expires_in * 1000,
-          idToken: backendData.id_token,
+          idToken: backendData.id_token || undefined,
         };
         
         await fetchUserInfo(newTokens.accessToken);
