@@ -238,15 +238,44 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           if (code && !deepLinkProcessedRef.current) {
             deepLinkProcessedRef.current = true;
             authLogger.debug('Received OAuth code via deep link', { code: code.substring(0, 10) + '...' });
+            
+            // Wait a moment to ensure request object is available
+            if (!request?.codeVerifier) {
+              authLogger.debug('Waiting for request object to be available...');
+              // Wait up to 2 seconds for request to be available
+              let attempts = 0;
+              while (!request?.codeVerifier && attempts < 20) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+              }
+            }
+            
             // Use the code_verifier from the original request if available
-            await exchangeCodeForTokens(code, request?.codeVerifier);
+            try {
+              await exchangeCodeForTokens(code, request?.codeVerifier);
+            } catch (err) {
+              // Reset the ref on error so user can retry
+              deepLinkProcessedRef.current = false;
+              authLogger.error('Error exchanging code from deep link', err);
+              const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+              setError(errorMessage);
+              setIsLoading(false);
+            }
+          } else if (code && deepLinkProcessedRef.current) {
+            authLogger.debug('Deep link already processed, ignoring duplicate');
           } else if (error) {
+            // Reset ref on error so user can retry
+            deepLinkProcessedRef.current = false;
             authLogger.error('OAuth error from deep link', { error });
             setError(error);
             setIsLoading(false);
           }
         } catch (err) {
+          // Reset ref on error so user can retry
+          deepLinkProcessedRef.current = false;
           authLogger.error('Error processing deep link', err);
+          setError('Failed to process authentication callback');
+          setIsLoading(false);
         }
       }
     };

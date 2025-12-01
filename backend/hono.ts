@@ -160,6 +160,23 @@ app.get("/auth/callback", (c) => {
 </html>`);
   }
   
+  // Handle case where callback is hit without code/error (initial navigation or preflight)
+  if (!code && !error) {
+    console.log('[OAuth Callback] Callback hit without code or error - likely initial navigation');
+    // Return a simple waiting page that doesn't redirect
+    return c.html(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to Google...</p>
+</body>
+</html>`);
+  }
+  
   if (code) {
     console.log('[OAuth Callback] OAuth success, code received');
     // Success - try both approaches:
