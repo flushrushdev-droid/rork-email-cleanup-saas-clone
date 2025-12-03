@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, useWindowDimensions } from 'react-native';
-import { Mail, Shield, Zap, Lock } from 'lucide-react-native';
+import { View, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { Mail, Shield, Zap, Lock, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -23,6 +23,7 @@ export default function LoginScreen() {
   const { height, fontScale } = useWindowDimensions();
   const router = useRouter();
   const { handleAsync, error, clearError } = useErrorHandler({ showAlert: false });
+  const [isAuthenticating, setIsAuthenticating] = React.useState(false);
 
   // Responsive tweaks so the screen fits without needing to scroll on smaller devices
   const effectiveHeight = height / Math.min(fontScale || 1, 1.4);
@@ -30,9 +31,16 @@ export default function LoginScreen() {
   
   const handleSignIn = async () => {
     clearError();
-    await handleAsync(async () => {
-      await signIn();
-    }, { showAlert: false });
+    setIsAuthenticating(true);
+    try {
+      await handleAsync(async () => {
+        await signIn();
+      }, { showAlert: false });
+    } catch (err) {
+      // If sign in fails, reset authenticating state
+      setIsAuthenticating(false);
+    }
+    // Don't set false on success - will redirect away
   };
 
   useEffect(() => {
@@ -44,6 +52,10 @@ export default function LoginScreen() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  const handleBackToWelcome = () => {
+    router.back();
+  };
+
   const handleTryDemo = async () => {
     clearError();
     await handleAsync(async () => {
@@ -52,7 +64,8 @@ export default function LoginScreen() {
   };
 
   // Use auth error if available, otherwise use error handler error
-  const displayError = authError || error;
+  // Don't show error if we're in the middle of authenticating
+  const displayError = isAuthenticating ? null : (authError || error);
   const styles = React.useMemo(() => createLoginStyles(colors), [colors]);
 
   return (
@@ -70,6 +83,24 @@ export default function LoginScreen() {
             />
           )}
 
+          {/* Back to Welcome Button */}
+          <TouchableOpacity 
+            onPress={handleBackToWelcome}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: 12,
+              marginBottom: 8,
+              gap: 6,
+            }}
+          >
+            <ArrowLeft size={16} color={colors.textSecondary} />
+            <AppText style={{ color: colors.textSecondary, fontSize: 14 }}>
+              Back to Welcome
+            </AppText>
+          </TouchableOpacity>
+
           <View style={[styles.buttonContainer, { gap: isSmall ? 8 : 10 }]}>
             <AccessibleButton
               accessibilityLabel="Continue with Google"
@@ -82,11 +113,11 @@ export default function LoginScreen() {
                 },
               ]}
               onPress={handleSignIn}
-              disabled={isLoading}
-              loading={isLoading}
+              disabled={isLoading || isAuthenticating}
+              loading={isLoading || isAuthenticating}
             >
               <AppText style={[styles.signInText, { fontSize: isSmall ? 15 : 16 }]}>
-                Continue with Google
+                {isAuthenticating ? 'Signing in...' : 'Continue with Google'}
               </AppText>
             </AccessibleButton>
 

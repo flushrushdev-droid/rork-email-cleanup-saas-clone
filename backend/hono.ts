@@ -179,107 +179,25 @@ app.get("/auth/callback", (c) => {
   
   if (code) {
     console.log('[OAuth Callback] OAuth success, code received');
-    // Success - try both approaches:
-    // 1. Keep code in URL for expo-auth-session to detect (WebBrowser.maybeCompleteAuthSession)
-    // 2. Also redirect to deep link as fallback (for deep link handler in app)
     const params = new URLSearchParams({
       code: code,
       ...(state && { state: state }),
     });
     const deepLink = `${appScheme}://auth/callback?${params.toString()}`;
-    console.log('[OAuth Callback] Deep link:', deepLink);
+    console.log('[OAuth Callback] Redirecting to deep link:', deepLink);
     
-    // Return HTML that:
-    // 1. Stays on page briefly so expo-auth-session can detect the code from URL
-    // 2. Then *tries* to redirect to deep link as fallback
-    // 3. Also shows a visible button the user can tap to open the app (for browsers that block auto-redirects)
+    // Instant redirect with no visible page - seamless UX
     return c.html(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Authentication Complete</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background: #f5f5f5;
-    }
-    .container {
-      text-align: center;
-      padding: 20px;
-      max-width: 400px;
-    }
-    .success-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: #4CAF50;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 30px;
-      margin: 0 auto 20px;
-    }
-    h1 {
-      color: #333;
-      margin: 0 0 10px 0;
-    }
-    p {
-      color: #666;
-      margin: 10px 0;
-    }
-    a.button {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 16px;
-      background-color: #007AFF;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-  </style>
+  <meta http-equiv="refresh" content="0;url=${deepLink}">
   <script>
-    (function() {
-      const deepLink = "${deepLink}";
-      
-      // Wait a moment for expo-auth-session to detect the code from URL
-      // WebBrowser.maybeCompleteAuthSession() should detect it
-      setTimeout(function() {
-        // After 500ms, try redirecting to deep link as fallback.
-        // Some browsers/webviews may block this; in that case, the user can tap the button below.
-        try {
-          window.location.href = deepLink;
-        } catch (e) {
-          console.error('Failed to redirect to deep link:', e);
-        }
-      }, 500);
-      
-      // Show message
-      setTimeout(function() {
-        document.querySelector('.container').innerHTML = 
-          '<div class="success-icon">✓</div>' +
-          '<h1>Authentication Complete</h1>' +
-          '<p>Redirecting to app...</p>' +
-          '<p style="font-size: 12px; color: #666; margin-top: 8px;">If nothing happens, tap the button below.</p>' +
-          '<a class="button" href="' + deepLink + '">Open AthenX Mail</a>';
-      }, 100);
-    })();
+    // Immediate redirect - no delay, no visible content
+    window.location.href = "${deepLink}";
   </script>
 </head>
-<body>
-  <div class="container">
-    <div class="success-icon">✓</div>
-    <h1>Authentication Complete</h1>
-    <p>Completing authentication...</p>
-  </div>
-</body>
+<body style="margin:0;background:#000;"></body>
 </html>`);
   }
   
